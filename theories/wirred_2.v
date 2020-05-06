@@ -268,7 +268,41 @@ Section h_vertex_and_its_private_definition.
 
   Variable v: G.
 
-  Hypothesis vinD: v \in D.
+  Lemma vw_in_V' : if [pick w in private_set' D v] is Some w then (v, w) \in V' G else true.
+  Proof.
+    case: pickP=> w ; last by auto.
+    move=> winPrivateSet.
+    have privateSetNotEmpty: private_set' D v != set0 by apply/set0Pn ; exists w.
+    move: (contraR (@private_set'_equals_empty G D v) privateSetNotEmpty)=> vinD.
+    move/eqP: (private_set'_equals_private_set vinD)=> psEq.
+    rewrite psEq in winPrivateSet ; move/private_belongs_to_private_set in winPrivateSet.
+    rewrite/private in winPrivateSet ; move/andP in winPrivateSet.
+    move: winPrivateSet=> [vdomw _].
+    by rewrite in_set.
+  Qed.
+
+  (*  En este punto queremos poder definir una función que dado un vértice de G,
+      nos devuelva el singleton {(v,w)} si w es un vertice privado de v, o el
+      conjunto vacío si no existe uno. El problema radica en poder demostrar que
+      este posible único elemento de setw es un vértice de G'. El primer intento
+      es intentando construir un subconjunto de G' con ese único elemento mediante
+      la prueba de arriba, pero coq no puede inferir que (v,w) sea un elemento de G'.
+
+  Definition setw v := if [pick w in private_set' D v] is Some w then Sub (v,w) vw_in_V' : {set G'} else set0.*)
+
+  (*  El segundo intento es definiendo directamente setw como el singleton con el elemento (v,w),
+      pero acá queda definido como un elemento de G * G, que no necesariamente es un elemento de G',
+      ya que aún falta demostrar que estos elementos cumplan v -*- w. Tenemos esta exacta prueba arriba,
+      pero no se de que manera definir [set ...] y demostrar que ese elemento pertenece a V' G
+      en la misma creación del singleton. Lo pensé demostrar en un lema siguiente pero aún no me sale.
+      ¿Incluso demostrado este teorema, como demostramos que setw v pertenece especificamente a G' ? *)
+
+  Definition setw v := if [pick w in private_set' D v] is Some w then [set (v,w)] else set0.
+
+  Lemma aux : forall x : G * G, x \in setw v -> x.1 -*- x.2.
+  Admitted.
+
+  (* Todo lo que sigue de la sección es el primer enfoque del problema. *)
 
 (*  Alternative (that uses "pick"):
 
@@ -284,6 +318,7 @@ Section h_vertex_and_its_private_definition.
     by rewrite private_eq_pred0.
   Qed. *)
 
+(*
   Local Lemma w_exists : exists w : G, private D v w.
   Proof. by  move/irredundantP: Dirr => /(_ v vinD) /(private_set_not_empty vinD).
   Qed.
@@ -299,11 +334,9 @@ Section h_vertex_and_its_private_definition.
     by move/andP=> [ vdomw _ ].
   Qed.
 
-  Definition h_vw := set1 (Sub (v, w) vw_in_V') : {set G'}. (* i.e. {x : G * G | x \in V' G} *)
+  Definition h_vw := Sub (v, w) vw_in_V' : G'. (* i.e. {x : G * G | x \in V' G} *)
 
-  (* Hay que reescribir estos lemas *)
-
-  (*Lemma h_vw1 : (val h_vw).1 = v.
+  Lemma h_vw1 : (val h_vw).1 = v.
   Proof. by rewrite /=. Qed.
 
   Lemma h_vw2 : private D v (val h_vw).2.
@@ -311,23 +344,13 @@ Section h_vertex_and_its_private_definition.
 
 End h_vertex_and_its_private_definition.
 
-Variable D : {set G}.
-Hypothesis Dirr : irredundant D.
-
-Definition h_vw' (v : G) := if @idP (v \in D) is ReflectT p then h_vw Dirr p else set0.
-Lemma h_vw'P (v : G) (vD : v \in D) : h_vw' v = h_vw Dirr vD.
-Proof.
-  rewrite /h_vw'; case: {-}_ / idP => [vD'|//]; by rewrite (bool_irrelevance vD' vD).
-Qed.
-
 (* For a given irredundant set D of G, there exists a stable set S of G' such that w(D) = w'(S) *)
-Theorem irred_G_to_stable_G' : exists2 S : {set G'}, stable S & weight_set weight D = weight_set weight' S.
+Theorem irred_G_to_stable_G' : forall D : {set G}, irredundant D ->
+          exists2 S : {set G'}, stable S & weight_set weight D = weight_set weight' S.
 Proof.
-  set S := \bigcup_(v in G) (h_vw' v).
-  exists S.
-  rewrite /stable.
-  apply/forallP=> x ; apply/forallP=> y.
-  apply/implyP=> xinS ; apply/implyP=> yinS.
+  move=> D Dirr.
+  set S := \bigcup_(v in G) (setw D v).
+  (*exists S.*)
 Admitted.
 
 (* For a given stable set S of G', there exists an irredundant set D of G such that w(D) = w'(G') *)
