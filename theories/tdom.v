@@ -84,35 +84,35 @@ Definition closed_neigh_set : {set T} := \bigcup_(w in T | w \in D) N[w].
 
 End Neighborhoods_definitions.
 
-Notation "N( G ; x )" := (@open_neigh T G x) (at level 0, G at level 99, x at level 99).
-Notation "N[ G ; x ]" := (@closed_neigh T G x) (at level 0, G at level 99, x at level 99).
-Notation "N( x )" := (@open_neigh T _ x) (at level 0, x at level 99, only parsing).
-Notation "N[ x ]" := (@closed_neigh T _ x) (at level 0, x at level 99, only parsing).
-Notation "x -- y" := (@tedge T _ x y) (at level 30).
-Notation "x -*- y" := (@cl_tedge T _ x y) (at level 30).
-Notation "V( G )" := (@tvertex T G) (at level 0, G at level 99).
-Notation "E( G )" := (@edges T G) (at level 0, G at level 99).
-Notation "NS( G ; D )" := (@open_neigh_set T G D) (at level 0, G at level 99, D at level 99).
-Notation "NS( D )" := (@open_neigh_set T _ D) (at level 0, D at level 99).
-Notation "NS[ G ; D ]" := (@closed_neigh_set T G D) (at level 0, G at level 99, D at level 99).
-Notation "NS[ D ]" := (@closed_neigh_set  _ D) (at level 0, D at level 99).
+Notation "N( G ; x )" := (open_neigh G x) (at level 0, G at level 99, x at level 99).
+Notation "N[ G ; x ]" := (closed_neigh G x) (at level 0, G at level 99, x at level 99).
+Notation "V( G )" := (tvertex G) (at level 0, G at level 99).
+Notation "E( G )" := (edges G) (at level 0, G at level 99).
+Notation "NS( G ; D )" := (open_neigh_set G D) (at level 0, G at level 99, D at level 99).
+Notation "NS[ G ; D ]" := (closed_neigh_set G D) (at level 0, G at level 99, D at level 99).
 
+
+(* Here, we define "G" and gives notation that consider "G" implicitly *)
 Variable G : tgraph T.
 
+Local Notation "N( x )" := (open_neigh G x) (at level 0, x at level 99, only parsing).
+Local Notation "N[ x ]" := (closed_neigh G x) (at level 0, x at level 99, only parsing).
+Local Notation "x -- y" := (tedge G x y) (at level 30).
+Local Notation "x -*- y" := (cl_tedge G x y) (at level 30).
+Local Notation "NS( D )" := (open_neigh_set G D) (at level 0, D at level 99).
+Local Notation "NS[ D ]" := (closed_neigh_set G D) (at level 0, D at level 99).
 
 
 (**********************************************************************************)
 Section Basic_Facts_Neighborhoods.
 
-(* Ouch! no puede inferir "G" a partir de solo tener "T" en N(v) :S *)
-
 Lemma tg_opneigh : forall u v : T, (u -- v) = (u \in N(v)).
 Proof. move=> u v ; by rewrite /open_neigh in_set tg_sym. Qed.
 
-Lemma v_notin_opneigh : forall v : G, v \notin N(v).
+Lemma v_notin_opneigh : forall v : T, v \notin N(v).
 Proof. move=> v ; by rewrite -tg_opneigh tg_irrefl. Qed.
 
-Lemma cltg_clneigh : forall u v : G, (u -*- v) = (u \in N[v]).
+Lemma cltg_clneigh : forall u v : T, (u -*- v) = (u \in N[v]).
 Proof.
   move=> u v.
   rewrite /closed_neigh in_set in_set1.
@@ -120,16 +120,16 @@ Proof.
   exact: tg_opneigh.
 Qed.
 
-Lemma cl_tg_sym : symmetric (@cl_sedge G). (* cl_sedge u v = cl_sedge v u *)
-Proof. rewrite /symmetric /cl_sedge /closed_neigh => x y ; by rewrite tg_sym eq_sym. Qed.
+Lemma cl_tg_sym : symmetric (@cl_tedge G). (* cl_tedge u v = cl_tedge v u *)
+Proof. rewrite /symmetric /cl_tedge /closed_neigh => x y ; by rewrite tg_sym eq_sym. Qed.
 
-Lemma cl_tg_refl : reflexive (@cl_sedge G). (* cl_sedge u u = true *)
-Proof. rewrite /reflexive /cl_sedge /closed_neigh => u ; by rewrite eq_refl orbT. Qed.
+Lemma cl_tg_refl : reflexive (@cl_tedge G). (* cl_sedge u u = true *)
+Proof. rewrite /reflexive /cl_tedge /closed_neigh => u ; by rewrite eq_refl orbT. Qed.
 
-Lemma v_in_clneigh : forall v : G, v \in N[v].
+Lemma v_in_clneigh : forall v : T, v \in N[v].
 Proof. move=> v ; by rewrite -cltg_clneigh cl_tg_refl. Qed.
 
-Lemma opneigh_proper_clneigh : forall v : G, N(v) \proper N[v].
+Lemma opneigh_proper_clneigh : forall v : T, N(v) \proper N[v].
 Proof.
   move=> v.
   apply/properP.
@@ -141,7 +141,7 @@ Proof.
   exact: v_notin_opneigh.
 Qed.
 
-Proposition tg_in_edge_set : forall u v : G, (u -- v) <-> [set u; v] \in E(G).
+Proposition tg_in_edge_set : forall u v : T, (u -- v) <-> [set u; v] \in E(G).
 Proof.
   move=> u v.
   rewrite /iff ; split.
@@ -160,7 +160,7 @@ Proof.
   by move-> ; move-> ; rewrite tg_sym.
 Qed.
 
-Proposition empty_open_neigh : NS(set0 : {set G}) = set0.
+Proposition empty_open_neigh : NS(set0 : {set T}) = set0.
 Proof.
   apply/eqP.
   rewrite -subset0.
@@ -173,7 +173,7 @@ Proof.
   by rewrite in_set0.
 Qed.
 
-Proposition empty_closed_neigh : NS[set0 : {set G}] = set0.
+Proposition empty_closed_neigh : NS[set0 : {set T}] = set0.
 Proof.
   apply/eqP.
   rewrite -subset0.
@@ -186,7 +186,7 @@ Proof.
   by rewrite in_set0.
 Qed.
 
-Variables D1 D2 : {set G}.
+Variables D1 D2 : {set T}.
 
 Proposition neigh_in_open_neigh : {in D1, forall v, N(v) \subset NS(D1)}.
 Proof.
@@ -216,7 +216,7 @@ Proof.
   exact: v_in_clneigh.
 Qed.
 
-Proposition dominated_belongs_to_open_neigh_set : forall u v : G, u \in D1 -> u -- v -> v \in NS(D1).
+Proposition dominated_belongs_to_open_neigh_set : forall u v : T, u \in D1 -> u -- v -> v \in NS(D1).
 Proof.
   move=> u v uinD1 adjuv.
   rewrite /open_neigh_set.
@@ -237,7 +237,7 @@ Proof.
   by rewrite /closed_neigh in_setU uinNv orTb.
 Qed.
 
-Proposition dominated_belongs_to_closed_neigh_set : forall u v : G, u \in D1 -> u -- v -> v \in NS[D1].
+Proposition dominated_belongs_to_closed_neigh_set : forall u v : T, u \in D1 -> u -- v -> v \in NS[D1].
 Proof.
   move=> u v uinD1 adjuv.
   apply: (subsetP open_neigh_set_subset_closed_neigh_set v).
@@ -260,16 +260,35 @@ Qed.
 End Basic_Facts_Neighborhoods.
 
 
+
+
+
+
+
+
+
+
+
+(* HASTA ACA LLEGUE !!! *)
+(* 1. Hay que cambiar los v : G por v : T *)
+(* 2. {set G} por {set T} *)
+(* 3. Las propiedades sobre D : {set T} ahora van a requerir tambien que D \subset V(G) *)
+
+
+
+
+
+
+
+
+
+
 (**********************************************************************************)
 Section Degree_of_vertices.
 
-Variable T : finType.
+Definition deg (v : T) := #|N(v)|.
 
-Variable G : tgraph T.
-
-Definition deg (v : G) := #|N(v)|.
-
-Lemma max_deg_ltn_n_minus_one : forall v : G, deg v <= #|V(G)| - 1.
+Lemma max_deg_ltn_n_minus_one : forall v : T, deg v <= #|V(G)| - 1.
 Proof.
   move=> v.
   rewrite cardsT.
@@ -308,7 +327,7 @@ Definition minimum_deg := ex_minn some_degree_exists.
 
 Definition maximum_deg := ex_maxn some_degree_exists some_degree_ltn_n_minus_one.
 
-Lemma minimum_deg_is_minimum : forall v : G, deg v >= minimum_deg.
+Lemma minimum_deg_is_minimum : forall v : T, deg v >= minimum_deg.
 Proof.
   move=> v.
   have H1: some_vertex_with_degree (deg v).
@@ -321,7 +340,7 @@ Proof.
   exact: (n_is_minimum (deg v) H1).
 Qed.
 
-Lemma maximum_deg_is_minimum : forall v : G, deg v <= maximum_deg.
+Lemma maximum_deg_is_minimum : forall v : T, deg v <= maximum_deg.
 Proof.
   move=> v.
   have H1: some_vertex_with_degree (deg v).
@@ -347,15 +366,6 @@ Proof.
 Qed.
 
 End Degree_of_vertices.
-
-
-(**********************************************************************************)
-(** * Domination Theory *)
-Section Domination_Theory.
-
-Variable T : finType.
-
-Variable G : tgraph T.
 
 
 (**********************************************************************************)
