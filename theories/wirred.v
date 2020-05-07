@@ -349,13 +349,31 @@ Proof.
   have H: ~~ (newgraph_rel (h_vw Dirr v1inD) (h_vw Dirr v2inD)).
   rewrite /newgraph_rel.
   rewrite negb_and.
+  case: (boolP (v2 == v1)) ; last first.
+  (* case v1 != v2 *)
+  move/eqP=> v1neqv2.
   apply/orP/or_intror.
-  rewrite negb_or.
-  apply/andP ; split.
+  rewrite negb_or; apply/andP ; split.
   rewrite h_vw1.
   have privateV1: private D v1 (val (h_vw Dirr v1inD)).2 by exact: (h_vw2 Dirr v1inD).
-  move/privateP in privateV1.
-  (*en algún momento falta demostrar que v1 != v2 para que se pueda cumplir la estabilidad *)
+  move/privateP: privateV1=> [_ v1domw]; move: (v1domw v2 v2inD)=> v1eqv2.
+  apply contraT; rewrite negbK; move=> v2domw.
+  by move: (v1eqv2 v2domw).
+  rewrite h_vw1.
+  have privateV2: private D v2 (val (h_vw Dirr v2inD)).2 by exact: (h_vw2 Dirr v2inD).
+  move/privateP: privateV2=> [_ v2domw]; move: (v2domw v1 v1inD)=> v1eqv2.
+  apply contraT; rewrite negbK; move=> v1domw; rewrite cl_sg_sym in v1domw.
+  move: (v1eqv2 v1domw).
+  by move/eqP in v1neqv2; rewrite eq_sym in v1neqv2; move/eqP in v1neqv2.
+  (* case v1 == v2 *)
+  move/eqP=> v1eqv2.
+  apply/orP/or_introl.
+  rewrite negbK.
+  Check eq_xchoose.
+  (* ¿Queda reflejado en nuesta construcción de S que para cada v en D se construye un
+   * único vértice (v,w) en S? Porque esa es la única pieza que falta para completar esta prueba.
+   * Creo que la cuestión radica en el lema w_exists y en la definición de w con xchoose.
+   * ¿xchoose toma siempre el mismo elemento en la elección del exists? Segun eq_xchoose, si. *)
 Admitted.
 
 (* For a given stable set S of G', there exists an irredundant set D of G such that w(D) = w'(G') *)
