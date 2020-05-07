@@ -320,7 +320,7 @@ Proof.
   rewrite /h_vw'; case: {-}_ / idP => [vD'|//]; by rewrite (bool_irrelevance vD' vD).
 Qed.
 
-Lemma h_vw'_not_empty (v : G) : forall x : G', x \in h_vw' v -> v \in D.
+Lemma h_vw'_not_empty (v : G) (x : G') : x \in h_vw' v -> v \in D.
 Admitted.
 
 (* For a given irredundant set D of G, there exists a stable set S of G' such that w(D) = w'(S) *)
@@ -368,12 +368,15 @@ Proof.
   (* case v1 == v2 *)
   move/eqP=> v1eqv2.
   apply/orP/or_introl.
-  rewrite negbK.
-  Check eq_xchoose.
-  (* ¿Queda reflejado en nuesta construcción de S que para cada v en D se construye un
-   * único vértice (v,w) en S? Porque esa es la única pieza que falta para completar esta prueba.
-   * Creo que la cuestión radica en el lema w_exists y en la definición de w con xchoose.
-   * ¿xchoose toma siempre el mismo elemento en la elección del exists? Segun eq_xchoose, si. *)
+  rewrite negbK /= xpair_eqE; apply/andP; split ; first by rewrite v1eqv2.
+  apply/eqP.
+  have samePrivateVertex: private D v1 =1 private D v2 by rewrite v1eqv2.
+  exact: eq_xchoose (w_exists Dirr v1inD) (w_exists Dirr v2inD) samePrivateVertex.
+  exact: H.
+  (* same weight *)
+  rewrite /weight_set /weight_set.
+  (* si podemos probar que la función h_vw es biyectiva para todo v en D,
+   * ¿podría ser suficiente probar "weight v = weight' (h_vw v)" ? *)
 Admitted.
 
 (* For a given stable set S of G', there exists an irredundant set D of G such that w(D) = w'(G') *)
