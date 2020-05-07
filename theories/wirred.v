@@ -310,23 +310,28 @@ Section h_vertex_and_its_private_definition.
 
 End h_vertex_and_its_private_definition.
 
-Variable D : {set G}.
-Hypothesis Dirr : irredundant D.
+Definition h_vw' (D : {set G}) (Dirr : irredundant D) (v : G) := if @idP (v \in D) is ReflectT p then set_h_vw Dirr p else set0.
 
-Definition h_vw' (v : G) := if @idP (v \in D) is ReflectT p then set_h_vw Dirr p else set0.
-
-Lemma h_vw'P (v : G) (vD : v \in D) : h_vw' v = set_h_vw Dirr vD.
+Lemma h_vw'P (D : {set G}) (Dirr : irredundant D) (v : G) (vD : v \in D) : h_vw' Dirr v = set_h_vw Dirr vD.
 Proof.
   rewrite /h_vw'; case: {-}_ / idP => [vD'|//]; by rewrite (bool_irrelevance vD' vD).
 Qed.
 
-Lemma h_vw'_not_empty (v : G) (x : G') : x \in h_vw' v -> v \in D.
+Lemma h_vw'_empty (D : {set G}) (Dirr : irredundant D) (v : G) : v \notin D -> h_vw' Dirr v = set0.
+Proof.
 Admitted.
 
-(* For a given irredundant set D of G, there exists a stable set S of G' such that w(D) = w'(S) *)
-Theorem irred_G_to_stable_G' : exists2 S : {set G'}, stable S & weight_set weight D = weight_set weight' S.
+Lemma h_vw'_not_empty (D : {set G}) (Dirr : irredundant D) (v : G) (x : G') : x \in h_vw' Dirr v -> v \in D.
 Proof.
-  set S := \bigcup_(v in G) (h_vw' v).
+  move=> H.
+  apply contraT=> vnotinD.
+  by rewrite (h_vw'_empty Dirr vnotinD) in_set0 in H.
+Qed.
+
+(* For a given irredundant set D of G, there exists a stable set S of G' such that w(D) = w'(S) *)
+Theorem irred_G_to_stable_G' (D : {set G}) (Dirr : irredundant D) : exists2 S : {set G'}, stable S & weight_set weight D = weight_set weight' S.
+Proof.
+  set S := \bigcup_(v in G) (h_vw' Dirr v).
   exists S.
   rewrite /stable.
   apply/forallP=> x ; apply/forallP=> y.
@@ -336,13 +341,13 @@ Proof.
   move: xinS; elim=> [v1 v1inG].
   move=> xinh_vw'v1; move: (xinh_vw'v1)=> v1inD.
   move/h_vw'_not_empty in v1inD.
-  rewrite (h_vw'P v1inD) in_set1 in xinh_vw'v1.
+  rewrite (h_vw'P Dirr v1inD) in_set1 in xinh_vw'v1.
   move/eqP in xinh_vw'v1.
   (* y = (v2,w2) *)
   move: yinS; elim=> [v2 v2inG].
   move=> yinh_vw'v2; move: (yinh_vw'v2)=> v2inD.
   move/h_vw'_not_empty in v2inD.
-  rewrite (h_vw'P v2inD) in_set1 in yinh_vw'v2.
+  rewrite (h_vw'P Dirr v2inD) in_set1 in yinh_vw'v2.
   move/eqP in yinh_vw'v2.
   (* stable *)
   rewrite xinh_vw'v1 yinh_vw'v2.
