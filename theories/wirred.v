@@ -299,26 +299,29 @@ Section h_vertex_and_its_private_definition.
     by move/andP=> [ vdomw _ ].
   Qed.
 
-  Definition h_vw := set1 (Sub (v, w) vw_in_V') : {set G'}. (* i.e. {x : G * G | x \in V' G} *)
+  Definition h_vw := Sub (v, w) vw_in_V' : G'. (* i.e. {x : G * G | x \in V' G} *)
+  Definition set_h_vw := set1 h_vw.
 
-  (* Hay que reescribir estos lemas *)
-
-  (*Lemma h_vw1 : (val h_vw).1 = v.
+  Lemma h_vw1 : (val h_vw).1 = v.
   Proof. by rewrite /=. Qed.
 
   Lemma h_vw2 : private D v (val h_vw).2.
-  Proof. by rewrite /= w_is_private. Qed.*)
+  Proof. by rewrite /= w_is_private. Qed.
 
 End h_vertex_and_its_private_definition.
 
 Variable D : {set G}.
 Hypothesis Dirr : irredundant D.
 
-Definition h_vw' (v : G) := if @idP (v \in D) is ReflectT p then h_vw Dirr p else set0.
-Lemma h_vw'P (v : G) (vD : v \in D) : h_vw' v = h_vw Dirr vD.
+Definition h_vw' (v : G) := if @idP (v \in D) is ReflectT p then set_h_vw Dirr p else set0.
+
+Lemma h_vw'P (v : G) (vD : v \in D) : h_vw' v = set_h_vw Dirr vD.
 Proof.
   rewrite /h_vw'; case: {-}_ / idP => [vD'|//]; by rewrite (bool_irrelevance vD' vD).
 Qed.
+
+Lemma h_vw'_not_empty (v : G) : forall x : G', x \in h_vw' v -> v \in D.
+Admitted.
 
 (* For a given irredundant set D of G, there exists a stable set S of G' such that w(D) = w'(S) *)
 Theorem irred_G_to_stable_G' : exists2 S : {set G'}, stable S & weight_set weight D = weight_set weight' S.
@@ -328,6 +331,31 @@ Proof.
   rewrite /stable.
   apply/forallP=> x ; apply/forallP=> y.
   apply/implyP=> xinS ; apply/implyP=> yinS.
+  move/bigcupP in xinS; move/bigcupP in yinS.
+  (* x = (v1,w1) *)
+  move: xinS; elim=> [v1 v1inG].
+  move=> xinh_vw'v1; move: (xinh_vw'v1)=> v1inD.
+  move/h_vw'_not_empty in v1inD.
+  rewrite (h_vw'P v1inD) in_set1 in xinh_vw'v1.
+  move/eqP in xinh_vw'v1.
+  (* y = (v2,w2) *)
+  move: yinS; elim=> [v2 v2inG].
+  move=> yinh_vw'v2; move: (yinh_vw'v2)=> v2inD.
+  move/h_vw'_not_empty in v2inD.
+  rewrite (h_vw'P v2inD) in_set1 in yinh_vw'v2.
+  move/eqP in yinh_vw'v2.
+  (* stable *)
+  rewrite xinh_vw'v1 yinh_vw'v2.
+  have H: ~~ (newgraph_rel (h_vw Dirr v1inD) (h_vw Dirr v2inD)).
+  rewrite /newgraph_rel.
+  rewrite negb_and.
+  apply/orP/or_intror.
+  rewrite negb_or.
+  apply/andP ; split.
+  rewrite h_vw1.
+  have privateV1: private D v1 (val (h_vw Dirr v1inD)).2 by exact: (h_vw2 Dirr v1inD).
+  move/privateP in privateV1.
+  (*en algún momento falta demostrar que v1 != v2 para que se pueda cumplir la estabilidad *)
 Admitted.
 
 (* For a given stable set S of G', there exists an irredundant set D of G such that w(D) = w'(G') *)
