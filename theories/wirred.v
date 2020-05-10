@@ -140,10 +140,10 @@ Proof.
   exists x.2.
   split.
   + case: pair_neq => [x1_neq | x2_neq].
-  * rewrite -x1_eq x2_eq !pair_absorb.
+  * rewrite -x1_eq x2_eq !setUid.
   move: x1_neq; apply: contra_neq => set_eq.
   by apply/set1P; rewrite -set_eq in_set1.
-  * rewrite x1_eq -x2_eq !pair_absorb.
+  * rewrite x1_eq -x2_eq !setUid.
   move: x2_neq; apply: contra_neq => set_eq.
   by apply/set1P; rewrite set_eq in_set1.
   + by left; rewrite /= in_set cl_sg_sym in yinV'.
