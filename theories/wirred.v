@@ -285,8 +285,7 @@ Section h_vertex_and_its_private_definition.
   Qed. *)
 
   Local Lemma w_exists : exists w : G, private D v w.
-  Proof. by  move/irredundantP: Dirr => /(_ v vinD) /(private_set_not_empty vinD).
-  Qed.
+  Proof. by  move/irredundantP: Dirr => /(_ v vinD) /(private_set_not_empty vinD). Qed.
 
   Let w : G := xchoose w_exists.
   Let w_is_private : private D v w := xchooseP w_exists.
@@ -310,7 +309,8 @@ Section h_vertex_and_its_private_definition.
 
 End h_vertex_and_its_private_definition.
 
-Definition h_vw' (D : {set G}) (Dirr : irredundant D) (v : G) := if @idP (v \in D) is ReflectT p then set_h_vw Dirr p else set0.
+Definition h_vw' (D : {set G}) (Dirr : irredundant D) (v : G) :=
+          if @idP (v \in D) is ReflectT p then set_h_vw Dirr p else set0.
 
 Lemma h_vw'P1 (D : {set G}) (Dirr : irredundant D) (v : G) (vD : v \in D) : h_vw' Dirr v = set_h_vw Dirr vD.
 Proof. rewrite /h_vw'; case: {-}_ / idP => [vD'|//]; by rewrite (bool_irrelevance vD' vD). Qed.
@@ -335,22 +335,20 @@ Proof.
   rewrite /stable.
   apply/forallP=> x ; apply/forallP=> y.
   apply/implyP=> xinS ; apply/implyP=> yinS.
-  move/bigcupP in xinS; move/bigcupP in yinS.
+(*  move/bigcupP in xinS; move/bigcupP in yinS.*)
   (* x = (v1,w1) *)
-  move: xinS; elim=> [v1 v1inG].
-  move=> xinh_vw'v1; move: (xinh_vw'v1)=> v1inD.
-  move/h_vw'_not_empty in v1inD.
+  move/bigcupP: xinS ; elim=> [v1 v1inG] xinh_vw'v1.
+  move: (xinh_vw'v1)=> /h_vw'_not_empty v1inD.
   rewrite (h_vw'P1 Dirr v1inD) in_set1 in xinh_vw'v1.
   move/eqP in xinh_vw'v1.
   (* y = (v2,w2) *)
-  move: yinS; elim=> [v2 v2inG].
-  move=> yinh_vw'v2; move: (yinh_vw'v2)=> v2inD.
-  move/h_vw'_not_empty in v2inD.
+  move/bigcupP: yinS; elim=> [v2 v2inG] yinh_vw'v2.
+  move: (yinh_vw'v2)=> /h_vw'_not_empty v2inD.
   rewrite (h_vw'P1 Dirr v2inD) in_set1 in yinh_vw'v2.
   move/eqP in yinh_vw'v2.
   (* stable *)
   rewrite xinh_vw'v1 yinh_vw'v2.
-  have H: ~~ (newgraph_rel (h_vw Dirr v1inD) (h_vw Dirr v2inD)).
+  suff H: ~~ (newgraph_rel (h_vw Dirr v1inD) (h_vw Dirr v2inD)) by rewrite /=.
   rewrite /newgraph_rel.
   rewrite negb_and.
   case: (boolP (v2 == v1)) ; last first.
@@ -371,14 +369,13 @@ Proof.
   by move/eqP in v1neqv2; rewrite eq_sym in v1neqv2; move/eqP in v1neqv2.
   (* case v1 == v2 *)
   move/eqP=> v1eqv2.
-  apply/orP/or_introl.
+  apply/orP ; left.
   rewrite negbK /= xpair_eqE; apply/andP; split ; first by rewrite v1eqv2.
   apply/eqP.
   have samePrivateVertex: private D v1 =1 private D v2 by rewrite v1eqv2.
   exact: eq_xchoose (w_exists Dirr v1inD) (w_exists Dirr v2inD) samePrivateVertex.
-  exact: H.
   (* same weight *)
-  rewrite /weight_set /weight_set.
+  rewrite /weight_set.
   (* si podemos probar que la función h_vw es biyectiva para todo v en D,
    * ¿podría ser suficiente probar "weight v = weight' (h_vw v)" ? *)
 Admitted.
