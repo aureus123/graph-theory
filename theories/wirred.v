@@ -135,29 +135,29 @@ Proof.
   by apply/eqP/injective_projections.
   case: (boolP ((x.1 == y.2) && (x.2 == y.1))) => [/andP [/eqP x1_eq /eqP x2_eq] | neg_perm].
   - exists x.1.
-  exists y.2.
-  exists y.1.
-  exists x.2.
-  split.
-  + case: pair_neq => [x1_neq | x2_neq].
-  * rewrite -x1_eq x2_eq !setUid.
-  move: x1_neq; apply: contra_neq => set_eq.
-  by apply/set1P; rewrite -set_eq in_set1.
-  * rewrite x1_eq -x2_eq !setUid.
-  move: x2_neq; apply: contra_neq => set_eq.
-  by apply/set1P; rewrite set_eq in_set1.
-  + by left; rewrite /= in_set cl_sg_sym in yinV'.
+    exists y.2.
+    exists y.1.
+    exists x.2.
+    split.
+    + case: pair_neq => [x1_neq | x2_neq].
+      * rewrite -x1_eq x2_eq !setUid.
+        move: x1_neq; apply: contra_neq => set_eq.
+        by apply/set1P; rewrite -set_eq in_set1.
+      * rewrite x1_eq -x2_eq !setUid.
+        move: x2_neq; apply: contra_neq => set_eq.
+        by apply/set1P; rewrite set_eq in_set1.
+    + by left; rewrite /= in_set cl_sg_sym in yinV'.
   - exists x.1.
-  exists x.2.
-  exists y.1.
-  exists y.2.
-  split.
-  + apply/contraT => doubleton_eq.
-  move/doubleton_eq_iff: (eqP (negPn doubleton_eq)) => doubleton_eq_equiv.
-  case: doubleton_eq_equiv => [[x1_eq x2_eq] | [x1_eq x2_eq]].
-  * by case: pair_neq => [x1_neq | x2_neq]; [rewrite x1_eq eq_refl in x1_neq | rewrite x2_eq eq_refl in x2_neq].
-  * by rewrite x1_eq x2_eq !eq_refl in neg_perm.
-  + by case: cond2_newgraph_rel => [? | ?]; [left; rewrite cl_sg_sym | right].
+    exists x.2.
+    exists y.1.
+    exists y.2.
+    split.
+    + apply/contraT => doubleton_eq.
+      move/doubleton_eq_iff: (eqP (negPn doubleton_eq)) => doubleton_eq_equiv.
+      case: doubleton_eq_equiv => [[x1_eq x2_eq] | [x1_eq x2_eq]].
+      * by case: pair_neq => [x1_neq | x2_neq]; [rewrite x1_eq eq_refl in x1_neq | rewrite x2_eq eq_refl in x2_neq].
+      * by rewrite x1_eq x2_eq !eq_refl in neg_perm.
+    + by case: cond2_newgraph_rel => [? | ?]; [left; rewrite cl_sg_sym | right].
 Qed.
 
 (* Alternative lemmas, not sure if necessary but gives an idea on how to manipulate things *)
@@ -200,61 +200,35 @@ Proof.
   rewrite /induced_subgraph.
   exists h_vv.
   (* h_vv is injective *)
-  rewrite /injective.
-  move=> x y H1.
-  move: (h_vv1 x) <-.
-  move: (h_vv1 y) <-.
-  by rewrite H1.
+  - rewrite /injective.
+    move=> x y H1.
+    move: (h_vv1 x) <-.
+    move: (h_vv1 y) <-.
+    by rewrite H1.
   (* h_vv is an induced homomorphism *)
-  rewrite /induced_hom.
-  move=> x y.
-  set x' := h_vv x.
-  set y' := h_vv y.
-  rewrite /iff ; split.
-  (* case x -- y -> x' -- y' *)
-  move=> adjxy.
-  suff: ((x, x) != (y, y)) && (y -*- x || y -*- x) by rewrite /=.
-  apply/andP ; split.
-  move: (negbT (sg_edgeNeq adjxy)).
-  apply: contra => /eqP.
-  rewrite pair_equal_spec => [[xeqy _]].
-  by move: xeqy->.
-  by rewrite orbb cl_sg_sym /cl_sedge adjxy orTb.
-  (* case x' -- y' -> x -- y *)
-  move=> adjx'y'.
-  have H2: ((x, x) != (y, y)) && (y -*- x || y -*- x) by exact: adjx'y'.
-  move/andP: H2 => [x'neqy'].
-  rewrite orbb cl_sg_sym /cl_sedge => xdomy.
-  have xneqy: x != y.
-  move: x'neqy'.
-  apply: contra.
-  by move/eqP->.
-  by rewrite (aorbNb xdomy xneqy).
-
-(* Prueba de induced homomorphism de Mauricio:
-  rewrite/iff ; split.
-  (* first case: -> *)
-  move=> adjxy.
-  have H: newgraph_rel (h_vv x) (h_vv y).
-  rewrite /newgraph_rel /=.
-  apply/andP ; split.
-  rewrite abeqcd negb_and orbb.
-  move/sg_edgeNeq: adjxy.
-  rewrite -[in X in X = false -> _](negbK (x == y)). (* Esto me costó bastante. Se puede simplificar? *)
-  exact: negbFE.
-  rewrite orbb /cl_sedge ; apply/orP/or_introl.
-  by rewrite sg_sym.
-  exact: H.
-  (* second case: <- *)
-  move=> h_xxadjh_yy.
-  have H: newgraph_rel (h_vv x) (h_vv y) by exact: h_xxadjh_yy.
-  rewrite /newgraph_rel /= in H.
-  move: H => /andP [xneqy ydomx].
-  rewrite abeqcd negb_and orbb in xneqy.
-  rewrite orbb in ydomx.
-  rewrite cl_sg_sym /cl_sedge in ydomx.
-  move/aorbNb in ydomx.
-  exact: (ydomx xneqy). *)
+  - rewrite /induced_hom.
+    move=> x y.
+    set x' := h_vv x.
+    set y' := h_vv y.
+    rewrite /iff ; split.
+    (* case x -- y -> x' -- y' *)
+    + move=> adjxy.
+      suff: ((x, x) != (y, y)) && (y -*- x || y -*- x) by rewrite /=.
+      apply/andP ; split.
+      * move: (negbT (sg_edgeNeq adjxy)).
+        apply: contra => /eqP.
+        rewrite pair_equal_spec => [[xeqy _]].
+        by move: xeqy->.
+      * by rewrite orbb cl_sg_sym /cl_sedge adjxy orbT.
+    (* case x' -- y' -> x -- y *)
+    + move=> adjx'y'.
+      have H2: ((x, x) != (y, y)) && (y -*- x || y -*- x) by exact: adjx'y'.
+      move/andP: H2 => [x'neqy'].
+      rewrite orbb cl_sg_sym /cl_sedge => xdomy.
+      suff xneqy: x != y by rewrite (aorbNa xdomy xneqy).
+      move: x'neqy'.
+      apply: contra.
+      by move/eqP->.
 Qed.
 
 
@@ -295,7 +269,7 @@ Section h_vertex_and_its_private_definition.
     rewrite /V' in_set /=.
     move: w_is_private.
     rewrite /private.
-    by move/andP=> [ vdomw _ ].
+    by move/andP=> [ ? _ ].
   Qed.
 
   Definition h_vw := Sub (v, w) vw_in_V' : G'. (* i.e. {x : G * G | x \in V' G} *)
