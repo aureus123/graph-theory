@@ -1271,6 +1271,7 @@ End Existence_of_stable_dominating_irredundant_sets.
 Section Weighted_domination_parameters.
 
 Variable weight : G -> nat.
+Hypothesis G_not_empty : V(G) != set0. (* Hubo que agregar esta hipotesis para poder definir correctamente delta_w *)
 Hypothesis positive_weights : forall v : G, weight v > 0.
 
 (* Sets of minimum/maximum weight *)
@@ -1300,6 +1301,35 @@ Definition alpha_w : nat := weight_set weight maximum_st.
 Definition Gamma_w : nat := weight_set weight maximum_minimal_dom.
 
 Definition IR_w : nat := weight_set weight maximum_irr.
+
+
+Definition deg_w (v : G) : nat := weight_set weight N(v).
+
+Let some_vertex_with_deg_w (n : nat) := [exists v, deg_w v == n].
+
+Local Lemma some_deg_w_exists : exists (n : nat), some_vertex_with_deg_w n.
+Proof.
+  move/set0Pn: G_not_empty.
+  elim=> v _.
+  exists (deg_w v).
+  rewrite /some_vertex_with_deg_w.
+  apply/existsP.
+  by exists v.
+Qed.
+
+Definition delta_w : nat := ex_minn some_deg_w_exists.
+
+Lemma delta_w_is_minimum (v : G) : delta_w <= weight_set weight N(v).
+Proof.
+  have H1: some_vertex_with_deg_w (deg_w v). rewrite /some_vertex_with_deg_w.
+  apply/existsP; by exists v.
+  move: (ex_minnP some_deg_w_exists). rewrite -/delta_w.
+  move=> [n _ n_is_minimum]. exact: (n_is_minimum (deg_w v) H1).
+Qed.
+
+Lemma delta_w_min_weight_sum : delta_w < \sum_(v in G | v \in V(G)) weight v.
+(* uso este lema en la prueba, ¿pero realmente hace falta la condición de menor estricto? *)
+Admitted.
 
 (* Weighted version of the Cockayne-Hedetniemi domination chain. *)
 
@@ -1375,6 +1405,27 @@ Proof.
   move/maximalP=> [Firr _].
   by move: (set_is_max F Firr).
 Qed.
+
+Theorem IR_w_leq_weight_V_minus_delta_w : IR_w <= weight_set weight V(G) - delta_w.
+Proof.
+  have irr_leq_wV_minus_delta_w (S : {set G}) : irredundant S -> weight_set weight S <= weight_set weight V( G) - delta_w.
+  { move/irredundantP=> Sirr.
+    case: (boolP (S == set0)).
+    - move/eqP=> emptyS; rewrite emptyS /weight_set big_set0.
+      move: delta_w_min_weight_sum; by rewrite -subn_gt0.
+    - move/set0Pn; elim=> v vS; set NSv := N( G; v) :\: (V(G) :\: S).
+      have H : weight_set weight (N(v) :&: (V(G) :\: S)) >= delta_w - weight_set weight NSv.
+      { move: (delta_w_is_minimum v).
+        rewrite /weight_set.
+        rewrite (big_setID ([set: G] :\: S) weight) /=.
+        (* falta poder convertir a <= b + c en a - c <= b, para lo cual.. ¿necesitamos una prueba de que a >= c? *)
+      }
+      case (boolP (NSv == set0)).
+      + move/eqP=> NSvempty; rewrite NSvempty /weight_set big_set0 in H.
+      (* investigar mas sobre bigops y como descomponer o recomponer estas operaciones *)
+  }
+  by move: (irr_leq_wV_minus_delta_w maximum_irr (maximum_set_p weight irr_empty)).
+Admitted.
 
 End Weighted_domination_parameters.
 
