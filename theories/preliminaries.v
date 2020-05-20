@@ -1000,6 +1000,15 @@ Proof. by firstorder. Qed.
 (** * Preliminaries (used in Domination Theory) *)
 Section Preliminaries1.
 
+Lemma properC (T : finType) (A B : {set T}) : A \proper B = (~: B \proper ~: A).
+Proof. 
+rewrite !properEneq setCS [~: _ == _]inj_eq 1?eq_sym //; exact/inv_inj/setCK.
+Qed.
+
+Lemma in11_in2 (T1 T2 : predArgType) (P : T1 -> T2 -> Prop) (A1 : {pred T1}) (A2 : {pred T2}) : 
+  {in A1, forall x, {in A2, forall y,  P x y}} <-> {in A1 & A2, forall x y, P x y}.
+Proof. by firstorder. Qed.
+
 Lemma aorbNa: forall a b : bool, (a || b) -> ~~ a -> b.
 Proof. move=> a b. by case: a ; case: b. Qed.
 
@@ -1010,15 +1019,7 @@ Variable T : finType.
 Variables u v : T.
 Variables A B : {set T}.
 
-(* The premise should maybe be [disjoint A & B] *)
-Lemma sum_disjoint_union (f : T -> nat) : A :&: B = set0 ->
-          \sum_(i in A :|: B) f i = \sum_(i in A) f i + \sum_(i in T | i \in B) f i.
-Proof.
-move => AB0.
-under [LHS]eq_bigl => i do rewrite in_setU -[_ || _]/(i \in [predU A & B]).
-by rewrite bigU //= -setI_eq0 AB0.
-Qed.
-
+(* only used below *)
 Lemma set_minus_union : B \subset A -> A = (A :\: B) :|: B.
 Proof.
   move=> BinA.
@@ -1035,38 +1036,8 @@ Proof.
   by apply (subsetP BinA).
 Qed.
 
-Lemma set_minus_disjoint : (A :\: B) :&: B = set0.
-Proof. by rewrite setIDAC -setIDA setDv setI0. Qed.
-
-Lemma set_pair_disjoint : (u != v) -> [set u] :&: [set v] = set0.
-Proof.
-  move=> uneqv.
-  apply/setP => x.
-  apply/setIP.
-  rewrite in_set0 !in_set1.
-  move=> [/eqP xisu /eqP xisv].
-  move: xisu xisv uneqv ->.
-  by move/eqP->.
-Qed.
-
-Lemma set_intersection_singleton : v \in A -> A :&: [set v] = [set v].
-Proof. move=> vinA ; apply: setIidPr ; by rewrite sub1set. Qed.
-
-Lemma set_intersection_empty : v \notin A -> A :&: [set v] = set0.
-Proof.
-  move=> vnotinA.
-  apply/eqP.
-  rewrite -subset0.
-  apply/subsetP => x.
-  move/setIP.
-  rewrite in_set1 => [[xinA /eqP xisv]].
-  move: xinA.
-  rewrite xisv.
-  by apply: contraLR.
-Qed.
-
 End Preliminaries1.
-
+Arguments in11_in2 [T1 T2 P] A1 A2.
 
 (**********************************************************************************)
 Section Preliminaries2.

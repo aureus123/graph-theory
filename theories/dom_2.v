@@ -11,6 +11,60 @@ Unset Printing Implicit Defensive.
 Set Bullet Behavior "Strict Subproofs".
 
 
+
+
+
+
+(* ATENCION: Versión vieja de dom.v, a continuación pego cosas que había en preliminaries.v
+   que desaparecieron luego porque están en la MathComp 1.10, solo a los efectos de compilar: *)
+
+Section Preliminaries_aux.
+
+Variable T : finType.
+Variables u v : T.
+Variables A B : {set T}.
+
+Lemma sum_disjoint_union : forall f : T -> nat, A :&: B = set0 ->
+          \sum_(i in T | i \in (A :|: B)) f i = \sum_(i in T | i \in A) f i + \sum_(i in T | i \in B) f i.
+Proof.
+  move=> f /eqP disjAB.
+  rewrite setI_eq0 in disjAB.
+  have H1 : forall i : T, i \in (A :|: B) = (i \in [predU A & B]).
+  move=> i ; by rewrite in_setU.
+  have H2 : \sum_(i in T | i \in (A :|: B)) f i = \sum_(i in T | i \in [predU A & B]) f i.
+  apply: eq_bigl => i ; by rewrite H1.
+  rewrite H2.
+  exact: bigU.
+Qed.
+
+Lemma set_minus_disjoint : (A :\: B) :&: B = set0.
+Proof. by rewrite setIDAC -setIDA setDv setI0. Qed.
+
+Lemma set_intersection_singleton : v \in A -> A :&: [set v] = [set v].
+Proof. move=> vinA ; apply: setIidPr ; by rewrite sub1set. Qed.
+
+Lemma set_intersection_empty : v \notin A -> A :&: [set v] = set0.
+Proof.
+  move=> vnotinA.
+  apply/eqP.
+  rewrite -subset0.
+  apply/subsetP => x.
+  move/setIP.
+  rewrite in_set1 => [[xinA /eqP xisv]].
+  move: xinA.
+  rewrite xisv.
+  by apply: contraLR.
+Qed.
+
+End Preliminaries_aux.
+
+
+
+
+
+
+
+
 (**********************************************************************************)
 (** * Basic facts about graphs *)
 Section Neighborhoods_definitions.
@@ -38,13 +92,13 @@ Notation "N[ G ; x ]" := (@closed_neigh G x) (at level 0, G at level 99, x at le
 Notation "N( x )" := (open_neigh x) (at level 0, x at level 99, only parsing).
 Notation "N[ x ]" := (closed_neigh x) (at level 0, x at level 99, only parsing).
 Notation "x -*- y" := (cl_sedge x y) (at level 30).
+Notation "V( G )" := (setT : {set G}) (at level 0, G at level 99).
 Notation "E( G )" := (edges G) (at level 0, G at level 99).
 Notation "NS( G ; D )" := (@open_neigh_set G D) (at level 0, G at level 99, D at level 99).
 Notation "NS( D )" := (open_neigh_set D) (at level 0, D at level 99).
 Notation "NS[ G ; D ]" := (@closed_neigh_set G D) (at level 0, G at level 99, D at level 99).
 Notation "NS[ D ]" := (closed_neigh_set D) (at level 0, D at level 99).
 
-(** TODO: replaced [V(G)] with [set: G], but the "VG" remains in lemma names *)
 
 (**********************************************************************************)
 Section Basic_Facts_Neighborhoods.
@@ -166,15 +220,16 @@ Variable G : sgraph.
 
 Definition deg (v : G) := #|N(v)|.
 
-Lemma max_deg_ltn_n_minus_one (v : G) : deg v <= #|G| - 1.
+Lemma max_deg_ltn_n_minus_one (v : G) : deg v <= #|V(G)| - 1.
 Proof.
+  rewrite cardsT.
   suff: deg v < #|G| by move=> H ; rewrite (pred_Sn (deg v)) -subn1 (leq_sub2r 1 H).
   have H1: #|N[v]| <= #|G| by rewrite max_card.
   rewrite /deg.
   exact: leq_trans (proper_card (opneigh_proper_clneigh v)) H1.
 Qed.
 
-Hypothesis G_not_empty : [set: G] != set0.
+Hypothesis G_not_empty : V(G) != set0.
 
 Let some_vertex_with_degree (n : nat) := [exists v, deg v == n].
 
@@ -188,7 +243,7 @@ Proof.
   by exists w.
 Qed.
 
-Local Lemma some_degree_ltn_n_minus_one (n : nat) : some_vertex_with_degree n -> n <= #|G| - 1.
+Local Lemma some_degree_ltn_n_minus_one (n : nat) : some_vertex_with_degree n -> n <= #|V(G)| - 1.
 Proof.
   move/existsP.
   elim=> w.
@@ -225,7 +280,7 @@ Proof.
   exact: (n_is_maximum (deg v) H1).
 Qed.
 
-Lemma maximum_deg_ltn_n_minus_one : maximum_deg <= #|G| - 1.
+Lemma maximum_deg_ltn_n_minus_one : maximum_deg <= #|V(G)| - 1.
 Proof.
   (* we first obtain the vertex "w" such that deg w = meximum_deg *)
   move: (ex_maxnP some_degree_exists some_degree_ltn_n_minus_one).
@@ -249,28 +304,108 @@ Variable G : sgraph.
 
 (**********************************************************************************)
 (** * Maximal and minimal sets *)
+Section MaxMin_sets.
 
-(* TODO: maximalP no longer refers to the the (now removed)
-[maximal]. So it should be named [maxset_?somethingP] *)
+Variable p : pred {set G}.     (* p : {set G} -> bool *)
+Variable D : {set G}.
 
-Proposition maximalP (p : pred {set G}) (D : {set G}) :
-  reflect (p D /\ (forall F : {set G}, D \proper F -> ~~ p F)) (maxset p D).
+Definition maximal : bool := p D && [forall F : {set G}, (D \proper F) ==> ~~ p F].
+
+Definition minimal : bool := p D && [forall F : {set G}, (F \proper D) ==> ~~ p F].
+
+Proposition maximalP : reflect (p D /\ (forall F : {set G}, D \proper F -> ~ p F)) maximal.
 Proof.
-  apply: (iffP maxsetP) => -[pD maxD]; split => // E.
-  - rewrite properEneq => /andP [DnE DsubE].
-    apply: contra_neqN DnE => pE; exact/esym/maxD.
-  - move => pE SsubE; apply: contraTeq pE => EnD; apply: maxD.
-    by rewrite properEneq eq_sym EnD.
+  rewrite /maximal.
+  apply: (iffP andP).
+  (* first case: -> *)
+  move=> [pD /forallP H1].
+  split=> //.
+  move=> F.
+  move: (H1 F).
+  move=> /implyP H2 DproperF.
+  move: (H2 DproperF).
+  by apply/negP.
+  (* second case: -> *)
+  move=> [pD H3].
+  split=> //.
+  apply/forallP => F.
+  apply/implyP => DproperF.
+  move: (H3 F DproperF).
+  by move/negP.
 Qed.
-Arguments maximalP {p D}.
 
-Proposition minimalP (p : pred {set G}) (D : {set G}) :
-  reflect (p D /\ (forall F : {set G}, F \proper D -> ~~ p F)) (minset p D).
+Proposition minimalP : reflect (p D /\ (forall F : {set G}, F \proper D -> ~ p F)) minimal.
 Proof.
-  rewrite minmaxset; apply (iffP maximalP); rewrite /= setCK => -[pD H]; split => // E.
-  all: by rewrite properC ?setCK => /H; rewrite ?setCK.
+  rewrite /minimal.
+  apply: (iffP andP).
+  (* first case: -> *)
+  move=> [pD /forallP H1].
+  split=> //.
+  move=> F.
+  move: (H1 F).
+  move=> /implyP H2 FproperD.
+  move: (H2 FproperD).
+  by apply/negP.
+  (* second case: -> *)
+  move=> [pD H3].
+  split=> //.
+  apply/forallP => F.
+  apply/implyP => FproperD.
+  move: (H3 F FproperD).
+  by move/negP.
 Qed.
-Arguments minimalP {p D}.
+
+Lemma maximal_eq_maxset : maximal <-> (maxset p D).
+Proof.
+  rewrite /iff ; split.
+  (* first case: -> *)
+  move/maximalP=> [pD H1].
+  apply/maxsetP ; split => //.
+  move=> F pF DsubF.
+  symmetry ; apply/eqP.
+  rewrite eqEproper DsubF andTb.
+  move: pF.
+  apply: contraL.
+  move=> DproperF.
+  apply/negP.
+  exact: (H1 F DproperF).
+  (* second case: <- *)
+  move/maxsetP=> [pD H2].
+  rewrite /maximal.
+  apply/andP ; split => //.
+  apply/forallP => F.
+  rewrite implybN /proper negb_and -implybE negbK.
+  apply/implyP => pF.
+  apply/implyP => DsubF.
+  by move: (H2 F pF DsubF)->.
+Qed.
+
+Lemma minimal_eq_minset : minimal <-> (minset p D).
+Proof.
+  rewrite /minimal /iff ; split.
+  (* first case: -> *)
+  move/minimalP=> [pD H1].
+  apply/minsetP ; split => //.
+  move=> F pF FsubD.
+  apply/eqP.
+  rewrite eqEproper FsubD andTb.
+  move: pF.
+  apply: contraL.
+  move=> FproperD.
+  apply/negP.
+  exact: (H1 F FproperD).
+  (* second case: <- *)
+  move=> /minsetP [pD H2].
+  rewrite /minimal.
+  apply/andP ; split => //.
+  apply/forallP => F.
+  rewrite implybN /proper negb_and -implybE negbK.
+  apply/implyP => pF.
+  apply/implyP => FsubD.
+  by move: (H2 F pF FsubD)->.
+Qed.
+
+End MaxMin_sets.
 
 
 (**********************************************************************************)
@@ -284,11 +419,11 @@ Definition ex_maximal : {set G} := s2val (maxset_exists pF).
 
 Definition ex_minimal : {set G} := s2val (minset_exists pF).
 
-Lemma maximal_exists : maxset p ex_maximal.
-Proof. exact: s2valP (maxset_exists pF). Qed.
+Lemma maximal_exists : maximal p ex_maximal.
+Proof. rewrite maximal_eq_maxset ; exact: s2valP (maxset_exists pF). Qed.
 
-Lemma minimal_exists : minset p ex_minimal.
-Proof. exact: s2valP (minset_exists pF). Qed.
+Lemma minimal_exists : minimal p ex_minimal.
+Proof. rewrite minimal_eq_minset. exact: s2valP (minset_exists pF). Qed.
 
 End MaxMin_sets_existence.
 
@@ -305,14 +440,17 @@ Arguments minimal_exists : clear implicits.
 (**********************************************************************************)
 (** * Independence systems, hereditary and superhereditary properties *)
 Section Independence_system_definitions.
-Implicit Types (p : pred {set G}) (F D : {set G}).
 
-Definition hereditary p : bool := [forall D : {set G}, forall (F : {set G} | F \subset D), p D ==> p F].
+Variable p : pred {set G}.     (* p : {set G} -> bool *)
 
-Definition superhereditary p : bool := hereditary [pred D | p (~: D)].
+Definition hereditary : bool :=
+          [forall D : {set G}, forall F : {set G}, (F \subset D) ==> p D ==> p F].
 
-Proposition hereditaryP p : 
-  reflect (forall D F : {set G}, (F \subset D) -> p D -> p F) (hereditary p).
+Definition superhereditary : bool :=
+          [forall D : {set G}, forall F : {set G}, (D \subset F) ==> p D ==> p F].
+
+Proposition hereditaryP : reflect
+          (forall D F : {set G}, (F \subset D) -> p D -> p F) hereditary.
 Proof.
   rewrite /hereditary.
   apply: (iffP forallP).
@@ -329,30 +467,95 @@ Proof.
   exact: (H2 D F FsubD).
 Qed.
 
-Proposition superhereditaryP (p : pred {set G}) : 
-  reflect (forall D F : {set G}, (D \subset F) -> p D -> p F) (superhereditary p).
+Proposition superhereditaryP : reflect
+          (forall D F : {set G}, (D \subset F) -> p D -> p F) superhereditary.
 Proof.
-  apply: (iffP (hereditaryP _)) => /= sh_p D F.
-  all: by rewrite -setCS => /sh_p; rewrite ?setCK; auto.
+  rewrite /superhereditary.
+  apply: (iffP forallP).
+  (* first case: -> *)
+  move=> H1 D F DsubF pD.
+  move: (H1 D).
+  move/forallP=> /(_ F).
+  by rewrite DsubF pD !implyTb.
+  (* second case: -> *)
+  move=> H2 D.
+  apply/forallP => F.
+  apply/implyP => DsubF.
+  apply/implyP.
+  exact: (H2 D F DsubF).
 Qed.
 
-(* TODO: these should be named [?somethingP] *)
-Theorem maximal_altdef p D : hereditary p ->
-   reflect (p D /\ forall v : G, v \notin D -> ~~ p (v |: D)) (maxset p D).
-Proof. 
-  move/hereditaryP => p_hereditary; apply: (iffP maximalP).
-  - case => pD maxD; split => // v vD. apply: maxD.
-    by rewrite setUC properUl // sub1set. 
-  - case => pD max1D; split => // A /properP [subA [v vA /max1D vD]].
-    apply: contraNN vD; apply: p_hereditary; by rewrite subUset sub1set vA.
+Variable D : {set G}.
+
+Theorem maximal_altdef : hereditary ->
+          (maximal p D <-> (p D && [forall v : G, (v \notin D) ==> ~~ p (D :|: [set v])])).
+Proof.
+  move=> p_hereditary.
+  rewrite /iff ; split.
+  (* first case: -> *)
+  - rewrite /maximal.
+    move=> /andP [pD /forallP H1].
+    rewrite pD andTb.
+    apply/forallP => v.
+    apply/implyP => vnotinD.
+    move/implyP: (H1 (D :|: [set v]))-> => [ // | ].
+    (* it is enough to prove that D \proper D cup {v} *)
+    by rewrite properUl // sub1set vnotinD.
+  (* second case: <- *)
+  - move=> /andP [pD /forallP H2].
+    apply/maximalP ; split=> //.
+    move=> F /properP [DsubF].
+    elim=> v vinF.
+    move=> vnotinD.
+    apply/negP.
+    move/implyP: (H2 v) => /(_ vnotinD).
+    apply: contra.
+    (* in order to apply the hereditary property, we first prove that
+       D cup {v} is contained in F. *)
+    have DcupvsubF: D :|: [set v] \subset F.
+    { apply/subsetP => x.
+      rewrite in_setU.
+      case/orP => [ |xisv].
+      + exact: (subsetP DsubF).
+      + rewrite in_set1 in xisv.
+        by move/eqP: xisv ->. }
+    move/hereditaryP: p_hereditary.
+    by move=> /(_ F (D :|: [set v]) DcupvsubF).
 Qed.
 
-Theorem minimal_altdef p D : superhereditary p ->
-   reflect (p D /\ forall v : G, v \in D -> ~~ p (D :\ v)) (minset p D).
+Theorem minimal_altdef : superhereditary ->
+          (minimal p D <-> (p D && [forall v : G, (v \in D) ==> ~~ p (D :\: [set v])])).
 Proof.
-  rewrite minmaxset => sh_p; apply: (iffP (maximal_altdef _ _)) => //=.
-  all: rewrite ?setCK => -[pD H]; split => // v; move: (H v).
-  all: by rewrite !inE ?setCU ?setCK ?negbK setDE setIC.
+  move=> p_superhereditary.
+  rewrite /minimal /iff ; split.
+  (* first case: -> *)
+  - move=> /andP [pD /forallP H1].
+    rewrite pD andTb.
+    apply/forallP => v.
+    apply/implyP => vinD.
+    move/implyP: (H1 (D :\: [set v]))-> => [ // | ].
+    (* it is enough to prove that D - {v} \proper D *)
+    exact: properD1.
+  (* second case: <- *)
+  - move=> /andP [pD /forallP H2].
+    rewrite pD andTb.
+    apply/forallP => F.
+    apply/implyP => /properP [FsubD].
+    elim=> v vinD.
+    move/implyP: (H2 v) => H3 vnotinF.
+    move: (H3 vinD).
+    apply: contra.
+    (* in order to apply the superhereditary property, we first prove that
+       F is contained in D - {v}. *)
+    have FsubDminusv: F \subset D :\: [set v].
+    { apply/subsetP => x xinF.
+      rewrite in_setD (subsetP FsubD x xinF) andbT.
+      move: vnotinF.
+      apply: contra => xisv.
+      rewrite in_set1 in xisv.
+      by move/eqP: xisv <-. }
+    move/superhereditaryP: p_superhereditary.
+    by move=> /(_ F (D :\: [set v]) FsubDminusv).
 Qed.
 
 End Independence_system_definitions.
@@ -367,14 +570,14 @@ Hypothesis positive_weights : forall v : G, weight v > 0.
 Variable p : pred {set G}.     (* p : {set G} -> bool *)
 Variable D : {set G}.
 
-Definition weight_set (S : {set G}) := \sum_(v in S) weight v.
+Definition weight_set (S : {set G}) := \sum_(v in G | v \in S) weight v.
 
 Lemma weight_set_natural : forall A : {set G}, weight_set A >= 0.
 Proof. move=> A ; exact: leq0n. Qed.
 
-Lemma empty_set_zero_weight A : (A == set0) = (weight_set A == 0).
+Lemma empty_set_zero_weight : D = set0 <-> weight_set D = 0.
 Proof.
-  apply/eqP/eqP.
+  rewrite /iff ; split.
   (* first case: -> *)
   move=> Dempty.
   rewrite /weight_set.
@@ -385,25 +588,51 @@ Proof.
   apply/eqP.
   move: weightzero.
   apply: contraLR => /set0Pn.
-  elim=> x xinD. 
-  apply: lt0n_neq0. rewrite /weight_set (bigD1 x) //=.
-  exact/ltn_addr/positive_weights.
+  elim=> x xinD.
+  rewrite /weight_set.
+  rewrite (eq_bigl (fun v => v \in ((D :\: [set x]) :|: [set x]))) ; last first.
+  move=> i ; by rewrite [in X in X = _](set_minus_union1 xinD).
+  rewrite lt0n_neq0 //.
+  (* now, we need to prove that the summation over (D - {x}) cup {x} is positive *)
+  rewrite sum_disjoint_union ; last by rewrite set_minus_disjoint.
+  rewrite big_set1 addnC ltn_addr => [// | ].
+  exact: positive_weights x.
 Qed.
 
 Lemma subsets_weight : forall A B : {set G}, A \subset B -> weight_set A <= weight_set B.
-Proof. 
-  move=> A B AsubB. 
-  by rewrite [X in _ <= X](big_setID A) /= (setIidPr AsubB) leq_addr.
+Proof.
+  move=> A B AsubB.
+  rewrite /weight_set.
+  rewrite [in X in _ <= X](eq_bigl (fun v => v \in ((B :\: A) :|: A))) ; last first.
+  move=> i ; by rewrite [in X in X = _](set_minus_union AsubB).
+  rewrite (sum_disjoint_union weight (set_minus_disjoint B A)).
+  exact: leq_addl.
 Qed.
 
 Lemma proper_sets_weight : forall A B : {set G}, A \proper B -> weight_set A < weight_set B.
 Proof.
-  move => A B /properP [AsubB].
+  move=> A B /properP [AsubB].
   elim=> x xinB xnotinA.
-  rewrite {2}/weight_set (big_setID A) /= (setIidPr AsubB).
-  rewrite -[X in X <= _]addn0 addSn -addnS leq_add2l lt0n.
-  rewrite -/(weight_set _) -empty_set_zero_weight. 
-  by apply/set0Pn; exists x; apply/setDP.
+  have AinBminusx: A \subset B :\: [set x].
+  { apply/subsetP => v vinA.
+    move: (subsetP AsubB v vinA) => vinB.
+    apply/setD1P.
+    split=> [ | //].
+    move: xnotinA.
+    apply: contra => visx.
+    by move/eqP: visx <-. }
+  move: (subsets_weight AinBminusx) => wAleqwBminusx.
+  suff wBminusxleqwB: weight_set (B :\: [set x]) < weight_set B by
+    exact: leq_ltn_trans wAleqwBminusx wBminusxleqwB.
+  (* it is enough to prove weight_set (B - {x}) < weight_set B *)
+  rewrite /weight_set.
+  rewrite [in X in _ < X](eq_bigl (fun v => v \in ((B :\: [set x]) :|: [set x]))) ; last first.
+  move=> i ; by rewrite [in X in X = _](set_minus_union1 xinB).
+  rewrite sum_disjoint_union ; last exact: set_minus_disjoint.
+  rewrite big_set1.
+  rewrite -[in X in X < _](addn0 (\sum_(v in G | v \in (B :\: [set x])) weight v)).
+  rewrite ltn_add2l.
+  exact: positive_weights x.
 Qed.
 
 Definition maximum : bool := p D && [forall F : {set G}, p F ==> (weight_set F <= weight_set D)].
@@ -448,24 +677,24 @@ Proof.
   exact: (H2 F).
 Qed.
 
-Lemma maximum_is_maximal : maximum -> maxset p D.
+Lemma maximum_is_maximal : maximum -> maximal p D.
 Proof.
   move/maximumP=> [pD H1].
   apply/maximalP.
   split=> //.
-  move=> F DproperF; apply/negP => pF.
+  move=> F DproperF pF.
   move: (H1 F pF).
   move: (proper_sets_weight DproperF).
   rewrite ltnNge => /negP.
   contradiction.
 Qed.
 
-Lemma minimum_is_minimal : minimum -> minset p D.
+Lemma minimum_is_minimal : minimum -> minimal p D.
 Proof.
   move/minimumP=> [pD H1].
   apply/minimalP.
   split=> //.
-  move=> F FproperD; apply/negP => pF.
+  move=> F FproperD pF.
   move: (H1 F pF).
   move: (proper_sets_weight FproperD).
   rewrite ltnNge => /negP.
@@ -528,7 +757,7 @@ Section Stable_Set.
 
 Variable S : {set G}.
 
-Definition stable : bool := [forall u in S, forall v in S, ~~ (u -- v)].
+Definition stable : bool := [forall u : G, forall v : G, (u \in S) ==> (v \in S) ==> ~~ (u -- v)].
 
 Definition stable_alt : bool := NS(S) :&: S == set0.
 
@@ -541,22 +770,49 @@ The rationale is that boolean negations on boolean atoms are quite well
 behaved (e.g., rewriting the boolean makes the negation simplify). *)
 
 Proposition stableP : reflect {in S&, forall u v, ~ u -- v} stable.
-Proof. apply: equivP (in11_in2 S S). do 2 (apply: forall_inPP => ?). exact: negP. Qed.
-
-Proposition stablePn : reflect (exists x y, [/\ x \in S, y \in S & x -- y]) (~~ stable).
-Proof. 
-  set E := exists _, _.
-  have EE : (exists2 x, x \in S & exists2 y, y \in S & x -- y) <-> E by firstorder.
-  rewrite /stable !negb_forall_in; apply: equivP EE; apply: exists_inPP => x.
-  rewrite negb_forall_in; apply: exists_inPP => y. exact: negPn.
+Proof.
+  rewrite /stable.
+  apply: (iffP forallP).
+  move=> H1 u v uinS vinS.
+  move/forallP: (H1 u) => H2.
+  apply/negP.
+  by rewrite (implyP ((implyP (H2 v)) uinS) vinS).
+  move=> H2 u.
+  apply/forallP => v.
+  apply/implyP => uinS.
+  apply/implyP => vinS.
+  apply/negP.
+  exact: H2.
 Qed.
 
-Proposition stable_eq_stable_alt : stable = stable_alt. 
-Proof. 
-rewrite /stable_alt setI_eq0; apply/stableP/disjointP => stS.
-- move => x /bigcupP [y yS yx] xS. rewrite inE in yx. exact: stS yx.
-- move => x y xS yS xy. apply: stS yS. 
-  apply/bigcupP; exists x => //. by rewrite inE.
+Theorem stable_eq_stable_alt : stable <-> stable_alt.
+Proof.
+  rewrite /stable /stable_alt /iff ; split.
+  apply: contraLR.
+  (* first case: -> *)
+  - move/set0Pn.
+    elim=> u.
+    rewrite in_setI => [/andP[uinNS uinS] ].
+    move/bigcupP: uinNS.
+    elim=> v vinS.
+    rewrite -sg_opneigh => adjuv.
+    rewrite negb_forall.
+    apply/existsP.
+    exists u.
+    rewrite negb_forall.
+    apply/existsP.
+    exists v.
+    rewrite negb_imply uinS andTb.
+    by rewrite negb_imply vinS andTb adjuv.
+  (* second case: <- *)
+  - rewrite eqEsubset => /andP [NScapSsub0 _].
+    apply/stableP.
+    move=> u v uinS vinS adjuv.
+    have vinNScapS: v \in NS(S) :&: S.
+    { move: (dominated_belongs_to_open_neigh_set uinS adjuv) => vinNS.
+      by rewrite in_setI vinNS vinS. }
+    move: (subsetP NScapSsub0 v vinNScapS).
+    by rewrite in_set0.
 Qed.
 
 End Stable_Set.
@@ -584,7 +840,7 @@ Variable D : {set G}.
 
 Definition dominating : bool := [forall v : G, (v \notin D) ==> [exists u : G, (u \in D) && (u -- v)]].
 
-Definition dominating_alt : bool := [set: G] == NS[D].
+Definition dominating_alt : bool := V(G) == NS[D].
 
 Proposition dominatingP : reflect
           (forall v : G, v \notin D -> exists u : G, u \in D /\ u -- v) dominating.
@@ -614,9 +870,12 @@ Proof.
   move/forallP=> H1.
   rewrite eqEsubset subsetT andbT.
   (* it is enough to prove V(G) \subset N[D] *)
-  apply/subsetP => x _. 
-  case: (boolP (x \in D)); first exact/subsetP/D_in_closed_neigh_set.
-  move => xnotinD.
+  apply/subsetP => x.
+  move: (set_minus_union (subsetT D)) ->.
+  rewrite in_setU.
+  case/orP ; [ | apply/subsetP ; exact: D_in_closed_neigh_set].
+  (* case when x \notin D *)
+  rewrite in_setD => /andP [xnotinD _].
   move/implyP: (H1 x) => H2.
   move/existsP: (H2 xnotinD).
   elim=> u /andP [uinD adjux].
@@ -634,7 +893,7 @@ Qed.
 End Dominating_Set.
 
 (* V(G) is dominating *)
-Lemma dom_VG : dominating [set :G].
+Lemma dom_VG : dominating V(G).
 Proof.
   rewrite dominating_eq_dominating_alt.
   rewrite /dominating_alt eqEsubset subsetT andbT.
@@ -647,7 +906,7 @@ Proof.
   apply/superhereditaryP.
   move=> D F DsubF /dominatingP Ddom.
   apply/dominatingP => v vnotinF.
-  have vinVminusF: v \in [set: G] :\: F by rewrite in_setD in_setT andbT.
+  have vinVminusF: v \in V(G) :\: F by rewrite in_setD in_setT andbT.
   (* if D is contained in F, then some v in V(G)-F also belongs to V(G)-D *)
   move: (subsetP (setDS setT DsubF)).
   move=> /(_ v vinVminusF).
@@ -746,7 +1005,7 @@ Proof.
   move=> v vinD.
   rewrite /private_set /private_set'.
   suff: N[v] = NS[D :&: [set v]] by move->.
-  rewrite (setIidPr _) ?sub1set //.
+  move: (set_intersection_singleton vinD)->.
   apply/eqP ; rewrite eqEsubset ; apply/andP ; split.
   - apply: neigh_in_closed_neigh.
     by rewrite in_set1.
@@ -760,8 +1019,10 @@ Lemma private_set'_equals_empty : forall v : G, v \notinD -> (private_set' v == 
 Proof.
   move=> v vnotinD.
   rewrite /private_set'.
-  rewrite disjoint_setI0 1?disjoint_sym ?disjoints1 //.
-  by rewrite empty_closed_neigh set0D.
+  move: (set_intersection_empty vnotinD)->.
+  move: empty_closed_neigh->.
+  apply/eqP.
+  exact: set0D.
 Qed.
 
 Definition irredundant : bool := [forall v : G, (v \in D) ==> (private_set v != set0)].
@@ -812,61 +1073,93 @@ Variable D : {set G}.
 
 (* A stable set D is maximal iff D is stable and dominating
  * See Prop. 3.5 of Fundamentals of Domination *)
-Theorem maximal_st_iff_st_dom : maxset stable D <-> (stable D /\ dominating D).
+Theorem maximal_st_iff_st_dom : maximal stable D <-> (stable D /\ dominating D).
 Proof.
-  rewrite -(rwP (maximal_altdef _ st_hereditary)).
+  rewrite maximal_altdef ; last exact: st_hereditary.
   rewrite /iff ; split ; last first.
   (* second case: <- *)
   - move=> [ stableD /dominatingP dominatingD].
-    split => // v vnotinD.
-    have [w [winD adjwv]] := dominatingD _ vnotinD.
-    apply/stablePn; exists v; exists w.
-    by rewrite !inE eqxx winD sgP adjwv orbT.
+    rewrite stableD andTb.
+    apply/forallP => v.
+    apply/implyP => vnotinD.
+    rewrite /stable.
+    rewrite negb_forall.
+    apply/existsP.
+    exists v.
+    rewrite negb_forall.
+    apply/existsP.
+    move: (dominatingD v vnotinD).
+    elim=> w [winD adjwv].
+    exists w.
+    rewrite negb_imply.
+    apply/andP ; split.
+    + by rewrite set1Ur.
+    + rewrite negb_imply.
+      rewrite negbK sg_sym adjwv andbT.
+      by rewrite set1Ul.
   (* first case: -> *)
-  - move => [stableD H1].
-    split=> //. apply/dominatingP => x xnotinD.
-    move: (H1 x).
-    move=> /(_ xnotinD). 
-    move/stablePn => [w] [z] [winDcupx zinDcupx adjwz].
+  - move/andP=> [stableD /forallP H1].
+    split=> //.
+    rewrite /dominating.
+    apply/forallP.
+    move=> x.
+    apply/implyP.
+    move=> xnotinD.
+    apply/existsP.
+    move/implyP: (H1 x).
+    move=> /(_ xnotinD).
+    rewrite /stable negb_forall.
+    move/existsP.
+    elim=> w.
+    rewrite negb_forall.
+    move/existsP.
+    elim=> z.
+    rewrite negb_imply negb_imply negbK.
+    move=> /andP [winDcupx /andP [zinDcupx adjwz]].
     case: (boolP (z == x)).
     (* case z = x *)
     + move/eqP=> zisx.
       move: adjwz.
       rewrite zisx => adjwx.
       exists w.
-      rewrite adjwx; split => //. 
+      rewrite adjwx andbT.
       move: winDcupx.
       rewrite in_setU in_set1.
-      by move: (sg_edgeNeq adjwx) ->.
+      move: (sg_edgeNeq adjwx) ->.
+      by rewrite orbF.
     (* case z != x *)
     + move=> zisnotx.
       have zinD: z \in D.
       { move: zinDcupx.
         rewrite in_setU in_set1.
-        by move/negbTE: zisnotx ->. }
+        move/negbTE: zisnotx ->.
+        by rewrite orbF. }
       exists z.
-      rewrite zinD; split => //.
+      rewrite zinD andTb.
       move: winDcupx.
       rewrite in_setU in_set1.
       case/orP ; last first.
+      (* case w == x *)
+      * move/eqP=> wisx.
+        by rewrite sg_sym -wisx.
       (* case w \in D *)
       * move=> winD.
         move/stableP: stableD.
         move=> /(_ w z winD zinD).
         contradiction.
-      (* case w == x *)
-      * move/eqP=> wisx.
-        by rewrite sg_sym -wisx.
 Qed.
 
 (* A maximal stable set is minimal dominating
  * See Prop. 3.6 of Fundamentals of Domination *)
-Theorem maximal_st_is_minimal_dom : maxset stable D -> minset dominating D.
+Theorem maximal_st_is_minimal_dom : maximal stable D -> minimal dominating D.
 Proof.
   rewrite maximal_st_iff_st_dom.
   move=> [stableD dominatingD].
-  rewrite -(rwP (minimal_altdef _ dom_superhereditary)).
-  split=>// x xinD.
+  rewrite minimal_altdef ; last apply dom_superhereditary.
+  apply/andP ; split=>//.
+  apply/forallP.
+  move=> x.
+  apply/implyP=> xinD.
   rewrite /dominating.
   rewrite negb_forall.
   apply/existsP.
@@ -887,13 +1180,15 @@ Qed.
 
 (* A dominating set D is minimal iff D is dominating and irredundant
  * See Prop. 3.8 of Fundamentals of Domination *)
-Theorem minimal_dom_iff_dom_irr : minset dominating D <-> (dominating D /\ irredundant D).
+Theorem minimal_dom_iff_dom_irr : minimal dominating D <-> (dominating D /\ irredundant D).
 Proof.
-  rewrite -(rwP (minimal_altdef _ dom_superhereditary)).
+  rewrite minimal_altdef ; last apply dom_superhereditary.
   rewrite /iff ; split ; last first.
   (* second case: <- *)
   - move=> [dominatingD /irredundantP irredundantD].
-    split => // v vinD.
+    rewrite dominatingD andTb.
+    apply/forallP=> v.
+    apply/implyP=> vinD.
     rewrite /dominating negb_forall.
     apply/existsP.
     move: (irredundantD v vinD).
@@ -915,11 +1210,11 @@ Proof.
       move: (H3 y yinD ydomw).
       by move->.
   (* first case: -> *)
-  - move => [dominatingD H1] ; split=> //.
+  - move/andP=> [dominatingD /forallP H1] ; split=> //.
     rewrite /irredundant.
     apply/forallP=> v.
     apply/implyP=> vinD.
-    move: (H1 v) => /(_ vinD).
+    move/implyP: (H1 v) => /(_ vinD).
     rewrite /dominating negb_forall.
     move/existsP.
     elim=> w.
@@ -951,18 +1246,20 @@ Qed.
 
 (* A minimal dominating set is maximal irredundant
  * See Prop. 3.9 of Fundamentals of Domination *)
-Theorem minimal_dom_is_maximal_irr : minset dominating D -> maxset irredundant D.
+Theorem minimal_dom_is_maximal_irr : minimal dominating D -> maximal irredundant D.
 Proof.
   rewrite minimal_dom_iff_dom_irr.
-  rewrite -(rwP (maximal_altdef _ irr_hereditary)).
+  rewrite maximal_altdef ; last apply irr_hereditary.
   move=> [dominatingD irredundantD].
-  split=>// v vnotinD.
+  apply/andP ; split=>//.
+  apply/forallP=> v.
+  apply/implyP=> vnotinD.
   rewrite /irredundant.
   rewrite negb_forall.
   apply/existsP.
   exists v.
   have vinDcupv : v \in D :|: [set v] by rewrite in_setU set11 orbT.
-  rewrite setUC negb_imply vinDcupv andTb.
+  rewrite negb_imply vinDcupv andTb.
   apply/negP.
   rewrite (private_set_not_empty vinDcupv).
   elim=> x.
@@ -995,11 +1292,11 @@ Section Existence_of_stable_dominating_irredundant_sets.
 
 (* Definitions of "maximal stable", "minimal dominating" and "maximal irredundant" sets *)
 
-Definition max_st := maxset stable.
+Definition max_st := maximal stable.
 
-Definition min_dom := minset dominating.
+Definition min_dom := minimal dominating.
 
-Definition max_irr := maxset irredundant.
+Definition max_irr := maximal irredundant.
 
 (* Inhabitants that are "maximal stable", "minimal dominating" and "maximal irredundant"
  * Recall that ex_minimal and ex_maximal requires a proof of an inhabitant of "stable",
@@ -1008,7 +1305,7 @@ Definition max_irr := maxset irredundant.
 
 Definition inhb_max_st := ex_maximal stable set0 st_empty.
 
-Definition inhb_min_dom := ex_minimal dominating [set: G] dom_VG.
+Definition inhb_min_dom := ex_minimal dominating V(G) dom_VG.
 
 Definition inhb_max_irr := ex_maximal irredundant set0 irr_empty.
 
@@ -1028,16 +1325,14 @@ End Existence_of_stable_dominating_irredundant_sets.
 Section Weighted_domination_parameters.
 
 Variable weight : G -> nat.
-
-Hypothesis G_not_empty : [set: G] != set0. (* Hubo que agregar esta hipotesis para poder definir correctamente delta_w *)
-
+Hypothesis G_not_empty : V(G) != set0. (* Hubo que agregar esta hipotesis para poder definir correctamente delta_w *)
 Hypothesis positive_weights : forall v : G, weight v > 0.
 
 (* Sets of minimum/maximum weight *)
 
 Let minimum_maximal_irr : {set G} := minimum_set weight max_irr inhb_max_irr.
 
-Let minimum_dom : {set G} := minimum_set weight dominating [set: G].
+Let minimum_dom : {set G} := minimum_set weight dominating V(G).
 
 Let minimum_maximal_st : {set G} := minimum_set weight max_st inhb_max_st.
 
@@ -1086,7 +1381,7 @@ Proof.
   move=> [n _ n_is_minimum]. exact: (n_is_minimum (deg_w v) H1).
 Qed.
 
-Lemma delta_w_min_weight_sum : delta_w < \sum_(v in G | v \in [set: G]) weight v.
+Lemma delta_w_min_weight_sum : delta_w < \sum_(v in G | v \in V(G)) weight v.
 (* uso este lema en la prueba, ¿pero realmente hace falta la condición de menor estricto? *)
 Admitted.
 
@@ -1099,7 +1394,7 @@ Proof.
   move/minimumP => [_ set_is_min].
   (* we provide an F that is minimal dominating *)
   set F := minimum_dom.
-  move: (minimum_set_welldefined weight dominating [set: G] dom_VG) => Fminimum_dom.
+  move: (minimum_set_welldefined weight dominating V(G) dom_VG) => Fminimum_dom.
   rewrite -/minimum_dom -/F in Fminimum_dom.
   move: (minimum_is_minimal positive_weights Fminimum_dom) => Fminimal_dom.
   (* and, therefore, F is maximal irredundant *)
@@ -1110,7 +1405,7 @@ Qed.
 Theorem gamma_w_leq_ii_w : gamma_w <= ii_w.
 Proof.
   (* we generate "set_is_min" which says that any dominating set F has weight >= gamma_w(G) *)
-  move: (minimum_set_welldefined weight dominating [set: G] dom_VG).
+  move: (minimum_set_welldefined weight dominating V(G) dom_VG).
   move/minimumP => [_ set_is_min].
   (* we provide a maximal stable F which is also dominating *)
   set F := minimum_maximal_st.
@@ -1165,15 +1460,15 @@ Proof.
   by move: (set_is_max F Firr).
 Qed.
 
-Theorem IR_w_leq_weight_V_minus_delta_w : IR_w <= weight_set weight [set: G] - delta_w.
+Theorem IR_w_leq_weight_V_minus_delta_w : IR_w <= weight_set weight V(G) - delta_w.
 Proof.
-  have irr_leq_wV_minus_delta_w (S : {set G}) : irredundant S -> weight_set weight S <= weight_set weight [set: G] - delta_w.
+  have irr_leq_wV_minus_delta_w (S : {set G}) : irredundant S -> weight_set weight S <= weight_set weight V( G) - delta_w.
   { move/irredundantP=> Sirr.
     case: (boolP (S == set0)).
     - move/eqP=> emptyS; rewrite emptyS /weight_set big_set0.
       move: delta_w_min_weight_sum; by rewrite -subn_gt0.
-    - move/set0Pn; elim=> v vS; set NSv := N( G; v) :\: ([set: G] :\: S).
-      have H : weight_set weight (N(v) :&: ([set: G] :\: S)) >= delta_w - weight_set weight NSv.
+    - move/set0Pn; elim=> v vS; set NSv := N( G; v) :\: (V(G) :\: S).
+      have H : weight_set weight (N(v) :&: (V(G) :\: S)) >= delta_w - weight_set weight NSv.
       { move: (delta_w_is_minimum v).
         rewrite /weight_set.
         rewrite (big_setID ([set: G] :\: S) weight) /=.
@@ -1289,10 +1584,10 @@ Proof.
   exact: (H2 F pF).
 Qed.
 
-Proposition maximum_card_is_maximal : maximum_card -> maxset p D.
+Proposition maximum_card_is_maximal : maximum_card -> maximal p D.
 Proof. rewrite maximum1 ; exact: maximum_is_maximal. Qed.
 
-Proposition minimum_card_is_minimal : minimum_card -> minset p D.
+Proposition minimum_card_is_minimal : minimum_card -> minimal p D.
 Proof. rewrite minimum1 ; exact: minimum_is_minimal. Qed.
 
 End Unweighted_Sets.
@@ -1355,7 +1650,7 @@ Section Classic_domination_parameters.
 
 Let minimum_maximal_irr : {set G} := minimum_set_card max_irr inhb_max_irr.
 
-Let minimum_dom : {set G} := minimum_set_card dominating [set: G].
+Let minimum_dom : {set G} := minimum_set_card dominating V(G).
 
 Let minimum_max_st : {set G} := minimum_set_card max_st inhb_max_st.
 
@@ -1391,7 +1686,7 @@ Qed.
 Lemma gamma_is_gamma1 : gamma = gamma_w ones.
 Proof. 
   rewrite /gamma /gamma_w /minimum_dom.
-  rewrite (min_card_weight_1 dominating [set: G] dom_VG).
+  rewrite (min_card_weight_1 dominating V(G) dom_VG).
   exact: card_weight_1.
 Qed.
 
