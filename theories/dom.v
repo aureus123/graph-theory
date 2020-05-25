@@ -76,6 +76,12 @@ Proof.
   by exists v; rewrite !inE ?eqxx sgP.
 Qed.
 
+Lemma opneigh_proper_G v : N(v) \proper [set: G].
+Proof.
+  have: N[v] \subset [set: G] by [].
+  move: (opneigh_proper_clneigh v); exact: proper_sub_trans.
+Qed.
+
 Proposition sg_in_edge_set u v : [set u; v] \in E(G) = (u -- v).
 Proof. 
   apply/edgesP/idP => [[x] [y] []|]; last by exists u; exists v.
@@ -743,17 +749,9 @@ Definition private_set' (v : G) := NS[D :&: [set v]] :\: NS[D :\: [set v]].
 
 Lemma private_set'_equals_private_set : {in D, forall v, private_set' v == private_set v}.
 Proof.
-  move=> v vinD.
-  rewrite /private_set /private_set'.
+  move=> v vinD; rewrite /private_set /private_set'.
   suff: N[v] = NS[D :&: [set v]] by move->.
-  rewrite (setIidPr _) ?sub1set //.
-  apply/eqP ; rewrite eqEsubset ; apply/andP ; split.
-  - apply: neigh_in_closed_neigh.
-    by rewrite in_set1.
-  - apply/subsetP => x.
-    move/bigcupP.
-    elim=> z ; rewrite in_set1.
-    by move/eqP->.
+  by rewrite (setIidPr _) ?sub1set // /closed_neigh_set big_set1.
 Qed.
 
 Lemma private_set'_equals_empty : forall v : G, v \notinD -> (private_set' v == set0).
@@ -1078,7 +1076,7 @@ Qed.
 
 Definition delta_w : nat := ex_minn some_deg_w_exists.
 
-Lemma delta_w_is_minimum (v : G) : delta_w <= weight_set weight N(v).
+Lemma delta_w_is_minimum (v : G) : delta_w <= deg_w v.
 Proof.
   have H1: some_vertex_with_deg_w (deg_w v). rewrite /some_vertex_with_deg_w.
   apply/existsP; by exists v.
@@ -1086,9 +1084,14 @@ Proof.
   move=> [n _ n_is_minimum]. exact: (n_is_minimum (deg_w v) H1).
 Qed.
 
-Lemma delta_w_min_weight_sum : delta_w < \sum_(v in G | v \in [set: G]) weight v.
-(* uso este lema en la prueba, ¿pero realmente hace falta la condición de menor estricto? *)
-Admitted.
+Lemma deg_w_less_weight_sum (v : G) : deg_w v < weight_set weight [set: G].
+Proof. rewrite /deg_w; apply: proper_sets_weight; auto; exact/opneigh_proper_G. Qed.
+
+Lemma delta_w_less_weight_sum : delta_w < weight_set weight [set: G].
+Proof.
+  move/set0Pn: G_not_empty=> [v _].
+  move: (delta_w_is_minimum v) (deg_w_less_weight_sum v); exact: leq_ltn_trans.
+Qed.
 
 (* Weighted version of the Cockayne-Hedetniemi domination chain. *)
 
@@ -1171,17 +1174,27 @@ Proof.
   { move/irredundantP=> Sirr.
     case: (boolP (S == set0)).
     - move/eqP=> emptyS; rewrite emptyS /weight_set big_set0.
-      move: delta_w_min_weight_sum; by rewrite -subn_gt0.
-    - move/set0Pn; elim=> v vS; set NSv := N( G; v) :\: ([set: G] :\: S).
-      have H : weight_set weight (N(v) :&: ([set: G] :\: S)) >= delta_w - weight_set weight NSv.
+      move: delta_w_less_weight_sum; by rewrite -subn_gt0.
+    - move/set0Pn; elim=> v vS.
+      have H : delta_w <= weight_set weight (N(v) :&: S) + weight_set weight (N(v) :&: ([set: G] :\: S)).
       { move: (delta_w_is_minimum v).
-        rewrite /weight_set.
-        rewrite (big_setID ([set: G] :\: S) weight) /=.
-        (* falta poder convertir a <= b + c en a - c <= b, para lo cual.. ¿necesitamos una prueba de que a >= c? *)
+        by rewrite /deg_w /weight_set (big_setID ([set: G] :\: S) weight) /= addnC setTD setDE setCK.
       }
-      case (boolP (NSv == set0)).
-      + move/eqP=> NSvempty; rewrite NSvempty /weight_set big_set0 in H.
-      (* investigar mas sobre bigops y como descomponer o recomponer estas operaciones *)
+      have H2: weight_set weight ([set: G] :\: S) >= delta_w.
+      { case (boolP (N(v) :&: S == set0)).
+        + rewrite (empty_set_zero_weight positive_weights); move/eqP=> NSvisempty.
+          rewrite NSvisempty addnC addn0 in H.
+          have H': weight_set weight (N( G; v) :&: ([set: G] :\: S)) <= weight_set weight ([set: G] :\: S) by apply: subsets_weight; exact: subsetIr.
+          exact: (leq_trans H H').
+        + move/set0Pn=> [x xinNvcupS].
+          (* Por cada vertice x en N(v) :&: S, hay un vertice x' (privado de x en S) en V-S que no esta en N(v)
+           * (ya que el vertice privado de x no puede ser tambien vecino de v).
+           * Pero de aca no podemos deducir que weight_sum (N(v) :&: S) <= weight_sum ((V-S) - N(v))
+           * (de hacerlo estaría resuleto el problema)
+           * ya que esta suposición solo vale para la versión no ponderada del problema,
+           * donde x y x' son facilmente intercambiables.
+           * En la versión ponderada es necesario también que los pesos sean los mismos. *)
+      }
   }
   by move: (irr_leq_wV_minus_delta_w maximum_irr (maximum_set_p weight irr_empty)).
 Admitted.
