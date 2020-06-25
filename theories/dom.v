@@ -500,6 +500,14 @@ Proof.
     apply/set0Pn. by exists w.
 Qed.
 
+Lemma prvnD (v w : G) : (private v w) -> w \in D -> v == w.
+Proof.
+  rewrite /private; move/andP=> [vdomw wprv] wD.
+  move/forallP in wprv.
+  move/implyP: (wprv w)=> /(_ wD)=> /implyP=> /(_ (cl_sg_refl w))=> weqv.
+  by rewrite eq_sym.
+Qed.
+
 (* This alternative definition of private_set contemplates cases where v \notin D.
  * If v belongs to D, it returns the set of private vertices; otherwise, it returns an empty set. *)
 Definition private_set' (v : G) := NS[D :&: [set v]] :\: NS[D :\: [set v]].
@@ -564,6 +572,22 @@ Proof.
   exact: (H1 u uinD udomx).
 Qed.
 
+Section h_vertex_and_its_private_definition.
+  Variable S : {set G}.
+  Hypothesis Sirr : irredundant S.
+  Variable v: G.
+  Hypothesis vinS: v \in S.
+
+  Local Lemma w_exists : exists w : G, private S v w.
+  Proof. by move/irredundantP: Sirr => /(_ v vinS) /(prvs0n vinS). Qed.
+
+  Let w : G := xchoose w_exists.
+  Let w_is_private : private S v w := xchooseP w_exists.
+  Definition prv := [set w].
+End h_vertex_and_its_private_definition.
+
+Definition prv' (S : {set G}) (Sirr : irredundant S) (v : G) :=
+          if @idP (v \in S) is ReflectT p then prv Sirr p else set0.
 
 (**********************************************************************************)
 (** * Fundamental facts about Domination Theory *)
@@ -1125,7 +1149,7 @@ Proof. by rewrite /some_vertex_with_neighborhood ; apply/existsP ; exists x. Qed
 
 Definition delta_w := W (arg_min N(x) some_vertex_with_neighborhood W).
 
-Fact delta_min (v : G) : delta_w <= deg_w v.
+Fact delta_w_min (v : G) : delta_w <= deg_w v.
 Proof.
   rewrite /delta_w ; case: (arg_minP W Nx_is_neighborhood_x) => A _ ; apply.
   by rewrite /some_vertex_with_neighborhood ; apply/existsP ; exists v.
@@ -1158,6 +1182,8 @@ Section Degree_of_vertices.
 Variable G : sgraph.
 
 Definition deg (v : G) := #|N(v)|.
+
+Definition deg_set (D : {set G}) := \sum_(v in D) deg v.
 
 Fact eq_deg_deg1 (v : G) : deg v = deg_w (@ones G) v.
 Proof. by rewrite /deg /deg_w -cardwset1. Qed.
@@ -1196,8 +1222,11 @@ Proof.
     rewrite /some_vertex_with_degree.
     move/existsP => [u] /eqP <-.
     rewrite eq_deg_deg1.
-    exact: delta_min.
+    exact: delta_w_min.
 Qed.
+
+Fact delta_min (v : G) : delta <= deg v.
+Proof. rewrite eq_delta_delta1 eq_deg_deg1; exact: delta_w_min. Qed.
 
 Definition Delta := ex_maxn degx_has_deg_x ltn_someu_degu_subn1.
 
@@ -1216,6 +1245,58 @@ Proof.
     move<- ; exists u ; apply/eqP.
     exact: eq_deg_deg1.
 Qed.
+
+Lemma subsetD (A : {set G}) (B : {set G}) : A \subset B <-> forall (x : G), x \in A -> x \in B.
+Proof. split. move=> AsubB y yA. apply contraT. move=> xnB.
+       have H : exists2 x, x \in A & x \notin B by exists y; by [].
+       by move/subsetPn/negP in H.
+Admitted.
+
+Lemma IR_leq_V_minus_delta : IR G <= #|[set: G]| - delta.
+Proof.
+  rewrite /IR.
+  have [S irrS _] := arg_maxP (fun D : {set G} => #|D|) (irr0 G).
+  case (boolP (S == set0)); first by move/eqP=> S0; rewrite S0; rewrite cards0; exact: leq0n.
+  move=> S0n. move: (S0n). move/set0Pn; elim=> v vS.
+  have degV := delta_min v; rewrite /deg in degV.
+  have H : #|N(v)| <= #|[set: G] :\: S|.
+  { have splitNv : N(v) :\: N(v) :&: S = N(v) :\: S by rewrite -[in X in _ = X](set0U (N(v) :\: S)) -(setDv N(v)); exact: setDIr.
+    have NvsubV : N(v) \subset [set: G] by []. apply (setSD S) in NvsubV. rewrite -splitNv in NvsubV.
+    case (boolP (N(v) :&: S == set0)).
+    - move/eqP=> NvS0. rewrite NvS0 setD0 in NvsubV. exact: (subset_leq_card NvsubV).
+    - move/set0Pn. elim=> _ _.
+      set prvS := \bigcup_(w in N(v) :&: S) prv' irrS w.
+      have prvSsubV : prvS \subset [set: G] :\: S.
+(* Probamos que el conjunto de los vertices privados elegidos de N(v) :&: S no están en S *)
+      { rewrite subsetD. move=> y. rewrite /prvS.
+        move/bigcupP. elim=> y' y'NvS yprv'. rewrite in_setD. apply/andP; split; last by [].
+        move/setIP in y'NvS; have [y'Nv y'S] := y'NvS.
+        move: yprv'. rewrite /prv'. case: {-}_/idP=> [y'S'|//]. rewrite (bool_irrelevance y'S' y'S).
+        rewrite /prv; move/set1P. move=> yprivate.
+        have HH : private S y' y. (* Esta conclusión debería ser muy sencilla a partir de yprivate *)
+        { auto. }
+        Check prvnD HH.
+      }
+(* Probamos que ela cardinalidad de N(v) :&: S es la misma que la de sus vertices privados elegidos *)
+      have eq_card_prvS_NvcapS : #|prvS| = #|N(v) :&: S|.
+      { auto. }
+      have Nv'subV : (N(v) :\: N(v) :&: S) :|: prvS \subset [set: G] :\: S.
+      { auto. } (* Aplicar subUsetP con  NvsubV /\ prvSsubV *)
+      move/subset_leq_card in Nv'subV.
+      have disj_Nv_prvS : N(v) :&: prvS = set0.
+(* Probamos que ningún vertice en el conjunto de los privados de N(v) :&: S es vecino de v *)
+      { auto. }
+      have disj_full : (N(v) :\: N(v) :&: S) :&: prvS = set0 by rewrite setIDAC disj_Nv_prvS set0D.
+      rewrite cardsU disj_full cardsDS in Nv'subV. rewrite -eq_card_prvS_NvcapS in Nv'subV.
+      (* ya casi *)
+  }
+  rewrite cardsDS in H; last by auto.
+  case (boolP (delta > 0)).
+  + move=> deltagt0. rewrite -card_gt0 in S0n. rewrite leq_psubCr.
+    exact: (leq_trans degV H). exact: S0n. exact: deltagt0.
+  + rewrite -leqNgt leqn0; move/eqP=> delta0. rewrite delta0 subn0.
+    exact: subset_leq_card.
+Admitted.
 
 End Degree_of_vertices.
 
