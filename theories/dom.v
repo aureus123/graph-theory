@@ -508,6 +508,14 @@ Proof.
   by rewrite eq_sym.
 Qed.
 
+Lemma disjoint_prv (v w : G) (vD : v \in D) (wD : w \in D) (vneqw : v != w): [disjoint private_set v & private_set w].
+Proof.
+  apply/disjointP=> x. rewrite -!mem_prv_prvs /private.
+  move/andP=> [vdomx _]; move/andP=> [_ /forallP prvwx].
+  move/implyP: (prvwx v) => vnprvx. move/implyP: (vnprvx vD)=> /(_ vdomx)=> veqw.
+  rewrite veqw in vneqw. by move/negP in vneqw.
+Qed.
+
 (* This alternative definition of private_set contemplates cases where v \notin D.
  * If v belongs to D, it returns the set of private vertices; otherwise, it returns an empty set. *)
 Definition private_set' (v : G) := NS[D :&: [set v]] :\: NS[D :\: [set v]].
@@ -571,23 +579,6 @@ Proof.
   move=> u uinF udomx. move: (subsetP FsubD u uinF) => uinD.
   exact: (H1 u uinD udomx).
 Qed.
-
-Section h_vertex_and_its_private_definition.
-  Variable S : {set G}.
-  Hypothesis Sirr : irredundant S.
-  Variable v: G.
-  Hypothesis vinS: v \in S.
-
-  Local Lemma w_exists : exists w : G, private S v w.
-  Proof. by move/irredundantP: Sirr => /(_ v vinS) /(prvs0n vinS). Qed.
-
-  Let w : G := xchoose w_exists.
-  Let w_is_private : private S v w := xchooseP w_exists.
-  Definition prv := [set w].
-End h_vertex_and_its_private_definition.
-
-Definition prv' (S : {set G}) (Sirr : irredundant S) (v : G) :=
-          if @idP (v \in S) is ReflectT p then prv Sirr p else set0.
 
 (**********************************************************************************)
 (** * Fundamental facts about Domination Theory *)
@@ -1252,11 +1243,21 @@ Proof. split. move=> AsubB y yA. apply contraT. move=> xnB.
        by move/subsetPn/negP in H.
 Admitted.
 
+(*  Falta probar esto, que se puede escribir de manera aun mas general.
+    Quizas sea algo que ya exista. *)
+Lemma card_inj_leq (A : {set G}) (F : G -> {set G}) :
+                   (forall x : G, x \in A -> #|F x| > 0) ->
+                   (forall x y : G, x \in A -> y \in A -> (x != y) -> [disjoint F x & F y]) ->
+                   #|A| <= #|\bigcup_(x in A) F x|.
+Admitted.
+
+(*  Prueba completa, pero demasiado larga.
+    Voy a simplificarla lo mas posible usando las recomendaciones de Christian. *)
 Lemma IR_leq_V_minus_delta : IR G <= #|[set: G]| - delta.
 Proof.
   rewrite /IR.
   have [S irrS _] := arg_maxP (fun D : {set G} => #|D|) (irr0 G).
-  case (boolP (S == set0)); first by move/eqP=> S0; rewrite S0; rewrite cards0; exact: leq0n.
+  case (boolP (S == set0)); first by move/eqP=> S0; rewrite S0 cards0; exact: leq0n.
   move=> S0n. move: (S0n). move/set0Pn; elim=> v vS.
   have degV := delta_min v; rewrite /deg in degV.
   have H : #|N(v)| <= #|[set: G] :\: S|.
@@ -1265,30 +1266,40 @@ Proof.
     case (boolP (N(v) :&: S == set0)).
     - move/eqP=> NvS0. rewrite NvS0 setD0 in NvsubV. exact: (subset_leq_card NvsubV).
     - move/set0Pn. elim=> _ _.
-      set prvS := \bigcup_(w in N(v) :&: S) prv' irrS w.
-      have prvSsubV : prvS \subset [set: G] :\: S.
+      set prvSNv := \bigcup_(w in N(v) :&: S) private_set S w.
 (* Probamos que el conjunto de los vertices privados elegidos de N(v) :&: S no están en S *)
-      { rewrite subsetD. move=> y. rewrite /prvS.
-        move/bigcupP. elim=> y' y'NvS yprv'. rewrite in_setD. apply/andP; split; last by [].
-        move/setIP in y'NvS; have [y'Nv y'S] := y'NvS.
-        move: yprv'. rewrite /prv'. case: {-}_/idP=> [y'S'|//]. rewrite (bool_irrelevance y'S' y'S).
-        rewrite /prv; move/set1P. move=> yprivate.
-        have HH : private S y' y. (* Esta conclusión debería ser muy sencilla a partir de yprivate *)
-        { auto. }
-        Check prvnD HH.
+      have prvSsubV : prvSNv \subset [set: G] :\: S.
+      { rewrite subsetD; move=> y; rewrite /prvSNv.
+        move/bigcupP; elim=> y' y'NvS.
+        rewrite -mem_prv_prvs; move/privateP=> [y'domy prvy'].
+        rewrite in_setD; apply/andP; split; last by []. apply/contraT. move/negPn=> yS.
+        have yeqy' := (prvy' y yS (cl_sg_refl y)). rewrite -yeqy' in y'NvS.
+        have/setIP [yNv _] := y'NvS. move: (yNv)=> yNv'; rewrite in_opn in yNv'; move/or_intror in yNv'.
+        have/orP vdomy := yNv' (v == y). have veqy' := prvy' v vS vdomy. rewrite yeqy' -veqy' in yNv.
+        by move: (v_notin_opneigh v)=> VnNv; move/negP in VnNv.
       }
-(* Probamos que ela cardinalidad de N(v) :&: S es la misma que la de sus vertices privados elegidos *)
-      have eq_card_prvS_NvcapS : #|prvS| = #|N(v) :&: S|.
-      { auto. }
-      have Nv'subV : (N(v) :\: N(v) :&: S) :|: prvS \subset [set: G] :\: S.
-      { auto. } (* Aplicar subUsetP con  NvsubV /\ prvSsubV *)
-      move/subset_leq_card in Nv'subV.
-      have disj_Nv_prvS : N(v) :&: prvS = set0.
+(* Probamos que ela cardinalidad de N(v) :&: S es igual o menor que la de sus vertices privados elegidos  *)
+      have leq_card_prvS_NvcapS : #|prvSNv| >= #|N(v) :&: S|. (*Check inj_card_leq.*)
+      { rewrite /prvSNv. apply card_inj_leq=> w. move/setIP=> [wNv wS].
+        rewrite card_gt0. move/irredundantP: irrS. by move=> /(_ w wS).
+        move=> w'; move/setIP=> [_ wS]; move/setIP=> [_ w'S]; exact: disjoint_prv wS w'S.
+      } rewrite -(leq_add2l (#|N(v)| - #|N(v) :&: S|)) in leq_card_prvS_NvcapS.
 (* Probamos que ningún vertice en el conjunto de los privados de N(v) :&: S es vecino de v *)
-      { auto. }
-      have disj_full : (N(v) :\: N(v) :&: S) :&: prvS = set0 by rewrite setIDAC disj_Nv_prvS set0D.
-      rewrite cardsU disj_full cardsDS in Nv'subV. rewrite -eq_card_prvS_NvcapS in Nv'subV.
-      (* ya casi *)
+      have disj_Nv_prvSNv : N(v) :&: prvSNv = set0.
+      { apply/eqP; rewrite setIC setI_eq0 disjoints_subset subsetD; move=> w.
+        rewrite in_setC in_opn.
+        rewrite /prvSNv. move/bigcupP. elim=> w' w'NvS. have/setIP [w'Nv _] := w'NvS.
+        rewrite -mem_prv_prvs; move/privateP=> [w'domw prvw'].
+        apply/contraT. move/negPn=> vadjw. move/or_intror in vadjw.
+        have/orP vdomw := vadjw (v == w). have veqw' := prvw' v vS vdomw.
+        rewrite -veqw' in w'Nv. by move: (v_notin_opneigh v)=> VnNv; move/negP in VnNv.
+      }
+(* Fin de las pruebas *)
+      move/subUsetP/subset_leq_card: (conj NvsubV prvSsubV)=> Nv'subV.
+      have disj_full : (N(v) :\: N(v) :&: S) :&: prvSNv = set0 by rewrite setIDAC disj_Nv_prvSNv set0D.
+      have NvgeqNvcupS : #|N(v)| >= #|N(v) :&: S| by rewrite -[in X in _ <= X](cardsID S) leq_addr.
+      rewrite cardsU disj_full cardsDS in Nv'subV; last by exact: subsetIl. rewrite cards0 subn0 in Nv'subV.
+      by move: (leq_trans leq_card_prvS_NvcapS Nv'subV); rewrite subnK.
   }
   rewrite cardsDS in H; last by auto.
   case (boolP (delta > 0)).
@@ -1296,7 +1307,7 @@ Proof.
     exact: (leq_trans degV H). exact: S0n. exact: deltagt0.
   + rewrite -leqNgt leqn0; move/eqP=> delta0. rewrite delta0 subn0.
     exact: subset_leq_card.
-Admitted.
+Qed.
 
 End Degree_of_vertices.
 
