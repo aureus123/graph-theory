@@ -1237,19 +1237,25 @@ Proof.
     exact: eq_deg_deg1.
 Qed.
 
-Lemma subsetD (A : {set G}) (B : {set G}) : A \subset B <-> forall (x : G), x \in A -> x \in B.
-Proof. split. move=> AsubB y yA. apply contraT. move=> xnB.
-       have H : exists2 x, x \in A & x \notin B by exists y; by [].
-       by move/subsetPn/negP in H.
+(*  Falta probar esto, que se puede escribir de manera aun mas general.
+    En bigop debe estar el lema general que hay que aplicar sobre este caso particular. *)
+Lemma bigcup_disj (A : {set G}) (F : G -> {set G}) :
+           (forall x y : G, x \in A -> y \in A -> (x != y) -> [disjoint F x & F y]) ->
+           #|\bigcup_(x in A) F x| = \sum_(x in A) #|F x|.
 Admitted.
 
-(*  Falta probar esto, que se puede escribir de manera aun mas general.
-    Quizas sea algo que ya exista. *)
+(* Identico a leq_add en ssrnat, pero con las variables en otro orden. *)
+Lemma leq_add' m1 m2 n1 n2 : m1 <= m2 -> n1 <= n2 -> m1 + n1 <= m2 + n2.
+Proof. by move=> le_mn1 le_mn2; rewrite (@leq_trans (m1 + n2)) ?leq_add2l ?leq_add2r. Qed.
+
 Lemma card_inj_leq (A : {set G}) (F : G -> {set G}) :
-                   (forall x : G, x \in A -> #|F x| > 0) ->
+                   (forall x : G, x \in A -> 0 < #|F x|) ->
                    (forall x y : G, x \in A -> y \in A -> (x != y) -> [disjoint F x & F y]) ->
                    #|A| <= #|\bigcup_(x in A) F x|.
-Admitted.
+Proof.
+move=> xAn0 Fdisj; rewrite (bigcup_disj Fdisj) -cardsE -sum1dep_card.
+exact: (big_ind2 leq (leqnn 0) leq_add' xAn0).
+Qed.
 
 (*  Prueba completa, pero demasiado larga.
     Voy a simplificarla lo mas posible usando las recomendaciones de Christian. *)
@@ -1269,7 +1275,7 @@ Proof.
       set prvSNv := \bigcup_(w in N(v) :&: S) private_set S w.
 (* Probamos que el conjunto de los vertices privados elegidos de N(v) :&: S no están en S *)
       have prvSsubV : prvSNv \subset [set: G] :\: S.
-      { rewrite subsetD; move=> y; rewrite /prvSNv.
+      { apply/subsetP. move=> y; rewrite /prvSNv.
         move/bigcupP; elim=> y' y'NvS.
         rewrite -mem_prv_prvs; move/privateP=> [y'domy prvy'].
         rewrite in_setD; apply/andP; split; last by []. apply/contraT. move/negPn=> yS.
@@ -1286,7 +1292,7 @@ Proof.
       } rewrite -(leq_add2l (#|N(v)| - #|N(v) :&: S|)) in leq_card_prvS_NvcapS.
 (* Probamos que ningún vertice en el conjunto de los privados de N(v) :&: S es vecino de v *)
       have disj_Nv_prvSNv : N(v) :&: prvSNv = set0.
-      { apply/eqP; rewrite setIC setI_eq0 disjoints_subset subsetD; move=> w.
+      { apply/eqP; rewrite setIC setI_eq0 disjoints_subset. apply/subsetP=> w.
         rewrite in_setC in_opn.
         rewrite /prvSNv. move/bigcupP. elim=> w' w'NvS. have/setIP [w'Nv _] := w'NvS.
         rewrite -mem_prv_prvs; move/privateP=> [w'domw prvw'].
