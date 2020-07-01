@@ -1237,24 +1237,24 @@ Proof.
     exact: eq_deg_deg1.
 Qed.
 
-(*  Falta probar esto, que se puede escribir de manera aun mas general.
-    En bigop debe estar el lema general que hay que aplicar sobre este caso particular. *)
 Lemma bigcup_disj (A : {set G}) (F : G -> {set G}) :
-           (forall x y : G, x \in A -> y \in A -> (x != y) -> [disjoint F x & F y]) ->
+           (forall x : G, x \in A -> 0 < #|F x|) ->
+           (forall x y : G, x \in A -> y \in A -> x != y -> [disjoint F x & F y]) ->
            #|\bigcup_(x in A) F x| = \sum_(x in A) #|F x|.
-Admitted.
-
-(* Identico a leq_add en ssrnat, pero con las variables en otro orden. *)
-Lemma leq_add' m1 m2 n1 n2 : m1 <= m2 -> n1 <= n2 -> m1 + n1 <= m2 + n2.
-Proof. by move=> le_mn1 le_mn2; rewrite (@leq_trans (m1 + n2)) ?leq_add2l ?leq_add2r. Qed.
-
-Lemma card_inj_leq (A : {set G}) (F : G -> {set G}) :
-                   (forall x : G, x \in A -> 0 < #|F x|) ->
-                   (forall x y : G, x \in A -> y \in A -> (x != y) -> [disjoint F x & F y]) ->
-                   #|A| <= #|\bigcup_(x in A) F x|.
-Proof.
-move=> xAn0 Fdisj; rewrite (bigcup_disj Fdisj) -cardsE -sum1dep_card.
-exact: (big_ind2 leq (leqnn 0) leq_add' xAn0).
+      move=> Fn0 Fdisj; pose Fs := imset F (mem A).
+      have trivFs: trivIset Fs. {
+        apply/trivIsetP=> _ _ /imsetP[i iA ->] /imsetP[j jA ->] neqFij.
+        apply/(Fdisj i j iA jA)/negP. move/eqP=> ieqj.
+        rewrite ieqj in neqFij. by move/negP in neqFij. }
+      rewrite -(big_imset id _) /=.
+      rewrite -(big_imset (fun X : {set G} => card (mem X)) _) /=.
+      apply/eqP; rewrite eq_sym; exact: trivFs.
+      all: rewrite/injective=> [v w vA wA FvFw].
+      all: apply/eqP/contraT=> vneqw.
+      all: move: (Fdisj v w vA wA vneqw)=> Fw0.
+      all: rewrite FvFw in Fw0; move/disjoint_setI0 in Fw0.
+      all: rewrite setIid in Fw0; move: (Fn0 w wA)=> Fwn0.
+      all: by rewrite Fw0 cards0 in Fwn0; move/negP in Fwn0.
 Qed.
 
 (*  Prueba completa, pero demasiado larga.
@@ -1286,15 +1286,19 @@ Proof.
       }
 (* Probamos que ela cardinalidad de N(v) :&: S es igual o menor que la de sus vertices privados elegidos  *)
       have leq_card_prvS_NvcapS : #|prvSNv| >= #|N(v) :&: S|. (*Check inj_card_leq.*)
-      { rewrite /prvSNv. apply card_inj_leq=> w. move/setIP=> [wNv wS].
-        rewrite card_gt0. move/irredundantP: irrS. by move=> /(_ w wS).
-        move=> w'; move/setIP=> [_ wS]; move/setIP=> [_ w'S]; exact: disjoint_prv wS w'S.
+      { rewrite /prvSNv.
+        have prv_disj: forall x y : G, x \in N(v) :&: S -> y \in N(v) :&: S -> (x != y) -> [disjoint private_set S x & private_set S y].
+        by move=> w w'; move/setIP=> [_ wS]; move/setIP=> [_ w'S]; exact: disjoint_prv wS w'S.
+        have prv_NvS_n0 : (forall x : G, x \in N(v) :&: S -> 0 < #|private_set S x|).
+        by move=> w /setIP [wNv wS]; rewrite card_gt0; move/irredundantP: irrS; move=> /(_ w wS).
+        rewrite (bigcup_disj prv_NvS_n0 prv_disj) -sum1_card.
+        apply/leq_sum/prv_NvS_n0.
       } rewrite -(leq_add2l (#|N(v)| - #|N(v) :&: S|)) in leq_card_prvS_NvcapS.
 (* Probamos que ningún vertice en el conjunto de los privados de N(v) :&: S es vecino de v *)
       have disj_Nv_prvSNv : N(v) :&: prvSNv = set0.
       { apply/eqP; rewrite setIC setI_eq0 disjoints_subset. apply/subsetP=> w.
-        rewrite in_setC in_opn.
-        rewrite /prvSNv. move/bigcupP. elim=> w' w'NvS. have/setIP [w'Nv _] := w'NvS.
+        rewrite in_setC in_opn /prvSNv.
+        move/bigcupP; elim=> w' w'NvS. have/setIP [w'Nv _] := w'NvS.
         rewrite -mem_prv_prvs; move/privateP=> [w'domw prvw'].
         apply/contraT. move/negPn=> vadjw. move/or_intror in vadjw.
         have/orP vdomw := vadjw (v == w). have veqw' := prvw' v vS vdomw.
