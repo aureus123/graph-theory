@@ -155,58 +155,32 @@ Variable G : sgraph.
 (* somev is a vertex of G (i.e. G is a non-empty graph) *)
 Hypothesis somev : G.
 
-Lemma bigcup_disj (A : {set G}) (F : G -> {set G}) :
-           (forall x : G, x \in A -> 0 < #|F x|) ->
-           (forall x y : G, x \in A -> y \in A -> x != y -> [disjoint F x & F y]) ->
-           #|\bigcup_(x in A) F x| = \sum_(x in A) #|F x|.
-      move=> Fn0 Fdisj; pose Fs := imset F (mem A).
-      have trivFs: trivIset Fs. {
-        apply/trivIsetP=> _ _ /imsetP[i iA ->] /imsetP[j jA ->] neqFij.
-        apply/(Fdisj i j iA jA)/negP. move/eqP=> ieqj.
-        rewrite ieqj in neqFij. by move/negP in neqFij. }
-      rewrite -(big_imset id _) /=.
-      rewrite -(big_imset (fun X : {set G} => card (mem X)) _) /=.
-      apply/eqP; rewrite eq_sym; exact: trivFs.
-      all: rewrite/injective=> [v w vA wA FvFw].
-      all: apply/eqP/contraT=> vneqw.
-      all: move: (Fdisj v w vA wA vneqw)=> Fw0.
-      all: rewrite FvFw in Fw0; move/disjoint_setI0 in Fw0.
-      all: rewrite setIid in Fw0; move: (Fn0 w wA)=> Fwn0.
-      all: by rewrite Fw0 cards0 in Fwn0; move/negP in Fwn0.
+Local Lemma bigcup_disj (A : {set G}) (F : G -> {set G}) :
+  {in A, forall x, 0 < #|F x|} ->
+  {in A&, forall x y, x != y -> [disjoint F x & F y]} ->
+  #|\bigcup_(x in A) F x| = \sum_(x in A) #|F x|.
+Proof.
+  move=> Fn0 Fdisj; pose Fs := imset F (mem A).
+  have trivFs: trivIset Fs.
+  { apply/trivIsetP=> _ _ /imsetP[i iA ->] /imsetP[j jA ->] neqFij.
+    apply/(Fdisj i j iA jA)/negP. move/eqP=> ieqj.
+    rewrite ieqj in neqFij. by move/negP in neqFij. }
+  rewrite -(big_imset id _) /=.
+  rewrite -(big_imset (fun X : {set G} => card (mem X)) _) /=.
+  apply/eqP; rewrite eq_sym; exact: trivFs.
+  all: rewrite/injective=> [v w vA wA FvFw].
+  all: apply/eqP/contraT=> vneqw.
+  all: move: (Fdisj v w vA wA vneqw)=> Fw0.
+  all: rewrite FvFw in Fw0; move/disjoint_setI0 in Fw0.
+  all: rewrite setIid in Fw0; move: (Fn0 w wA)=> Fwn0.
+  all: by rewrite Fw0 cards0 in Fwn0; move/negP in Fwn0.
 Qed.
 
-(*Theorem mem_prv_prvs (v w : G) : (private G v w) <-> (w \in private_set v).
+Lemma disjoint_prv (D : {set G}) :
+  {in D&, forall v w, v != w -> [disjoint private_set D v & private_set D w]}.
 Proof.
-  rewrite /private_set /iff ; split.
-  - move/privateP => [vdomw H1].
-    rewrite in_setD /closed_neigh_set.
-    apply/andP.
-    split ; last by rewrite in_cln.
-    apply/bigcupP.
-    elim=> x xinDminusv winNx.
-    move: xinDminusv.
-    rewrite in_setD in_set1 => /andP [xnotv xinD].
-    move: winNx.
-    rewrite in_cln => xdomw.
-    move: (H1 x xinD xdomw).
-    move/eqP: xnotv.
-    contradiction.
-  - rewrite in_setD /closed_neigh_set.
-    move=> /andP [wnotincup winNv].
-    apply/privateP ; split ; first by rewrite -in_cln.
-    move=> u uinD udomw.
-    apply/eqP.
-    move: wnotincup.
-    apply: contraR => unotv.
-    apply/bigcupP.
-    exists u ; last by rewrite in_cln.
-    by rewrite /= in_setD uinD andbT in_set1.
-Qed.*)
-
-Lemma disjoint_prv (v w : G) (D : {set G}) (vD : v \in D) (wD : w \in D) (vneqw : v != w) :
-  [disjoint private_set D v & private_set D w].
-Proof.
-  apply/disjointP=> x ; move/privateP=> [vdomx _] ; move/privateP=> [_ prvw].
+  move=> v w vD wD vneqw ; apply/disjointP=> x.
+  move/privateP=> [vdomx _] ; move/privateP=> [_ prvw].
   by move: vneqw ; rewrite (prvw v vD vdomx) ; move/negP.
 Qed.
 
@@ -216,15 +190,15 @@ Lemma IR_leq_V_minus_delta : IR G <= #|[set: G]| - @delta G somev.
 Proof.
   rewrite /IR.
   have [S irrS _] := arg_maxP (fun D : {set G} => #|D|) (irr0 G).
-  case (boolP (S == set0)); first by move/eqP=> S0; rewrite S0 cards0; exact: leq0n.
-  move=> S0n. move: (S0n). move/set0Pn; elim=> v vS.
-  have degV := delta_min somev v; rewrite /deg in degV.
+  case (boolP (S == set0)) ; first by move/eqP-> ; rewrite cards0 leq0n.
+  move=> S0n. move: (S0n) ; move/set0Pn=> [v vS].
+  have degV := delta_min somev v ; rewrite /deg in degV.
   have H : #|N(v)| <= #|[set: G] :\: S|.
   { have splitNv : N(v) :\: N(v) :&: S = N(v) :\: S by rewrite -[in X in _ = X](set0U (N(v) :\: S)) -(setDv N(v)); exact: setDIr.
-    have NvsubV : N(v) \subset [set: G] by []. apply (setSD S) in NvsubV. rewrite -splitNv in NvsubV.
+    have NvsubV : N(v) :\: N(v) :&: S \subset [set: G] :\: S by rewrite splitNv setSD.
     case (boolP (N(v) :&: S == set0)).
-    - move/eqP=> NvS0. rewrite NvS0 setD0 in NvsubV. exact: (subset_leq_card NvsubV).
-    - move/set0Pn. elim=> _ _.
+    - move/eqP=> NvS0 ; move: NvsubV ; rewrite NvS0 setD0 ; exact: subset_leq_card.
+    - move/set0Pn=> _.
       set prvSNv := \bigcup_(w in N(v) :&: S) private_set S w.
 (* Probamos que el conjunto de los vertices privados elegidos de N(v) :&: S no están en S *)
       have prvSsubV : prvSNv \subset [set: G] :\: S.
