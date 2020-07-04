@@ -12,158 +12,6 @@ Set Bullet Behavior "Strict Subproofs".
 
 
 (**********************************************************************************)
-(** * Basic facts about graphs *)
-Section Neighborhoods_definitions.
-
-Variable G : diGraph.
-
-Definition open_neigh (u : G) := [set v | u -- v].
-Local Notation "N( x )" := (open_neigh x) (at level 0, x at level 99, format "N( x )").
-
-Definition closed_neigh (u : G) := u |: N(u).
-Local Notation "N[ x ]" := (closed_neigh x) (at level 0, x at level 99, format "N[ x ]").
-
-Definition cl_sedge (u v : G) : bool := (u == v) || (u -- v).
-
-Variable D : {set G}.
-
-Definition open_neigh_set : {set G} := \bigcup_(w in D) N(w).
-
-Definition closed_neigh_set : {set G} := \bigcup_(w in D) N[w].
-
-End Neighborhoods_definitions.
-
-Notation "x -*- y" := (cl_sedge x y) (at level 30).
-Notation "E( G )" := (edges G) (at level 0, G at level 99, format "E( G )").
-
-Notation "N( x )" := (@open_neigh _ x) 
-   (at level 0, x at level 99, format "N( x )").
-Notation "N[ x ]" := (@closed_neigh _ x) 
-   (at level 0, x at level 99, format "N[ x ]").
-Notation "N( G ; x )" := (@open_neigh G x)
-   (at level 0, G at level 99, x at level 99, format "N( G ; x )", only parsing).
-Notation "N[ G ; x ]" := (@closed_neigh G x)
-   (at level 0, G at level 99, x at level 99, format "N[ G ; x ]", only parsing).
-   
-Notation "NS( G ; D )" := (@open_neigh_set G D) 
-   (at level 0, G at level 99, D at level 99, format "NS( G ; D )", only parsing).
-Notation "NS( D )" := (open_neigh_set D) 
-   (at level 0, D at level 99, format "NS( D )").
-Notation "NS[ G ; D ]" := (@closed_neigh_set G D) 
-   (at level 0, G at level 99, D at level 99, format "NS[ G ; D ]", only parsing).
-Notation "NS[ D ]" := (closed_neigh_set D) 
-   (at level 0, D at level 99, format "NS[ D ]").
-
-
-(**********************************************************************************)
-Section Basic_Facts_Neighborhoods.
-
-(* TOTHINK: naming conventions that make these lemmas acutally useful
-(i.e., names shorter than inlining their proofs)
-
-Conventions: 
-opn : open_neigh
-cln : closed_neigh
-opns : open_neigh_set
-clns : closed_neigh_set
-in_? : canonical [(x \in ?) = _ ] lemma (could be part of inE)
-mem_? : other lemmas about (x \in ?)
-prv : private
-prvs : private_set
-wset : weighted sets
-
-some suggestions below *)
-
-Variable G : sgraph.
-Implicit Types (u v : G).
-
-Lemma in_opn u v : u \in N(v) = (v -- u).
-Proof. by rewrite /open_neigh in_set. Qed.
-
-Lemma v_notin_opneigh v : v \notin N(v).
-Proof. by rewrite in_opn sg_irrefl. Qed.
-
-Lemma in_cln u v : u \in N[v] = (v -*- u). 
-Proof. by rewrite /closed_neigh in_setU1 eq_sym in_opn. Qed.
-
-Lemma cl_sg_sym : symmetric (@cl_sedge G). (* cl_sedge u v = cl_sedge v u *)
-Proof. rewrite /symmetric /cl_sedge /closed_neigh => x y ; by rewrite sg_sym eq_sym. Qed.
-
-Lemma cl_sg_refl : reflexive (@cl_sedge G). (* cl_sedge u u = true *)
-Proof. by move => x; rewrite /cl_sedge eqxx. Qed.
-
-Lemma v_in_clneigh v : v \in N[v].
-Proof. by rewrite in_cln cl_sg_refl. Qed.
-
-Lemma opn_proper_cln v : N(v) \proper N[v].
-Proof. 
-  apply/properP; rewrite subsetUr; split => //.
-  by exists v; rewrite !inE ?eqxx sgP.
-Qed.
-
-Lemma in_edges u v : [set u; v] \in E(G) = (u -- v).
-Proof. 
-  apply/edgesP/idP => [[x] [y] []|]; last by exists u; exists v.
-  by case/doubleton_eq_iff => -[-> ->] //; rewrite sgP.
-Qed.
-
-Lemma opns0 : NS(G;set0) = set0. 
-Proof. by rewrite /open_neigh_set big_set0. Qed.
-
-Lemma clns0 : NS[G;set0] = set0.
-Proof. by rewrite /closed_neigh_set big_set0. Qed.
-
-Variables D1 D2 : {set G}.
-
-Lemma opn_sub_opns : {in D1, forall v, N(v) \subset NS(D1)}.
-Proof. move=> v vinD1; exact: bigcup_sup. Qed.
-
-Lemma cln_sub_clns : {in D1, forall v, N[v] \subset NS[D1]}.
-Proof. move=> v vinD1; exact: bigcup_sup. Qed.
-
-Lemma set_sub_clns : D1 \subset NS[D1].
-Proof.
-  apply/subsetP => x xinD1. 
-  apply/bigcupP; exists x => //. exact: v_in_clneigh.
-Qed.
-
-Lemma mem_opns u v : u \in D1 -> u -- v -> v \in NS(D1).
-Proof. move=> uinD1 adjuv. apply/bigcupP ; exists u => // ; by rewrite in_opn. Qed.
-
-Lemma opns_sub_clns : NS(D1) \subset NS[D1].
-Proof.
-  apply/subsetP => u.
-  rewrite /open_neigh_set /closed_neigh_set.
-  move/bigcupP.
-  elim=> v vinD1 uinNv.
-  apply/bigcupP.
-  exists v => [// | ].
-  by rewrite /closed_neigh in_setU uinNv orbT.
-Qed.
-
-Lemma mem_clns u v : u \in D1 -> u -- v -> v \in NS[D1].
-Proof.
-  move=> uinD1 adjuv.
-  apply: (subsetP opns_sub_clns v).
-  exact: mem_opns adjuv.
-Qed.
-
-Lemma subset_clns : D1 \subset D2 -> NS[D1] \subset NS[D2].
-Proof.
-  move=> D1subD2.
-  rewrite /closed_neigh_set.
-  apply/subsetP => x /bigcupP.
-  elim=> i iinD1 xinNi.
-  apply/bigcupP.
-  exists i.
-  exact: subsetP D1subD2 i iinD1.
-  exact: xinNi.
-Qed.
-
-End Basic_Facts_Neighborhoods.
-
-
-(**********************************************************************************)
 (** * Domination Theory *)
 Section Domination_Theory.
 
@@ -383,14 +231,14 @@ Proof.
     case: (boolP (x \in D)) ; first by rewrite negb_imply andFb.
     move=> xnotinD ; rewrite negb_imply andTb negb_exists.
     move/forallP => H2 y yinD. 
-    move: (H2 y). rewrite yinD andTb /cl_sedge.
+    move: (H2 y). rewrite yinD andTb /dominates.
     apply: contra ; case/predU1P => [ | //].
     move=> yeqx. rewrite yeqx in yinD. by move/negP: xnotinD ; contradiction.
   - elim=> v H3. exists v. rewrite negb_imply negb_exists ; apply/andP ; split.
-    + move: (H3 v). rewrite cl_sg_refl. by move/(@contraL (v \in D) true) ->.
+    + move: (H3 v). rewrite dominates_refl. by move/(@contraL (v \in D) true) ->.
     + apply/forallP=> u.
       case: (boolP (u \in D)) ; last by rewrite andFb.
-      move=> /(H3 u). by rewrite andTb /cl_sedge negb_or => /andP [_].
+      move=> /(H3 u). by rewrite andTb /dominates negb_or => /andP [_].
 Qed.
 
 Theorem dominating_eq_dominating_alt : dominating <-> dominating_alt.
@@ -500,22 +348,6 @@ Proof.
     apply/set0Pn. by exists w.
 Qed.
 
-Lemma prvnD (v w : G) : (private v w) -> w \in D -> v == w.
-Proof.
-  rewrite /private; move/andP=> [vdomw wprv] wD.
-  move/forallP in wprv.
-  move/implyP: (wprv w)=> /(_ wD)=> /implyP=> /(_ (cl_sg_refl w))=> weqv.
-  by rewrite eq_sym.
-Qed.
-
-Lemma disjoint_prv (v w : G) (vD : v \in D) (wD : w \in D) (vneqw : v != w): [disjoint private_set v & private_set w].
-Proof.
-  apply/disjointP=> x. rewrite -!mem_prv_prvs /private.
-  move/andP=> [vdomx _]; move/andP=> [_ /forallP prvwx].
-  move/implyP: (prvwx v) => vnprvx. move/implyP: (vnprvx vD)=> /(_ vdomx)=> veqw.
-  rewrite veqw in vneqw. by move/negP in vneqw.
-Qed.
-
 (* This alternative definition of private_set contemplates cases where v \notin D.
  * If v belongs to D, it returns the set of private vertices; otherwise, it returns an empty set. *)
 Definition private_set' (v : G) := NS[D :&: [set v]] :\: NS[D :\: [set v]].
@@ -580,6 +412,7 @@ Proof.
   exact: (H1 u uinD udomx).
 Qed.
 
+
 (**********************************************************************************)
 (** * Fundamental facts about Domination Theory *)
 Section Relations_between_stable_dominating_irredundant_sets.
@@ -638,7 +471,7 @@ Proof.
   apply/dominatingPn.
   exists x => y.
   rewrite in_setD1 => /andP [yneqx yinD].
-  rewrite /cl_sedge negb_or yneqx andTb.
+  rewrite /dominates negb_or yneqx andTb.
   move/stableP: stableD ; by move=> /(_ y x yinD xinD).
 Qed.
 
@@ -674,24 +507,24 @@ Proof.
       apply/contraLR => uneqv.
       have uinDminusv : u \in D :\ v by rewrite in_setD1 uneqv uinD.
       by rewrite (H3 u uinDminusv).
-    + case: (boolP (w == v)) ; first by move/eqP-> ; rewrite cl_sg_refl.
+    + case: (boolP (w == v)) ; first by move/eqP-> ; rewrite dominates_refl.
       move=> wneqv.
       case: (boolP (w \in D)).
       * move=> winD.
         move: (H3 w).
         rewrite in_setD1 wneqv andTb.
         move=> /(_ winD) /negP.
-        move: (cl_sg_refl w).
+        move: (dominates_refl w).
         contradiction.
       * move=> wnotinD.
         move/dominatingP: dominatingD.
         move=> /(_ w wnotinD).
         elim=> u.
-        case: (boolP (u == v)) ; first by move/eqP-> => _ adjvw ; rewrite /cl_sedge adjvw orbT.
+        case: (boolP (u == v)) ; first by move/eqP-> => _ adjvw ; rewrite /dominates adjvw orbT.
         move=> uneqv uinD.
         have uinDminusv : u \in D :\ v by rewrite in_setD1 uneqv uinD.
         move: (H3 u uinDminusv).
-        rewrite /cl_sedge negb_or => /andP [_].
+        rewrite /dominates negb_or => /andP [_].
         move/negP.
         contradiction.
 Qed.
@@ -719,7 +552,7 @@ Proof.
   - have xinDcupv: x \in D :|: [set v] by rewrite in_setU xinD orTb.
     move/forallP=> /(_ x).
     move/implyP=> /(_ xinDcupv).
-    rewrite cl_sg_refl implyTb.
+    rewrite dominates_refl implyTb.
     move/eqP=> xeqv ; rewrite -xeqv in vnotinD.
     by move/negP in vnotinD.
   (* case when x is not in D (some u in D dominates x) *)
@@ -729,7 +562,7 @@ Proof.
     have uinDcupv: u \in D :|: [set v] by rewrite in_setU uinD orTb.
     move/forallP=> /(_ u).
     move/implyP=> /(_ uinDcupv).
-    rewrite /cl_sedge adjux orbT implyTb.
+    rewrite /dominates adjux orbT implyTb.
     move/eqP=> ueqv ; rewrite -ueqv in vnotinD.
     by move/negP in vnotinD.
 Qed.
@@ -1108,9 +941,9 @@ Arguments IR : clear implicits.
 
 
 (**********************************************************************************)
-Section Weighted_degree.
+(** * Minimum and maximum (weighted and unweighted) degrees of a graph *)
 
-(* TOTHINK: This is currently unused, delete or move elsewhere? *)
+Section Weighted_degree.
 
 Variable G : sgraph.
 Variable weight : G -> nat.
@@ -1140,7 +973,7 @@ Proof. by rewrite /some_vertex_with_neighborhood ; apply/existsP ; exists x. Qed
 
 Definition delta_w := W (arg_min N(x) some_vertex_with_neighborhood W).
 
-Fact delta_w_min (v : G) : delta_w <= deg_w v.
+Fact delta_min (v : G) : delta_w <= deg_w v.
 Proof.
   rewrite /delta_w ; case: (arg_minP W Nx_is_neighborhood_x) => A _ ; apply.
   by rewrite /some_vertex_with_neighborhood ; apply/existsP ; exists v.
@@ -1173,8 +1006,6 @@ Section Degree_of_vertices.
 Variable G : sgraph.
 
 Definition deg (v : G) := #|N(v)|.
-
-Definition deg_set (D : {set G}) := \sum_(v in D) deg v.
 
 Fact eq_deg_deg1 (v : G) : deg v = deg_w (@ones G) v.
 Proof. by rewrite /deg /deg_w -cardwset1. Qed.
@@ -1213,11 +1044,8 @@ Proof.
     rewrite /some_vertex_with_degree.
     move/existsP => [u] /eqP <-.
     rewrite eq_deg_deg1.
-    exact: delta_w_min.
+    exact: delta_min.
 Qed.
-
-Fact delta_min (v : G) : delta <= deg v.
-Proof. rewrite eq_delta_delta1 eq_deg_deg1; exact: delta_w_min. Qed.
 
 Definition Delta := ex_maxn degx_has_deg_x ltn_someu_degu_subn1.
 
@@ -1237,88 +1065,6 @@ Proof.
     exact: eq_deg_deg1.
 Qed.
 
-Lemma bigcup_disj (A : {set G}) (F : G -> {set G}) :
-           (forall x : G, x \in A -> 0 < #|F x|) ->
-           (forall x y : G, x \in A -> y \in A -> x != y -> [disjoint F x & F y]) ->
-           #|\bigcup_(x in A) F x| = \sum_(x in A) #|F x|.
-      move=> Fn0 Fdisj; pose Fs := imset F (mem A).
-      have trivFs: trivIset Fs. {
-        apply/trivIsetP=> _ _ /imsetP[i iA ->] /imsetP[j jA ->] neqFij.
-        apply/(Fdisj i j iA jA)/negP. move/eqP=> ieqj.
-        rewrite ieqj in neqFij. by move/negP in neqFij. }
-      rewrite -(big_imset id _) /=.
-      rewrite -(big_imset (fun X : {set G} => card (mem X)) _) /=.
-      apply/eqP; rewrite eq_sym; exact: trivFs.
-      all: rewrite/injective=> [v w vA wA FvFw].
-      all: apply/eqP/contraT=> vneqw.
-      all: move: (Fdisj v w vA wA vneqw)=> Fw0.
-      all: rewrite FvFw in Fw0; move/disjoint_setI0 in Fw0.
-      all: rewrite setIid in Fw0; move: (Fn0 w wA)=> Fwn0.
-      all: by rewrite Fw0 cards0 in Fwn0; move/negP in Fwn0.
-Qed.
-
-(*  Prueba completa, pero demasiado larga.
-    Voy a simplificarla lo mas posible usando las recomendaciones de Christian. *)
-Lemma IR_leq_V_minus_delta : IR G <= #|[set: G]| - delta.
-Proof.
-  rewrite /IR.
-  have [S irrS _] := arg_maxP (fun D : {set G} => #|D|) (irr0 G).
-  case (boolP (S == set0)); first by move/eqP=> S0; rewrite S0 cards0; exact: leq0n.
-  move=> S0n. move: (S0n). move/set0Pn; elim=> v vS.
-  have degV := delta_min v; rewrite /deg in degV.
-  have H : #|N(v)| <= #|[set: G] :\: S|.
-  { have splitNv : N(v) :\: N(v) :&: S = N(v) :\: S by rewrite -[in X in _ = X](set0U (N(v) :\: S)) -(setDv N(v)); exact: setDIr.
-    have NvsubV : N(v) \subset [set: G] by []. apply (setSD S) in NvsubV. rewrite -splitNv in NvsubV.
-    case (boolP (N(v) :&: S == set0)).
-    - move/eqP=> NvS0. rewrite NvS0 setD0 in NvsubV. exact: (subset_leq_card NvsubV).
-    - move/set0Pn. elim=> _ _.
-      set prvSNv := \bigcup_(w in N(v) :&: S) private_set S w.
-(* Probamos que el conjunto de los vertices privados elegidos de N(v) :&: S no están en S *)
-      have prvSsubV : prvSNv \subset [set: G] :\: S.
-      { apply/subsetP. move=> y; rewrite /prvSNv.
-        move/bigcupP; elim=> y' y'NvS.
-        rewrite -mem_prv_prvs; move/privateP=> [y'domy prvy'].
-        rewrite in_setD; apply/andP; split; last by []. apply/contraT. move/negPn=> yS.
-        have yeqy' := (prvy' y yS (cl_sg_refl y)). rewrite -yeqy' in y'NvS.
-        have/setIP [yNv _] := y'NvS. move: (yNv)=> yNv'; rewrite in_opn in yNv'; move/or_intror in yNv'.
-        have/orP vdomy := yNv' (v == y). have veqy' := prvy' v vS vdomy. rewrite yeqy' -veqy' in yNv.
-        by move: (v_notin_opneigh v)=> VnNv; move/negP in VnNv.
-      }
-(* Probamos que ela cardinalidad de N(v) :&: S es igual o menor que la de sus vertices privados elegidos  *)
-      have leq_card_prvS_NvcapS : #|prvSNv| >= #|N(v) :&: S|. (*Check inj_card_leq.*)
-      { rewrite /prvSNv.
-        have prv_disj: forall x y : G, x \in N(v) :&: S -> y \in N(v) :&: S -> (x != y) -> [disjoint private_set S x & private_set S y].
-        by move=> w w'; move/setIP=> [_ wS]; move/setIP=> [_ w'S]; exact: disjoint_prv wS w'S.
-        have prv_NvS_n0 : (forall x : G, x \in N(v) :&: S -> 0 < #|private_set S x|).
-        by move=> w /setIP [wNv wS]; rewrite card_gt0; move/irredundantP: irrS; move=> /(_ w wS).
-        rewrite (bigcup_disj prv_NvS_n0 prv_disj) -sum1_card.
-        apply/leq_sum/prv_NvS_n0.
-      } rewrite -(leq_add2l (#|N(v)| - #|N(v) :&: S|)) in leq_card_prvS_NvcapS.
-(* Probamos que ningún vertice en el conjunto de los privados de N(v) :&: S es vecino de v *)
-      have disj_Nv_prvSNv : N(v) :&: prvSNv = set0.
-      { apply/eqP; rewrite setIC setI_eq0 disjoints_subset. apply/subsetP=> w.
-        rewrite in_setC in_opn /prvSNv.
-        move/bigcupP; elim=> w' w'NvS. have/setIP [w'Nv _] := w'NvS.
-        rewrite -mem_prv_prvs; move/privateP=> [w'domw prvw'].
-        apply/contraT. move/negPn=> vadjw. move/or_intror in vadjw.
-        have/orP vdomw := vadjw (v == w). have veqw' := prvw' v vS vdomw.
-        rewrite -veqw' in w'Nv. by move: (v_notin_opneigh v)=> VnNv; move/negP in VnNv.
-      }
-(* Fin de las pruebas *)
-      move/subUsetP/subset_leq_card: (conj NvsubV prvSsubV)=> Nv'subV.
-      have disj_full : (N(v) :\: N(v) :&: S) :&: prvSNv = set0 by rewrite setIDAC disj_Nv_prvSNv set0D.
-      have NvgeqNvcupS : #|N(v)| >= #|N(v) :&: S| by rewrite -[in X in _ <= X](cardsID S) leq_addr.
-      rewrite cardsU disj_full cardsDS in Nv'subV; last by exact: subsetIl. rewrite cards0 subn0 in Nv'subV.
-      by move: (leq_trans leq_card_prvS_NvcapS Nv'subV); rewrite subnK.
-  }
-  rewrite cardsDS in H; last by auto.
-  case (boolP (delta > 0)).
-  + move=> deltagt0. rewrite -card_gt0 in S0n. rewrite leq_psubCr.
-    exact: (leq_trans degV H). exact: S0n. exact: deltagt0.
-  + rewrite -leqNgt leqn0; move/eqP=> delta0. rewrite delta0 subn0.
-    exact: subset_leq_card.
-Qed.
-
 End Degree_of_vertices.
 
 Arguments deg_w : clear implicits.
@@ -1327,3 +1073,232 @@ Arguments Delta_w : clear implicits.
 Arguments deg : clear implicits.
 Arguments delta : clear implicits.
 Arguments Delta : clear implicits.
+
+
+(**********************************************************************************)
+(** * A classic result of Graph Theory: the sum of degrees equals the cardinal of the edge set *)
+
+Section EdgelessGraph.
+  Variable G : sgraph.
+  Hypothesis edgeless : E(G) = set0.
+
+  Lemma sg_edgeless (u v : G) : u -- v = false.
+  Proof.
+    apply: negbTE ; move/eqP: edgeless ; apply: contraLR.
+    rewrite negbK => adjuv.
+    apply/set0Pn ; exists [set u; v] ; apply/edgesP.
+    by exists u ; exists v ; split=> //.
+  Qed.
+
+  Lemma deg_edgeless (v : G) : deg G v = 0.
+  Proof.
+    rewrite /deg opn_edges ; apply/eqP ; rewrite cards_eq0.
+    move/eqP: edgeless ; apply: contraLR ; move/set0Pn => [u].
+    rewrite in_set => vuinEG.
+    by apply/set0Pn ; exists [set v; u].
+  Qed.
+
+End EdgelessGraph.
+
+Section RemoveEdge.
+  Variable G : sgraph.
+  Variables u v : G.
+  Hypothesis adjuv : u -- v.
+
+  Definition remove_edge_rel (x y : G) := if ([set u; v] == [set x; y]) then false else x -- y.
+
+  Lemma remove_edge_sym : symmetric remove_edge_rel.
+  Proof.
+    rewrite /symmetric /remove_edge_rel => x y.
+    case: ifP ; case: ifP => //.
+    - move=> /eqP H1 /eqP H2 ; move: H1 ; rewrite H2 doubleton_eq_iff.
+      have: (x = y /\ y = x \/ x = x /\ y = y) by apply: or_intror => //.
+      contradiction.
+    - move/eqP-> ; move/eqP ; rewrite doubleton_eq_iff.
+      have: (y = x /\ x = y \/ y = y /\ x = x) by apply: or_intror => //.
+      contradiction.
+    - by rewrite sg_sym.
+  Qed.
+
+  Lemma remove_edge_irrefl : irreflexive remove_edge_rel.
+  Proof.
+    rewrite /irreflexive /remove_edge_rel => ?.
+    case: ifP => // ; by rewrite sg_irrefl.
+  Qed.
+
+  Definition remove_edge := SGraph remove_edge_sym remove_edge_irrefl.
+
+  Fact remove_edge_rel_false : remove_edge_rel u v = false.
+  Proof. by rewrite /remove_edge_rel eqxx. Qed.
+
+  Fact remove_edge_rel_sg (x y : G) : [set u; v] != [set x; y] -> remove_edge_rel x y = (x -- y).
+  Proof. by rewrite /remove_edge_rel ; apply: ifN. Qed.
+
+  Fact remove_edge_implies_sg (x y : G) : remove_edge_rel x y -> x -- y.
+  Proof.
+    rewrite /remove_edge_rel ; case: ifP ; last by [].
+    move: not_false_is_true ; contradiction.
+  Qed.
+
+  Proposition remove_edge_set : E(remove_edge) = E(G) :\ [set u; v].
+  Proof.
+    apply/eqP ; rewrite eqEsubset ; apply/andP ; split.
+    - apply/subsetP => e einEG'.
+      rewrite in_setD1 ; apply/andP ; split.
+      + have : exists x y : remove_edge, e = [set x; y] /\ remove_edge_rel x y.
+        by move/edgesP : einEG'.
+        (* note: can't use the previous line directly because it generates the adjacency
+           relation from G, not from remove_edge :S *)
+        move=> [x [y [eeqxy]]].
+        move: eeqxy->.
+        apply: contraL.
+        move/eqP ; rewrite doubleton_eq_iff ; case.
+        * by elim ; move-> ; move-> ; rewrite remove_edge_rel_false.
+        * by elim ; move-> ; move-> ; rewrite remove_edge_sym remove_edge_rel_false.
+      + move/edgesP: einEG'=> [x [y [eisxy adjxy]]].
+        suff : e \in E(G) by simpl.
+        (* same weird thing happens here, can't apply directly edgesP, probably because
+           x, y is from remove_edge instead of G because of the coercion :S *)
+        apply/edgesP ; exists x ; exists y ; split => //.
+        apply: remove_edge_implies_sg.
+        exact: adjxy.
+    - apply/subsetP => e.
+      rewrite in_setD1 => /andP [enequv ?].
+      have einEG : e \in E(G) by simpl. (* again! *)
+      move/edgesP: einEG => [x [y [eisxy adjxy]]].
+      rewrite eisxy in_edges.
+      suff: remove_edge_rel x y by simpl.
+      rewrite eisxy eq_sym in enequv.
+      by rewrite (remove_edge_rel_sg enequv).
+  Qed.
+
+  Lemma opn_remove_edgew (w : G) : w \notin [set u; v] -> N(G; w) = N(remove_edge; w).
+  Proof.
+    move=> wnotuv ; rewrite !opn_edges remove_edge_set.
+    apply/eqP ; rewrite eqEsubset ; apply/andP ; split ; last first.
+    - by apply/subsetP=> z ; rewrite !in_set in_edges => /andP [_ ?].
+    - apply/subsetP=> z.
+      rewrite in_set in_edges => adjwz.
+      rewrite in_set in_setD1 ; apply/andP ; split ; last by rewrite (in_edges w z).
+      move: wnotuv ; apply: contra ; move/eqP.
+      rewrite doubleton_eq_iff in_set2 ; case.
+      + by elim ; move-> ; rewrite eqxx orTb.
+      + by elim ; move-> ; rewrite eqxx orbT.
+  Qed.
+
+  Lemma opn_remove_edgeu : N(G; u) = N(remove_edge; u) :|: [set v].
+  Proof.
+    rewrite !opn_edges remove_edge_set.
+    apply/eqP ; rewrite eqEsubset ; apply/andP ; split.
+    - apply/subsetP=> z.
+      rewrite in_setU in_set1 !in_set !in_edges => adjuz.
+      rewrite adjuz andbT -implybE ; apply/implyP ; move/eqP.
+      rewrite doubleton_eq_left. by move->.
+    - apply/subsetP=> z.
+      rewrite in_setU in_set1 !in_set.
+      move/orP ; case ; first by move/andP ; elim.
+      by move/eqP-> ; rewrite in_edges.
+  Qed.
+
+  Lemma opn_remove_edgev : N(G; v) = N(remove_edge; v) :|: [set u].
+  Proof.
+    rewrite !opn_edges remove_edge_set.
+    apply/eqP ; rewrite eqEsubset ; apply/andP ; split.
+    - apply/subsetP=> z.
+      rewrite in_setU in_set1 !in_set !in_edges => adjuz.
+      rewrite adjuz andbT -implybE setUC ; apply/implyP ; move/eqP.
+      rewrite doubleton_eq_right. by move->.
+    - apply/subsetP=> z.
+      rewrite in_setU in_set1 !in_set.
+      move/orP ; case ; first by move/andP ; elim.
+      by move/eqP-> ; rewrite in_edges sgP.
+  Qed.
+
+  Proposition deg_remove_edgew (w : G) : w \notin [set u; v] -> deg G w = deg remove_edge w.
+  Proof.
+    move=> wnotuv ; rewrite /deg ; apply: eq_card.
+    by rewrite (opn_remove_edgew wnotuv).
+  Qed.
+
+  Proposition deg_remove_edgeu : deg G u = (deg remove_edge u).+1.
+  Proof.
+    rewrite /deg opn_remove_edgeu cardsU cards1 addn1. 
+    suff: N(remove_edge; u) :&: [set v] = set0 by move-> ; rewrite cards0 subn0.
+    apply/eqP ; rewrite setI_eq0 ; apply/disjointP => x.
+    rewrite in_opn in_set1 => adjux /eqP xisv.
+    have: remove_edge_rel u v by move: adjux ; rewrite xisv.
+    by rewrite remove_edge_rel_false.
+  Qed.
+
+  Proposition deg_remove_edgev : deg G v = (deg remove_edge v).+1.
+  Proof.
+    rewrite /deg opn_remove_edgev cardsU cards1 addn1. 
+    suff: N(remove_edge; v) :&: [set u] = set0 by move-> ; rewrite cards0 subn0.
+    apply/eqP ; rewrite setI_eq0 ; apply/disjointP => x.
+    rewrite in_opn in_set1 => adjvx /eqP xisu.
+    have: remove_edge_rel v u by move: adjvx ; rewrite xisu.
+    by rewrite remove_edge_sym remove_edge_rel_false.
+  Qed.
+
+End RemoveEdge.
+
+
+Theorem edges_sum_degrees : forall G : sgraph, 2 * #|E(G)| = \sum_(w in G) deg G w.
+Proof.
+  (* first, we shape the statement *)
+  suff: forall (n : nat) (G : sgraph), #|E(G)| = n -> 2 * n = \sum_(w in [set: G]) deg G w.
+  { by move=> H1 G ; move: (H1 #|E(G)| G erefl)-> ; under eq_bigl => ? do rewrite in_setT. }
+  move=> n ; elim/nat_ind: n => [G | m IH].
+  (* base case *)
+  - move=> /cards0_eq edgeless.
+  under eq_bigr => w do rewrite deg_edgeless //.
+  by rewrite sum_nat_const !muln0.
+  (* inductive case *)
+  - move=> G Emplus1.
+    rewrite mulnC mulSn mulnC.
+    (* we first obtain an edge {u,v} from G *)
+    move: (ltn0Sn m).
+    rewrite -Emplus1 card_gt0.
+    move/set0Pn => [e einEG].
+    move/edgesP: (einEG) => [u [v [eisuv adjuv]]].
+    (* we now split the summation, and do the same for the inductive hypothesis *)
+    rewrite (big_setID [set u; v]) (setIidPr (subsetT [set u; v])) /=.
+
+    set G' := @remove_edge G u v.
+    have IH' : #|E(G')| = m ->
+         2 * m = \sum_(i in [set (u : G'); (v : G')]) deg G' i
+               + \sum_(i in [set: G'] :\: [set (u : G'); (v : G')]) deg G' i.
+    { move=> EG'm.
+      rewrite -[in X in _ = X + _](setIidPr (subsetT [set (u : G'); (v : G')])).
+      by rewrite -(big_setID [set u; v]) (IH G' EG'm). }
+
+    have uvinEG : [set [set u; v]] \subset E(G).
+    { by rewrite sub1set -eisuv einEG. }
+
+    have EG'm : #|E(G')| = m.
+    { by rewrite remove_edge_set cardsD Emplus1 (setIidPr uvinEG) cards1 subn1 /=. }
+
+    (* now, we apply the inductive hypothesis *)
+    rewrite (IH' EG'm) addnA.
+
+    under [in X in _ + _ = _ + X]eq_bigr => w.
+      rewrite setTD in_setC => wnequv.
+      rewrite (deg_remove_edgew wnequv) -/G'.
+    over.
+    have H3 : [set: G'] :\: [set u; v] = [set: svertex G] :\: [set u; v] by auto.
+    under [in X in _ + _ + X = _ + _]eq_bigl => w do rewrite H3.
+
+    apply/eqP ; rewrite eqn_add2r ; apply/eqP.
+
+    have usubuv : [set u] \subset [set u; v] by rewrite sub1set set21.
+    have uvdifv : [set u; v] :\: [set u] = [set v].
+    { by rewrite setU1K // in_set1 (sg_edgeNeq adjuv). }
+
+    rewrite (big_setID [set u]) (setIidPr usubuv) big_set1 /=.
+    rewrite [in X in _ = X](big_setID [set u]) (setIidPr usubuv) big_set1 /=.
+    rewrite !uvdifv !big_set1.
+    rewrite (@deg_remove_edgeu G u v adjuv) -/G'.
+    rewrite (@deg_remove_edgev G u v adjuv) -/G'.
+    by rewrite [in X in _ = X]addSn [in X in _ = X]addnS !addSnnS add0n.
+Qed.
+
