@@ -373,13 +373,13 @@ Lemma above_largest (T : finType) P (U V : {set T}) :
   largest P U -> #|V| > #|U| -> ~ P V.
 Proof. move => [_ large_U]. rewrite ltnNge; exact/contraNnot/large_U. Qed.
 
-(** compat:mathcomp-1.10 / in mathcomp-1.11, this will be subsumed by leqP *)
+(** in mathcomp-1.11, this will be subsumed by leqP *)
 Inductive maxn_cases n m : nat -> Type := 
 | MaxnR of n <= m : maxn_cases n m m
 | MaxnL of m < n : maxn_cases n m n.
 
 Lemma maxnP n m : maxn_cases n m (maxn n m).
-Proof.
+Proof. 
 (* compat:mathcomp-1.10.0 *)
 by case: (leqP n m) => H; rewrite ?(maxn_idPr H) ?(maxn_idPl (ltnW H)); constructor.
 Qed.
@@ -863,64 +863,26 @@ Lemma in11_in2 (T1 T2 : predArgType) (P : T1 -> T2 -> Prop) (A1 : {pred T1}) (A2
   {in A1, forall x, {in A2, forall y,  P x y}} <-> {in A1 & A2, forall x y, P x y}.
 Proof. by firstorder. Qed.
 
-Lemma eq_extremum (T : eqType) (I : finType) r x0 (p1 p2 : pred I) (F1 F2 : I -> T) : 
-  p1 =1 p2 -> F1 =1 F2 -> extremum r x0 p1 F1 = extremum r x0 p2 F2.
-Proof.
-move=> eq_p eq_F; rewrite /extremum; apply/f_equal/eq_pick => x.
-by rewrite !inE eq_p; under eq_forallb => i do rewrite !eq_p !eq_F.
-Qed.
-
-Lemma eq_arg_min (I : finType) (x : I) (p1 p2 : pred I) (w1 w2 : I -> nat) :
-  p1 =1 p2 -> w1 =1 w2 -> arg_min x p1 w1 = arg_min x p2 w2.
-Proof. exact: eq_extremum. Qed.
-
-Lemma eq_arg_max (I : finType) (x : I) (p1 p2 : pred I) (w1 w2 : I -> nat) :
-  p1 =1 p2 -> w1 =1 w2 -> arg_max x p1 w1 = arg_max x p2 w2.
-Proof. exact: eq_extremum. Qed.
-
 Variable T : finType.
 
-Proposition maxset_properP (p : pred {set T}) (D : {set T}) :
-  reflect (p D /\ (forall F : {set T}, D \proper F -> ~~ p F)) (maxset p D).
-Proof.
-  apply: (iffP maxsetP) => -[pD maxD]; split => // E.
-  - rewrite properEneq => /andP [DnE DsubE].
-    apply: contra_neqN DnE => pE; exact/esym/maxD.
-  - move => pE SsubE; apply: contraTeq pE => EnD; apply: maxD.
-    by rewrite properEneq eq_sym EnD.
-Qed.
+Lemma set21_subset (u v : T) (A : {set T}) : [set u; v] \subset A -> u \in A.
+Proof. move=> uvsubA ; apply: (subsetP uvsubA u) ; exact: set21. Qed.
 
-Proposition minset_properP (p : pred {set T}) (D : {set T}) :
-  reflect (p D /\ (forall F : {set T}, F \proper D -> ~~ p F)) (minset p D).
-Proof.
-  rewrite minmaxset; apply (iffP (maxset_properP _ _)).
-  all: rewrite /= setCK => -[pD H]; split => // E.
-  all: by rewrite properC ?setCK => /H; rewrite ?setCK.
-Qed.
-
-(* not used *)
-Lemma largest_maxset (p : pred {set T}) (A : {set T}) :
-  largest p A -> maxset p A.
-Proof.
-  move => [pA maxA]. apply/maxset_properP; split => // B /proper_card; rewrite ltnNge.
-  exact/contraNN/maxA.
-Qed.
-
-(* not used *)
-Lemma smallest_minset (p : pred {set T}) (A : {set T}) : 
-  smallest p A -> minset p A.
-Proof.
-  move => [pA minA]. apply/minset_properP; split => // B /proper_card; rewrite ltnNge.
-  exact/contraNN/minA.
-Qed.
+Lemma set22_subset (u v : T) (A : {set T}) : [set u; v] \subset A -> v \in A.
+Proof. rewrite setUC ; exact: set21_subset. Qed.
 
 Lemma doubleton_eq_left (u v w : T) : [set u; v] = [set u; w] <-> v = w.
 Proof.
   rewrite /iff ; split ; last by move->.
-  apply: contra_eq => vDw; apply/eqP/setP.
-  case: (eqVneq v u) => [?|vDu]; subst.
-  - by move/(_ w); rewrite !inE eqxx [_ == u]eq_sym (negbTE vDw).
-  - by move/(_ v); rewrite !inE eqxx (negbTE vDw) (negbTE vDu).
+  (* we prove the hard case: {u, v} = {u, w} -> v = w *)
+  move=> uvisuw.
+  apply/eqP.
+  move: (set22 u v) => H1.
+  rewrite uvisuw in_set2 in H1.
+  case/orP: H1 => [visu | // ].
+  rewrite -!(eqP visu) setUid in uvisuw.
+  move: (set22 v w) => H2.
+  by rewrite eq_sym -in_set1 uvisuw.
 Qed.
 
 Lemma doubleton_eq_right (u v w : T) : [set u; w] = [set v; w] <-> u = v.
@@ -929,25 +891,28 @@ Proof. rewrite ![[set _;w]]setUC; exact: doubleton_eq_left. Qed.
 Lemma doubleton_eq_iff (u v w x : T) : [set u; v] = [set w; x] <->
   ((u = w /\ v = x) \/ (u = x /\ v = w)).
 Proof.
-  split ; last by case => -[-> ->] //; rewrite setUC.
-  move=> E; case: (eqVneq u w) => [?|uDw]; subst.
-    left; split => //. by move/doubleton_eq_left : E.
-  have ? : u = x; subst.
-  { move/setP/(_ u) : E. rewrite !inE !eqxx (negbTE uDw) /=.
-    by move/esym/eqP. }
-  right; split => //. rewrite [RHS]setUC in E.
-  by move/doubleton_eq_left : E.
+  rewrite /iff ; split ; last first.
+  - case => [ [uisw visx] | [uisx visw] ]. 
+    by rewrite uisw visx.
+    by rewrite uisx visw setUC.
+  - move=> uviswx.
+    have uinwx := (set21 u v).
+    rewrite uviswx in_set2 in uinwx.
+    case/orP: uinwx => [/eqP uisw|/eqP uisx].
+    + left ; split => //.
+      have [dbl_eq_left _] := (doubleton_eq_left w v x).
+      apply: dbl_eq_left.
+      by rewrite -[in X in X = _] uisw.
+    + right ; split => //.
+      have [dbl_eq_right _] := (doubleton_eq_right v w x).
+      apply: dbl_eq_right.
+      rewrite -[in X in X = _] uisx -uviswx.
+      exact: setUC.
 Qed.
 
-Lemma sorted_leq_nth s (srt_s : sorted leq s) : 
-  forall i j, i < j -> i < size s -> j < size s -> nth 0 s i <= nth 0 s j.
-Proof. 
-move => i j /ltnW i_j i_s j_s. apply: sorted_le_nth => //. exact: leq_trans.
-Qed.
-Arguments sorted_leq_nth : clear implicits. 
+Lemma pair_neq_card2 (u v : T) : (u != v) <-> #|[set u; v]| = 2.
+Proof. by rewrite cards2; case: (altP (u =P v)). Qed.
 
 End Preliminaries_dom.
 
 Arguments in11_in2 [T1 T2 P] A1 A2.
-Arguments maxset_properP {T p D}.
-Arguments minset_properP {T p D}.
