@@ -80,6 +80,11 @@ End Basic_Facts_Induced_Homomorphism_Isomorphism.
 Lemma sub_G2_G1 (G1 G2 : sgraph) : isomorphic G1 G2 -> induced_subgraph G2 G1.
 Proof. move/iso_G2_G1 ; exact: sub_G1_G2. Qed.
 
+Lemma sub_G1_G2_G3_trans (G1 G2 G3 : sgraph) :
+  induced_subgraph G1 G2 ->
+  induced_subgraph G2 G3 -> induced_subgraph G1 G3.
+Admitted.
+
 
 (**********************************************************************************)
 Section Newgraph_construction.
@@ -124,62 +129,6 @@ Let W' := weight_set weight'.
 Lemma positive_weights' : forall v : G', weight' v > 0.
 Proof. by rewrite /weight'. Qed.
 
-(*Lemma G'_vertex_def : forall x : G', (exists u v : G, u -*- v).
-Proof.
-  move=> /= [x xinV'].
-  exists x.1.
-  exists x.2.
-  move: xinV'.
-  by rewrite in_set.
-Qed.
-
-Lemma G'_edge_def : forall x y : G', x -- y -> (exists u v w r : G,
-          ([set u; v] != [set w; r]) /\ ((v -*- w) \/ (r -*- u))).
-Proof.
-  move=> [x xinV'] [y yinV'] /andP /= [x_neq_y /orP cond2_newgraph_rel].
-  have pair_neq: (x.1 != y.1) \/ (x.2 != y.2).
-  apply/orP; move: x_neq_y; apply/contraR.
-  rewrite negb_or => /andP [/negPn/eqP x1_eq /negPn/eqP x2_eq].
-  by apply/eqP/injective_projections.
-  case: (boolP ((x.1 == y.2) && (x.2 == y.1))) => [/andP [/eqP x1_eq /eqP x2_eq] | neg_perm].
-  - exists x.1.
-    exists y.2.
-    exists y.1.
-    exists x.2.
-    split.
-    + case: pair_neq => [x1_neq | x2_neq].
-      * rewrite -x1_eq x2_eq !setUid.
-        move: x1_neq; apply: contra_neq => set_eq.
-        by apply/set1P; rewrite -set_eq in_set1.
-      * rewrite x1_eq -x2_eq !setUid.
-        move: x2_neq; apply: contra_neq => set_eq.
-        by apply/set1P; rewrite set_eq in_set1.
-    + by left; rewrite /= in_set cl_sg_sym in yinV'.
-  - exists x.1.
-    exists x.2.
-    exists y.1.
-    exists y.2.
-    split.
-    + apply/contraT => doubleton_eq.
-      move/doubleton_eq_iff: (eqP (negPn doubleton_eq)) => doubleton_eq_equiv.
-      case: doubleton_eq_equiv => [[x1_eq x2_eq] | [x1_eq x2_eq]].
-      * by case: pair_neq => [x1_neq | x2_neq]; [rewrite x1_eq eq_refl in x1_neq | rewrite x2_eq eq_refl in x2_neq].
-      * by rewrite x1_eq x2_eq !eq_refl in neg_perm.
-    + by case: cond2_newgraph_rel => [? | ?]; [left; rewrite cl_sg_sym | right].
-Qed.
-
-(* Alternative lemmas, not sure if necessary but gives an idea on how to manipulate things *)
-Lemma G'_vertex_def' : forall x : G', (val x).1 -*- (val x).2.
-Proof.
-  move=> /= [x xinV'] /=.
-  move: xinV'.
-  by rewrite in_set.
-Qed.
-
-Lemma G'_edge_def' : forall x y : G', x -- y -> (val x != val y) /\
-          ((val y).1 -*- (val x).2 \/ (val y).2 -*- (val x).1).
-Proof. by move=> [x _] [y _] /andP /= [x_neq_y /orP cond2_newgraph_rel]. Qed.
-*)
 
 
 (* Function h_vv maps a vertex v in G to its counterpart vv in G' *)
@@ -191,10 +140,10 @@ Section h_counterpart_definition.
 
   Definition h_vv := Sub (v, v) vv_in_V' : G'.
 
-  Lemma h_vv1 : (val h_vv).1 = v.
+  Fact h_vv1 : (val h_vv).1 = v.
   Proof. by rewrite /=. Qed.
 
-  Lemma h_vv2 : (val h_vv).2 = v.
+  Fact h_vv2 : (val h_vv).2 = v.
   Proof. by rewrite /=. Qed.
 End h_counterpart_definition.
 
@@ -225,35 +174,35 @@ Section set_h_vertex_and_its_private_definition.
 
       Definition h_vw := Sub (v, w) vw_in_V' : G'.
 
-      Lemma h_vw1 : (val h_vw).1 = v.
+      Fact h_vw1 : (val h_vw).1 = v.
       Proof. by rewrite /=. Qed.
 
-      Lemma h_vw2 : (val h_vw).2 \in private_set D v.
+      Fact h_vw2 : (val h_vw).2 \in private_set D v.
       Proof. by rewrite /=. Qed.
     End h_vertex_in_D_and_its_private_definition.
 
     Definition h_vw' := if @idP (v \in D) is ReflectT p then set1 (h_vw p) else set0.
 
-    Lemma h_vw'0 : v \notin D -> h_vw' = set0.
+    Fact h_vw'0 : v \notin D -> h_vw' = set0.
     Proof.
       move=> vnotinD.
       rewrite /h_vw'; case: {-}_ / idP => [// | ] ; last by rewrite /=.
       move=> vinD; apply/eqP ; apply contraT=> _; by move/negP in vnotinD.
     Qed.
 
-    Lemma h_vw'1 (vD : v \in D) : h_vw' = set1 (h_vw vD).
+    Fact h_vw'1 (vD : v \in D) : h_vw' = set1 (h_vw vD).
     Proof. rewrite /h_vw'; case: {-}_ / idP => [vD'|//]; by rewrite (bool_irrelevance vD' vD). Qed.
   End h_vertex_and_its_private_definition.
 
   Definition h_Dw := \bigcup_(v in D) (h_vw' v).
 
-  Lemma h_Dw1 (x : G') : x \in h_Dw -> (val x).1 \in D.
+  Fact h_Dw1 (x : G') : x \in h_Dw -> (val x).1 \in D.
   Proof.
     rewrite /h_Dw ; move/bigcupP=> [v vinD].
     by rewrite (h_vw'1 vinD) in_set1 ; move/eqP-> ; rewrite h_vw1.
   Qed.
 
-  Lemma h_Dw2 (x : G') : x \in h_Dw -> (val x).2 \in private_set D (val x).1.
+  Fact h_Dw2 (x : G') : x \in h_Dw -> (val x).2 \in private_set D (val x).1.
   Proof.
     rewrite /h_Dw ; move/bigcupP=> [v vinD].
     by rewrite (h_vw'1 vinD) in_set1 ; move/eqP-> ; rewrite h_vw2.
@@ -335,12 +284,137 @@ Proof.
     by move<- ; apply: IR_max.
 Qed.
 
+End Upper_Weighted_Irredundant_Problem.
+
+
+(**********************************************************************************)
+Section Upper_Weighted_Irredundant_Properties.
+
+Variable G : sgraph.
+Let G' := newgraph G.
+
+(* Some graph definitions *)
+Definition v0_4 := @Ordinal 4 0 isT : 'I_4.
+Definition v1_4 := @Ordinal 4 1 isT : 'I_4.
+Definition v2_4 := @Ordinal 4 2 isT : 'I_4.
+Definition v3_4 := @Ordinal 4 3 isT : 'I_4.
+
+Definition v0_5 := @Ordinal 5 0 isT : 'I_5.
+Definition v1_5 := @Ordinal 5 1 isT : 'I_5.
+Definition v2_5 := @Ordinal 5 2 isT : 'I_5.
+Definition v3_5 := @Ordinal 5 3 isT : 'I_5.
+Definition v4_5 := @Ordinal 5 4 isT : 'I_5.
+
+Definition v0_6 := @Ordinal 6 0 isT : 'I_6.
+Definition v1_6 := @Ordinal 6 1 isT : 'I_6.
+Definition v2_6 := @Ordinal 6 2 isT : 'I_6.
+Definition v3_6 := @Ordinal 6 3 isT : 'I_6.
+Definition v4_6 := @Ordinal 6 4 isT : 'I_6.
+Definition v5_6 := @Ordinal 6 5 isT : 'I_6.
+
+Definition give_sg (f : nat -> nat -> bool) (n : nat) (i j : ordinal_finType n) :=
+  let u := nat_of_ord i in
+    let v := nat_of_ord j in
+      if (u == v) then false else
+        if (u < v) then f u v else f v u.
+
+Fact give_sg_sym (f : nat -> nat -> bool) (n : nat) : symmetric (give_sg f (n:=n)).
+Proof.
+  rewrite /symmetric /give_sg => u v.
+  case: (boolP (u == v)) ; first by move/eqP->.
+  move=> uneqv ; move: (uneqv) ; rewrite neq_ltn => uneqv'.
+  rewrite (ifN _ _ uneqv).
+  rewrite eq_sym in uneqv.
+  rewrite (ifN _ _ uneqv).
+  move/orP: uneqv' ; case.
+  all : move=> ultv ; move: (ltnW ultv) ; rewrite leqNgt => nvltu ; by rewrite (ifN _ _ nvltu) ultv.
+Qed.
+
+Fact give_sg_irrefl (f : nat -> nat -> bool) (n : nat) : irreflexive (give_sg f (n:=n)).
+Proof. by rewrite /irreflexive /give_sg => ? ; rewrite eq_refl. Qed.
+
+(* P4: path of size 4 *)
+Let P4_adj(u v : nat) :=
+  match u, v with
+  | 0, 1 => true
+  | 1, 2 => true
+  | 2, 3 => true
+  | _, _ => false
+end.
+
+Definition P4 : sgraph.
+Proof.
+  refine {| svertex := ordinal_finType 4 ;
+            sedge := give_sg P4_adj (n:=4) |}.
+  - exact: give_sg_sym. - exact: give_sg_irrefl.
+Qed.
+
+(* K23: complete bipartite K_{2,3} *)
+Let K23_adj(u v : nat) :=
+  match u, v with
+  | 0, 2 => true
+  | 0, 3 => true
+  | 0, 4 => true
+  | 1, 2 => true
+  | 1, 3 => true
+  | 1, 4 => true
+  | _, _ => false
+end.
+
+Definition K23 : sgraph.
+Proof.
+  refine {| svertex := ordinal_finType 5 ;
+            sedge := give_sg K23_adj (n:=5) |}.
+  - exact: give_sg_sym. - exact: give_sg_irrefl.
+Qed.
+
+(* To prove G' P4-free => G {P4,K23}-free we do the following:
+     If G has P4 as an induced subgraph, then G' does too.
+     If G has K23 as an induced subgraph, then G' has a P4. *)
+
+Theorem G'P4free : induced_subgraph P4 G \/ induced_subgraph K23 G -> induced_subgraph P4 G'.
+Proof.
+  case.
+  - move=> P4subG ; move: (subgraph_G_G' G) ; rewrite -/G' => GsubG'.
+    exact: sub_G1_G2_G3_trans P4subG GsubG'.
+  - (* Hay que ver la prueba escrita y trabajar un poquito *)
+Admitted.
+
+(* To prove G' claw-free => G {claw,bull,P6,CC6}-free we do the following:
+     If G has claw as an induced subgraph, then G' does too.
+     If G has bull as an induced subgraph, then G' has a claw.
+     If G has P6 as an induced subgraph, then G' has a claw.
+     If G has a complement of C6 as an induced subgraph, then G' has a claw. *)
+
+(*
+Theorem G'clawfree : induced_subgraph claw G \/ induced_subgraph bull G \/ 
+  induced_subgraph P6 G \/ induced_subgraph CC6 G -> induced_subgraph claw G'.
+Proof.
+  case ; case ; case.
+  - move=> clawsubG ; move: (subgraph_G_G' G) ; rewrite -/G' => GsubG'.
+    exact: sub_G1_G2_G3_trans clawsubG GsubG'.
+Admitted.
+*)
+
+End Upper_Weighted_Irredundant_Properties.
 
 
 
 
 
-(* HASTA ACA LLEGUE! *)
+
+
+
+
+
+
+
+
+
+
+
+
+(* A PARTIR DE ACA ES LO VIEJO!! *)
 
 
 
@@ -355,6 +429,61 @@ Qed.
 
 
 
+
+Lemma G'_vertex_def : forall x : G', (exists u v : G, u -*- v).
+Proof.
+  move=> /= [x xinV'].
+  exists x.1.
+  exists x.2.
+  move: xinV'.
+  by rewrite in_set.
+Qed.
+
+Lemma G'_edge_def : forall x y : G', x -- y -> (exists u v w r : G,
+          ([set u; v] != [set w; r]) /\ ((v -*- w) \/ (r -*- u))).
+Proof.
+  move=> [x xinV'] [y yinV'] /andP /= [x_neq_y /orP cond2_newgraph_rel].
+  have pair_neq: (x.1 != y.1) \/ (x.2 != y.2).
+  apply/orP; move: x_neq_y; apply/contraR.
+  rewrite negb_or => /andP [/negPn/eqP x1_eq /negPn/eqP x2_eq].
+  by apply/eqP/injective_projections.
+  case: (boolP ((x.1 == y.2) && (x.2 == y.1))) => [/andP [/eqP x1_eq /eqP x2_eq] | neg_perm].
+  - exists x.1.
+    exists y.2.
+    exists y.1.
+    exists x.2.
+    split.
+    + case: pair_neq => [x1_neq | x2_neq].
+      * rewrite -x1_eq x2_eq !setUid.
+        move: x1_neq; apply: contra_neq => set_eq.
+        by apply/set1P; rewrite -set_eq in_set1.
+      * rewrite x1_eq -x2_eq !setUid.
+        move: x2_neq; apply: contra_neq => set_eq.
+        by apply/set1P; rewrite set_eq in_set1.
+    + by left; rewrite /= in_set cl_sg_sym in yinV'.
+  - exists x.1.
+    exists x.2.
+    exists y.1.
+    exists y.2.
+    split.
+    + apply/contraT => doubleton_eq.
+      move/doubleton_eq_iff: (eqP (negPn doubleton_eq)) => doubleton_eq_equiv.
+      case: doubleton_eq_equiv => [[x1_eq x2_eq] | [x1_eq x2_eq]].
+      * by case: pair_neq => [x1_neq | x2_neq]; [rewrite x1_eq eq_refl in x1_neq | rewrite x2_eq eq_refl in x2_neq].
+      * by rewrite x1_eq x2_eq !eq_refl in neg_perm.
+    + by case: cond2_newgraph_rel => [? | ?]; [left; rewrite cl_sg_sym | right].
+Qed.
+
+Lemma G'_vertex_def' : forall x : G', (val x).1 -*- (val x).2.
+Proof.
+  move=> /= [x xinV'] /=.
+  move: xinV'.
+  by rewrite in_set.
+Qed.
+
+Lemma G'_edge_def' : forall x y : G', x -- y -> (val x != val y) /\
+          ((val y).1 -*- (val x).2 \/ (val y).2 -*- (val x).1).
+Proof. by move=> [x _] [y _] /andP /= [x_neq_y /orP cond2_newgraph_rel]. Qed.
 
 
 (* Function h_vw maps a vertex v in D (an irredundant set) to (v,w) where w is one of its
@@ -479,38 +608,3 @@ Proof.
    * ¿podría ser suficiente probar "weight v = weight' (h_vw v)" ? *)
 Admitted.
 
-(* For a given stable set S of G', there exists an irredundant set D of G such that w(D) = w'(G') *)
-Theorem stable_G'_to_irred_G : forall S : {set G'}, stable S ->
-          exists2 D : {set G}, irredundant D & weight_set weight D = weight_set weight' S.
-Admitted.
-
-(* Main theorem: the construction works! 
-Theorem IR_w_G_is_alpha_w_G' : IR_w G weight = alpha_w G' weight'.
-Proof.
-  apply/eqP; rewrite eqn_leq ; apply/andP ; split.
-  (* case IR_w(G) <= alpha_w(G'):
-     let F be an irredundant set of maximum weight, say M, i.e. M=IR_w(G)
-     there exists a stable set S of weight M, then alpha_w(G') >= M *)
-  set F := maximum_set weight (irredundant (G:=G)) set0.
-  move: (@maximum_set_p G weight (irredundant (G:=G)) set0 (irr_empty G)).
-  rewrite /alpha_w /IR_w -/F => Firr.
-  move: (irred_G_to_stable_G' Firr).
-  elim=> S Sst ->.
-  move: (@maximum_set_welldefined G' weight' (stable (G:=G')) set0 (st_empty G')).
-  move/maximumP => [_ set_is_max].
-  exact: (set_is_max S Sst).
-
-  (* case alpha_w(G') <= IR_w(G):
-     let F be a stable set of maximum weight, say M, i.e. M=alpha_w(G')
-     there exists an irred. set D of weight M, then IR_w(G) >= M *)
-  set F := maximum_set weight' (stable (G:=G')) set0.
-  move: (@maximum_set_p G' weight' (stable (G:=G')) set0 (st_empty G')).
-  rewrite /alpha_w /IR_w -/F => Fst.
-  move: (stable_G'_to_irred_G Fst).
-  elim=> D Dirr <-.
-  move: (@maximum_set_welldefined G weight (irredundant (G:=G)) set0 (irr_empty G)).
-  move/maximumP => [_ set_is_max].
-  exact: (set_is_max D Dirr).
-Qed.*)
-
-End Upper_Weighted_Irredundant_Problem.
