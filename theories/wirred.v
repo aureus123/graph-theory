@@ -10,10 +10,37 @@ Unset Printing Implicit Defensive.
 
 Set Bullet Behavior "Strict Subproofs".
 
+(** * Alternative versions of private_set for irredundant sets *)
+Section alternative_private_set.
+
+Variable G : sgraph.
+
+Variable D : {set G}.
+
+(* This alternative definition of private_set contemplates cases where v \notin D.
+ * If v belongs to D, it returns the set of private vertices; otherwise, it returns an empty set. *)
+Definition private_set' (v : G) := NS[D :&: [set v]] :\: NS[D :\: [set v]].
+
+Lemma eq_prvs_prvs' (v : G) : v \in D -> private_set' v == private_set D v.
+Proof.
+  move=> vinD ; rewrite /private_set /private_set'.
+  suff: N[v] = NS[D :&: [set v]] by move->.
+  rewrite (setIidPr _) ?sub1set //.
+  apply/eqP ; rewrite eqEsubset ; apply/andP ; split.
+  - apply: cln_sub_clns. by rewrite in_set1.
+  - apply/subsetP => x. move/bigcupP. elim=> z ; rewrite in_set1. by move/eqP->.
+Qed.
+
+Lemma eq0prvs' (v : G) : v \notinD -> (private_set' v == set0).
+Proof.
+  move=> vnotinD ; rewrite /private_set' disjoint_setI0 1?disjoint_sym ?disjoints1 //.
+  by rewrite clns0 set0D.
+Qed.
+
+End alternative_private_set.
+
 
 (** * Homomorphisms, isomorphisms and subgraphs. All "induced"! *)
-(* TODO: Use the tools provided by sgraph.v instead of reinventing the wheel :)  *)
-
 Section Basic_Facts_Induced_Homomorphism_Isomorphism.
 
 Definition induced_hom (G1 G2 : sgraph) (h : G1 -> G2) :=
@@ -22,12 +49,8 @@ Definition induced_hom (G1 G2 : sgraph) (h : G1 -> G2) :=
 Definition induced_subgraph (G1 G2 : sgraph) :=
           exists2 h : G1 -> G2, injective h & induced_hom h.
 
-Lemma induced_S_is_sub : forall (G : sgraph) (S : {set G}), induced_subgraph (induced S) G.
-Proof.
-  move=> G S.
-  rewrite /induced_subgraph /induced_hom.
-  exists val => // ; exact: val_inj.
-Qed.
+Lemma induced_S_is_sub (G : sgraph) (S : {set G}) : induced_subgraph (induced S) G.
+Proof. rewrite /induced_subgraph /induced_hom. exists val => // ; exact: val_inj. Qed.
 
 Definition isomorphic (G1 G2 : sgraph) := 
           exists2 f : G1 -> G2, (exists2 g : G2 -> G1, cancel f g & cancel g f) & induced_hom f.
@@ -37,38 +60,25 @@ Hypothesis iso_G1_G2 : isomorphic G1 G2.
 
 Lemma sub_G1_G2 : induced_subgraph G1 G2.
 Proof.
-  elim: iso_G1_G2 => f.
-  elim=> g can_f_g can_g_f hom_f.
-  rewrite /induced_subgraph.
-  exists f => //.
-  exact: (can_inj can_f_g).
+  elim: iso_G1_G2 => f [g can_f_g can_g_f hom_f].
+  rewrite /induced_subgraph ; exists f => // ; exact: (can_inj can_f_g).
 Qed.
 
 Lemma iso_G2_G1 : isomorphic G2 G1.
 Proof.
-  elim: iso_G1_G2 => f.
-  elim=> g can_f_g can_g_f hom_f.
-  rewrite /isomorphic.
-  exists g.
-  exists f => //.
-  rewrite /induced_hom => x y.
-  set x' := g x.
-  set y' := g y.
+  elim: iso_G1_G2 => f [g can_f_g can_g_f hom_f].
+  rewrite /isomorphic ; exists g ; first by exists f => //.
+  rewrite /induced_hom => x y. set x' := g x. set y' := g y.
   by rewrite -(can_g_f x) -(can_g_f y) -/x' -/y' hom_f.
 Qed.
 
 Lemma induced_hom_bijective : exists h : G1 -> G2, bijective h.
-Proof.
-  elim: iso_G1_G2 => h.
-  elim=> invh can_h_invh can_invh_h _.
-  exists h.
-  by exists invh.
-Qed.
+Proof. by elim: iso_G1_G2 => h [invh ? ? _] ; exists h ; exists invh. Qed.
 
 End Basic_Facts_Induced_Homomorphism_Isomorphism.
 
-Lemma sub_G2_G1 : forall G1 G2 : sgraph, isomorphic G1 G2 -> induced_subgraph G2 G1.
-Proof. move=> G1 G2 /iso_G2_G1 ; exact: sub_G1_G2. Qed.
+Lemma sub_G2_G1 (G1 G2 : sgraph) : isomorphic G1 G2 -> induced_subgraph G2 G1.
+Proof. move/iso_G2_G1 ; exact: sub_G1_G2. Qed.
 
 
 (**********************************************************************************)
@@ -76,7 +86,7 @@ Section Newgraph_construction.
 
 Variable G : sgraph.
 
-Local Definition V' := [set x : G * G | x.1 -*- x.2].
+Definition V' := [set x : G * G | x.1 -*- x.2].
 
 Definition newgraph_type := sig [eta mem V'].
 
@@ -86,12 +96,8 @@ Definition newgraph_rel := [rel x y : newgraph_type | (val x != val y)
 
 Lemma newgraph_sym : symmetric newgraph_rel.
 Proof.
-  rewrite /symmetric /newgraph_rel /=.
-  move=> x y.
-  rewrite eq_sym.
-  apply: andb_id2l => _.
-  rewrite cl_sg_sym orbC.
-  apply: orb_id2r => _.
+  rewrite /symmetric /newgraph_rel /= => x y.
+  rewrite eq_sym ; apply: andb_id2l => _ ; rewrite cl_sg_sym orbC ; apply: orb_id2r => _.
   by rewrite cl_sg_sym.
 Qed.
 
@@ -112,11 +118,13 @@ Hypothesis positive_weights : forall v : G, weight v > 0.
 
 Let G' := newgraph G.
 Let weight' := fun x : G' => weight (val x).1.
+Let W := weight_set weight.
+Let W' := weight_set weight'.
 
 Lemma positive_weights' : forall v : G', weight' v > 0.
 Proof. by rewrite /weight'. Qed.
 
-Lemma G'_vertex_def : forall x : G', (exists u v : G, u -*- v).
+(*Lemma G'_vertex_def : forall x : G', (exists u v : G, u -*- v).
 Proof.
   move=> /= [x xinV'].
   exists x.1.
@@ -171,65 +179,182 @@ Qed.
 Lemma G'_edge_def' : forall x y : G', x -- y -> (val x != val y) /\
           ((val y).1 -*- (val x).2 \/ (val y).2 -*- (val x).1).
 Proof. by move=> [x _] [y _] /andP /= [x_neq_y /orP cond2_newgraph_rel]. Qed.
-
-
-
-
+*)
 
 
 (* Function h_vv maps a vertex v in G to its counterpart vv in G' *)
 Section h_counterpart_definition.
-
   Variable v : G.
 
-  Lemma vv_in_V' : (v, v) \in V' G.
-  Proof. by rewrite /V' in_set /fst /snd cl_sg_refl. Qed.
+  Let vv_in_V' : (v, v) \in V' G.
+  Proof. by rewrite /V' in_set /fst /snd dominates_refl. Qed.
 
-  Definition h_vv := Sub (v, v) vv_in_V' : G'. (* i.e. {x : G * G | x \in V' G} *)
+  Definition h_vv := Sub (v, v) vv_in_V' : G'.
 
   Lemma h_vv1 : (val h_vv).1 = v.
   Proof. by rewrite /=. Qed.
 
   Lemma h_vv2 : (val h_vv).2 = v.
   Proof. by rewrite /=. Qed.
-
 End h_counterpart_definition.
+
+
+(* Function h_vw maps a vertex v in D (an irredundant set) to (v,w) where w is one of its
+ * private vertices, while h_vw' maps any vertex to a set of G', where it returns {(v,w)} if
+ * v belongs to D, and an empty set otherwise.
+ * Function h_Dw gives the set {(v,w) : v \in D, w is a private set of v}. *)
+Section set_h_vertex_and_its_private_definition.
+  Variable D : {set G}.
+
+  Hypothesis Dirr : irredundant D.
+
+  Section h_vertex_and_its_private_definition.
+    Variable v: G.
+
+    Section h_vertex_in_D_and_its_private_definition.
+      Hypothesis vinD: v \in D.
+
+      Let w_exists : exists w : G, w \in private_set D v.
+      Proof. by move/irredundantP: Dirr => /(_ v vinD) ; move/set0Pn. Qed.
+
+      Let w : G := xchoose w_exists.
+      Let w_is_private : w \in private_set D v := xchooseP w_exists.
+
+      Let vw_in_V' : (v, w) \in V' G.
+      Proof. by rewrite /V' in_set /= ; move/privateP: w_is_private => [? _]. Qed.
+
+      Definition h_vw := Sub (v, w) vw_in_V' : G'.
+
+      Lemma h_vw1 : (val h_vw).1 = v.
+      Proof. by rewrite /=. Qed.
+
+      Lemma h_vw2 : (val h_vw).2 \in private_set D v.
+      Proof. by rewrite /=. Qed.
+    End h_vertex_in_D_and_its_private_definition.
+
+    Definition h_vw' := if @idP (v \in D) is ReflectT p then set1 (h_vw p) else set0.
+
+    Lemma h_vw'0 : v \notin D -> h_vw' = set0.
+    Proof.
+      move=> vnotinD.
+      rewrite /h_vw'; case: {-}_ / idP => [// | ] ; last by rewrite /=.
+      move=> vinD; apply/eqP ; apply contraT=> _; by move/negP in vnotinD.
+    Qed.
+
+    Lemma h_vw'1 (vD : v \in D) : h_vw' = set1 (h_vw vD).
+    Proof. rewrite /h_vw'; case: {-}_ / idP => [vD'|//]; by rewrite (bool_irrelevance vD' vD). Qed.
+  End h_vertex_and_its_private_definition.
+
+  Definition h_Dw := \bigcup_(v in D) (h_vw' v).
+
+  Lemma h_Dw1 (x : G') : x \in h_Dw -> (val x).1 \in D.
+  Proof.
+    rewrite /h_Dw ; move/bigcupP=> [v vinD].
+    by rewrite (h_vw'1 vinD) in_set1 ; move/eqP-> ; rewrite h_vw1.
+  Qed.
+
+  Lemma h_Dw2 (x : G') : x \in h_Dw -> (val x).2 \in private_set D (val x).1.
+  Proof.
+    rewrite /h_Dw ; move/bigcupP=> [v vinD].
+    by rewrite (h_vw'1 vinD) in_set1 ; move/eqP-> ; rewrite h_vw2.
+  Qed.
+
+  Lemma weight_D_eq_h_Dw : W D = W' h_Dw.
+  Proof.
+    (* we shape the statement and prove by induction on the cardinality of D *)
+    suff: forall (n : nat), #|D| = n -> W D = W' h_Dw by move=> /(_ #|D| erefl).
+    move=> n ; elim/nat_ind: n => [| m IH].
+    - move/cards0_eq/eqP => D0.
+      move: (D0) ; rewrite /W (wset0 positive_weights D) ; move/eqP->.
+      rewrite /W' ; apply/eqP ; rewrite eq_sym -(wset0 positive_weights' h_Dw).
+      move: D0 ; apply: contraLR.
+      move/set0Pn => [x xinhDw] ; apply/set0Pn ; exists (val x).1 ; exact: h_Dw1.
+    - 
+  (* La idea es, con el #|D| = m.+1, probar que #|D|>0 y así sacar un elemento v de D con el set0Pn.
+     Luego sacamos el elemento x := (h_vw v) de h_Dw. Deberíamos llegar a algo como:
+        W ((D :\: v) :|: v) = W' ((h_Dw :\: x) :|: x).
+     Luego, usando big_setID y setIidPr, lo convertimos en:
+        W (D :\: v) + W (set1 v) = W' (h_Dw :\: x) + W' (set1 x).
+     pero el h_Dw está ligado a D, hay que trabajar un poco para ligarlo a D :\: v.
+     Luego, con la hipótesis inductiva cancelamos los términos izquierdos y nos queda:
+        W (set1 v) = W' (set1 x).
+     que son cuentitas. *)
+  Admitted.
+
+End set_h_vertex_and_its_private_definition.
+
 
 Theorem subgraph_G_G' : induced_subgraph G G'.
 Proof.
   rewrite /induced_subgraph.
   exists h_vv.
   (* h_vv is injective *)
-  - rewrite /injective.
-    move=> x y H1.
-    move: (h_vv1 x) <-.
-    move: (h_vv1 y) <-.
-    by rewrite H1.
+  - rewrite /injective=> x y H1.
+    by move: (h_vv1 x) <- ; move: (h_vv1 y) <- ; rewrite H1.
   (* h_vv is an induced homomorphism *)
-  - rewrite /induced_hom.
-    move=> x y.
-    set x' := h_vv x.
-    set y' := h_vv y.
+  - rewrite /induced_hom=> x y ; set x' := h_vv x ; set y' := h_vv y.
     rewrite /iff ; split.
     (* case x -- y -> x' -- y' *)
     + move=> adjxy.
       suff: ((x, x) != (y, y)) && (y -*- x || y -*- x) by rewrite /=.
       apply/andP ; split.
-      * move: (negbT (sg_edgeNeq adjxy)).
-        apply: contra => /eqP.
-        rewrite pair_equal_spec => [[xeqy _]].
-        by move: xeqy->.
-      * by rewrite orbb cl_sg_sym /cl_sedge adjxy orbT.
+      * move: (negbT (sg_edgeNeq adjxy)) ; apply: contra => /eqP.
+        by rewrite pair_equal_spec => [[xeqy _]] ; move: xeqy->.
+      * by rewrite orbb cl_sg_sym /dominates adjxy orbT.
     (* case x' -- y' -> x -- y *)
     + move=> adjx'y'.
       have H2: ((x, x) != (y, y)) && (y -*- x || y -*- x) by exact: adjx'y'.
-      move/andP: H2 => [x'neqy'].
-      rewrite orbb cl_sg_sym /cl_sedge => xdomy.
-      suff xneqy: x != y by rewrite (aorbNa xdomy xneqy).
-      move: x'neqy'.
-      apply: contra.
-      by move/eqP->.
+      move/andP: H2 => [/negP x'neqy'].
+      rewrite orbb cl_sg_sym /dominates ; move/orP ; case ; last by [].
+      move/eqP=> xeqy.
+      have x'eqy': (x, x) == (y, y) by apply/eqP ; rewrite pair_equal_spec ; split=> //.
+      contradiction.
 Qed.
+
+(* For a given irredundant set D of G, there exists a stable set S of G' such that w(D) = w'(S) *)
+Theorem irred_G_to_stable_G' (D : {set G}) (Dirr : irredundant D) :
+  exists2 S : {set G'}, stable S & W D = W' S.
+Admitted.
+
+(* For a given stable set S of G', there exists an irredundant set D of G such that w(D) = w'(G') *)
+Theorem stable_G'_to_irred_G (S : {set G'}) (stS : stable S) :
+  exists2 D : {set G}, irredundant D & W D = W' S.
+Admitted.
+
+(* Main theorem *)
+Theorem IR_w_G_is_alpha_w_G' : IR_w G weight = alpha_w G' weight'.
+Proof.
+  apply/eqP; rewrite eqn_leq ; apply/andP ; split.
+  - have [D Dirr] := IR_witness weight.
+    move<- ; rewrite -/W.
+    have [S Sst] := irred_G_to_stable_G' Dirr.
+    by move-> ; apply: alpha_max.
+  - have [S Sst] := alpha_witness weight'.
+    move<- ; rewrite -/W'.
+    have [D Dirr] := stable_G'_to_irred_G Sst.
+    by move<- ; apply: IR_max.
+Qed.
+
+
+
+
+
+
+(* HASTA ACA LLEGUE! *)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 (* Function h_vw maps a vertex v in D (an irredundant set) to (v,w) where w is one of its
