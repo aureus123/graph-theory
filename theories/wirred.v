@@ -46,6 +46,13 @@ Section Basic_Facts_Induced_Homomorphism_Isomorphism.
 Definition induced_hom (G1 G2 : sgraph) (h : G1 -> G2) :=
           forall x y : G1, x -- y <-> h x -- h y.
 
+Lemma induced_hom_comp (G1 G2 G3 : sgraph) (h : G1 -> G2) (h' : G2 -> G3) :
+  induced_hom h -> induced_hom h' -> induced_hom (h' \o h).
+Proof.
+  rewrite /induced_hom => hom_h hom_h' x y ; rewrite /comp /iff ; split.
+  all: by rewrite (hom_h x y) (hom_h' (h x) (h y)).
+Qed.
+
 Definition induced_subgraph (G1 G2 : sgraph) :=
           exists2 h : G1 -> G2, injective h & induced_hom h.
 
@@ -80,10 +87,15 @@ End Basic_Facts_Induced_Homomorphism_Isomorphism.
 Lemma sub_G2_G1 (G1 G2 : sgraph) : isomorphic G1 G2 -> induced_subgraph G2 G1.
 Proof. move/iso_G2_G1 ; exact: sub_G1_G2. Qed.
 
-Lemma sub_G1_G2_G3_trans (G1 G2 G3 : sgraph) :
+Lemma subgraph_trans (G1 G2 G3 : sgraph) :
   induced_subgraph G1 G2 ->
   induced_subgraph G2 G3 -> induced_subgraph G1 G3.
-Admitted.
+Proof.
+  rewrite /induced_subgraph => [[h inj_h hom_h] [h' inj_h' hom_h']].
+  exists (h' \o h) ; [ by apply: inj_comp | by apply: induced_hom_comp ].
+Qed.
+
+Notation "A \subgraph B" := (induced_subgraph A B) (at level 70, no associativity).
 
 
 (**********************************************************************************)
@@ -233,7 +245,7 @@ Section set_h_vertex_and_its_private_definition.
 End set_h_vertex_and_its_private_definition.
 
 
-Theorem subgraph_G_G' : induced_subgraph G G'.
+Theorem subgraph_G_G' : G \subgraph G'.
 Proof.
   rewrite /induced_subgraph.
   exists h_vv.
@@ -288,30 +300,10 @@ End Upper_Weighted_Irredundant_Problem.
 
 
 (**********************************************************************************)
-Section Upper_Weighted_Irredundant_Properties.
+Section Graph_definitions.
 
-Variable G : sgraph.
-Let G' := newgraph G.
-
-(* Some graph definitions *)
-Definition v0_4 := @Ordinal 4 0 isT : 'I_4.
-Definition v1_4 := @Ordinal 4 1 isT : 'I_4.
-Definition v2_4 := @Ordinal 4 2 isT : 'I_4.
-Definition v3_4 := @Ordinal 4 3 isT : 'I_4.
-
-Definition v0_5 := @Ordinal 5 0 isT : 'I_5.
-Definition v1_5 := @Ordinal 5 1 isT : 'I_5.
-Definition v2_5 := @Ordinal 5 2 isT : 'I_5.
-Definition v3_5 := @Ordinal 5 3 isT : 'I_5.
-Definition v4_5 := @Ordinal 5 4 isT : 'I_5.
-
-Definition v0_6 := @Ordinal 6 0 isT : 'I_6.
-Definition v1_6 := @Ordinal 6 1 isT : 'I_6.
-Definition v2_6 := @Ordinal 6 2 isT : 'I_6.
-Definition v3_6 := @Ordinal 6 3 isT : 'I_6.
-Definition v4_6 := @Ordinal 6 4 isT : 'I_6.
-Definition v5_6 := @Ordinal 6 5 isT : 'I_6.
-
+(* give_sg generate the sedge relation from a function f such that:
+     f u v (with 0 <= u < v < n) is true iff (u,v) is an edge of G *)
 Definition give_sg (f : nat -> nat -> bool) (n : nat) (i j : ordinal_finType n) :=
   let u := nat_of_ord i in
     let v := nat_of_ord j in
@@ -333,52 +325,162 @@ Qed.
 Fact give_sg_irrefl (f : nat -> nat -> bool) (n : nat) : irreflexive (give_sg f (n:=n)).
 Proof. by rewrite /irreflexive /give_sg => ? ; rewrite eq_refl. Qed.
 
-(* P4: path of size 4 *)
-Let P4_adj(u v : nat) :=
+(* 'K_n,m : complete bipartite graph K_{n,m} *)
+Section complete_bipartite.
+  Variables n m : nat.
+
+  Let Knm_adj (u v : nat) := (u < n) && (n <= v).
+
+  Definition Knm : sgraph.
+  Proof.
+    refine {| svertex := ordinal_finType (n+m) ;
+              sedge := give_sg Knm_adj (n:=n+m) |}.
+    - exact: give_sg_sym. - exact: give_sg_irrefl.
+  Qed.
+End complete_bipartite.
+
+(* 'P_n : path of n vertices P_n *)
+Section path_graph.
+  Variables n : nat.
+
+  Let Pn_adj (u v : nat) := (u == v-1).
+
+  Definition Pn : sgraph.
+  Proof.
+    refine {| svertex := ordinal_finType n ;
+              sedge := give_sg Pn_adj (n:=n) |}.
+    - exact: give_sg_sym. - exact: give_sg_irrefl.
+  Qed.
+End path_graph.
+
+(* 'C_n : circuit of n vertices C_n *)
+Section circuit_graph.
+  Variables n : nat.
+
+  Let Cn_adj (u v : nat) := (u == v-1) || ((u == 0) && (v == n-1)).
+
+  Definition Cn : sgraph.
+  Proof.
+    refine {| svertex := ordinal_finType n ;
+              sedge := give_sg Cn_adj (n:=n) |}.
+    - exact: give_sg_sym. - exact: give_sg_irrefl.
+  Qed.
+End circuit_graph.
+
+(* 'CC_n : complement of circuit of n vertices *)
+Section circuit_graph.
+  Variables n : nat.
+
+  Let CCn_adj (u v : nat) := ~~ ((u == v-1) || ((u == 0) && (v == n-1))).
+
+  Definition CCn : sgraph.
+  Proof.
+    refine {| svertex := ordinal_finType n ;
+              sedge := give_sg CCn_adj (n:=n) |}.
+    - exact: give_sg_sym. - exact: give_sg_irrefl.
+  Qed.
+End circuit_graph.
+
+(* Claw *)
+Let claw_adj(u v : nat) :=
   match u, v with
   | 0, 1 => true
-  | 1, 2 => true
-  | 2, 3 => true
-  | _, _ => false
-end.
-
-Definition P4 : sgraph.
-Proof.
-  refine {| svertex := ordinal_finType 4 ;
-            sedge := give_sg P4_adj (n:=4) |}.
-  - exact: give_sg_sym. - exact: give_sg_irrefl.
-Qed.
-
-(* K23: complete bipartite K_{2,3} *)
-Let K23_adj(u v : nat) :=
-  match u, v with
   | 0, 2 => true
   | 0, 3 => true
-  | 0, 4 => true
-  | 1, 2 => true
-  | 1, 3 => true
-  | 1, 4 => true
   | _, _ => false
 end.
 
-Definition K23 : sgraph.
+Definition claw : sgraph.
 Proof.
-  refine {| svertex := ordinal_finType 5 ;
-            sedge := give_sg K23_adj (n:=5) |}.
+  refine {| svertex := ordinal_finType 4 ;
+            sedge := give_sg claw_adj (n:=4) |}.
   - exact: give_sg_sym. - exact: give_sg_irrefl.
 Qed.
+
+(* Bull *)
+Let bull_adj(u v : nat) :=
+  match u, v with
+  | 0, 1 => true
+  | 0, 2 => true
+  | 1, 2 => true
+  | 1, 3 => true
+  | 2, 4 => true
+  | _, _ => false
+end.
+
+Definition bull : sgraph.
+Proof.
+  refine {| svertex := ordinal_finType 5 ;
+            sedge := give_sg claw_adj (n:=5) |}.
+  - exact: give_sg_sym. - exact: give_sg_irrefl.
+Qed.
+
+End Graph_definitions.
+
+Notation "''K_' n , m" := (Knm n m)
+  (at level 8, n at level 2, m at level 2, format "''K_' n , m").
+
+Notation "''P_' n" := (Pn n)
+  (at level 8, n at level 2, format "''P_' n").
+
+Notation "''C_' n" := (Cn n)
+  (at level 8, n at level 2, format "''C_' n").
+
+Notation "''CC_' n" := (Cn n)
+  (at level 8, n at level 2, format "''CC_' n").
+
+
+(**********************************************************************************)
+Section Upper_Weighted_Irredundant_Properties.
+
+Variable G : sgraph.
+Let G' := newgraph G.
+
+(* Some vertex numbering *)
+Definition v0_4 := @Ordinal 4 0 isT : 'I_4.
+Definition v1_4 := @Ordinal 4 1 isT : 'I_4.
+Definition v2_4 := @Ordinal 4 2 isT : 'I_4.
+Definition v3_4 := @Ordinal 4 3 isT : 'I_4.
+
+Definition v0_5 := @Ordinal 5 0 isT : 'I_5.
+Definition v1_5 := @Ordinal 5 1 isT : 'I_5.
+Definition v2_5 := @Ordinal 5 2 isT : 'I_5.
+Definition v3_5 := @Ordinal 5 3 isT : 'I_5.
+Definition v4_5 := @Ordinal 5 4 isT : 'I_5.
+
+Definition v0_6 := @Ordinal 6 0 isT : 'I_6.
+Definition v1_6 := @Ordinal 6 1 isT : 'I_6.
+Definition v2_6 := @Ordinal 6 2 isT : 'I_6.
+Definition v3_6 := @Ordinal 6 3 isT : 'I_6.
+Definition v4_6 := @Ordinal 6 4 isT : 'I_6.
+Definition v5_6 := @Ordinal 6 5 isT : 'I_6.
 
 (* To prove G' P4-free => G {P4,K23}-free we do the following:
      If G has P4 as an induced subgraph, then G' does too.
      If G has K23 as an induced subgraph, then G' has a P4. *)
 
-Theorem G'P4free : induced_subgraph P4 G \/ induced_subgraph K23 G -> induced_subgraph P4 G'.
+Theorem G'P4free : 'P_4 \subgraph G \/ 'K_2,3 \subgraph G -> 'P_4 \subgraph G'.
 Proof.
   case.
   - move=> P4subG ; move: (subgraph_G_G' G) ; rewrite -/G' => GsubG'.
-    exact: sub_G1_G2_G3_trans P4subG GsubG'.
+    exact: subgraph_trans P4subG GsubG'.
   - (* Hay que ver la prueba escrita y trabajar un poquito *)
 Admitted.
+
+Variables GP4 GK23 : sgraph.
+Hypothesis G_is_P4 : isomorphic GP4 'P_4.
+Hypothesis G_is_K23 : isomorphic GK23 'K_2,3.
+
+Corollary G'P4free' : GP4 \subgraph G \/ GK23 \subgraph G -> GP4 \subgraph G'.
+Proof.
+  case.
+  - move=> P4subG ; apply: (subgraph_trans (sub_G1_G2 G_is_P4)).
+    apply: G'P4free ; left.
+    by apply: (subgraph_trans (sub_G2_G1 G_is_P4)).
+  - move=> K23subG ; apply: (subgraph_trans (sub_G1_G2 G_is_P4)).
+    apply: G'P4free ; right.
+    by apply: (subgraph_trans (sub_G2_G1 G_is_K23)).
+Qed.
 
 (* To prove G' claw-free => G {claw,bull,P6,CC6}-free we do the following:
      If G has claw as an induced subgraph, then G' does too.
@@ -386,15 +488,40 @@ Admitted.
      If G has P6 as an induced subgraph, then G' has a claw.
      If G has a complement of C6 as an induced subgraph, then G' has a claw. *)
 
-(*
-Theorem G'clawfree : induced_subgraph claw G \/ induced_subgraph bull G \/ 
-  induced_subgraph P6 G \/ induced_subgraph CC6 G -> induced_subgraph claw G'.
+Theorem G'clawfree : claw \subgraph G \/ bull \subgraph G \/
+                     'P_6 \subgraph G \/ 'CC_6 \subgraph G -> claw \subgraph G'.
 Proof.
-  case ; case ; case.
-  - move=> clawsubG ; move: (subgraph_G_G' G) ; rewrite -/G' => GsubG'.
-    exact: sub_G1_G2_G3_trans clawsubG GsubG'.
+  case.
+  { move=> clawsubG ; move: (subgraph_G_G' G) ; rewrite -/G' => GsubG'.
+    exact: subgraph_trans clawsubG GsubG'. }
+  case.
 Admitted.
-*)
+
+Variables Gclaw Gbull GP6 GCC6 : sgraph.
+Hypothesis G_is_claw : isomorphic Gclaw claw.
+Hypothesis G_is_bull : isomorphic Gbull bull.
+Hypothesis G_is_P6 : isomorphic GP6 'P_6.
+Hypothesis G_is_CC6 : isomorphic GCC6 'CC_6.
+
+Corollary G'clawfree' : Gclaw \subgraph G \/ Gbull \subgraph G \/
+                          GP6 \subgraph G \/ GCC6 \subgraph G -> Gclaw \subgraph G'.
+Proof.
+  case.
+  { move=> clawsubG ; apply: (subgraph_trans (sub_G1_G2 G_is_claw)).
+    apply: G'clawfree ; left.
+    by apply: (subgraph_trans (sub_G2_G1 G_is_claw)). }
+  case.
+  { move=> bullsubG ; apply: (subgraph_trans (sub_G1_G2 G_is_claw)).
+    apply: G'clawfree ; right ; left.
+    by apply: (subgraph_trans (sub_G2_G1 G_is_bull)). }
+  case.
+  - move=> P6subG ; apply: (subgraph_trans (sub_G1_G2 G_is_claw)).
+    apply: G'clawfree ; right ; right ; left.
+    by apply: (subgraph_trans (sub_G2_G1 G_is_P6)).
+  - move=> CC6subG ; apply: (subgraph_trans (sub_G1_G2 G_is_claw)).
+    apply: G'clawfree ; right ; right ; right.
+    by apply: (subgraph_trans (sub_G2_G1 G_is_CC6)).
+Qed.
 
 End Upper_Weighted_Irredundant_Properties.
 
