@@ -186,7 +186,7 @@ Qed.
 
 (*  Prueba completa, pero demasiado larga.
     Voy a simplificarla lo mas posible usando las recomendaciones de Christian. *)
-Lemma IR_leq_V_minus_delta : IR G <= #|[set: G]| - @delta G somev.
+Theorem IR_leq_V_minus_delta : IR G <= #|[set: G]| - @delta G somev.
 Proof.
   rewrite /IR.
   have [S irrS _] := arg_maxP (fun D : {set G} => #|D|) (irr0 G).
@@ -254,3 +254,36 @@ Arguments Delta_w : clear implicits.
 Arguments deg : clear implicits.
 Arguments delta : clear implicits.
 Arguments Delta : clear implicits.
+
+
+(**********************************************************************************)
+(** * Example of value of IR(K_n) *)
+
+Section IR_complete_graph.
+
+Variable n : nat.
+Hypothesis n_positive : 0 < n.
+
+Let somev := @Ordinal n 0 n_positive : 'I_n.
+
+Theorem min_degree_complete : @delta 'K_n somev = n - 1.
+Admitted.
+
+Lemma somev_irr : @irredundant 'K_n [set somev].
+Proof.
+  apply/irredundantP ; move=> v vinD ; apply/set0Pn ; exists v.
+  apply/privateP ; split; first by exact: dominates_refl.
+  move=> u ; rewrite in_set1 ; move/eqP->.
+  rewrite /dominates ; move/orP ; case ; first by move/eqP.
+Admitted.
+
+Theorem IR_complete_1 : IR 'K_n = 1.
+Proof.
+  apply/eqP ; rewrite eqn_leq ; apply/andP ; split.
+  - have: IR 'K_n <= #|[set: 'K_n]| - @delta 'K_n somev by exact: IR_leq_V_minus_delta.
+    by rewrite min_degree_complete cardsT card_ord (subKn n_positive).
+  - have: #|[set somev]| = 1 by rewrite cards1.
+    by move<- ; rewrite eq_IR_IR1 (@cardwset1 'K_n [set somev]) (IR_max _ somev_irr).
+Qed.
+
+End IR_complete_graph.

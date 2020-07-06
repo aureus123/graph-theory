@@ -339,6 +339,9 @@ Section complete_bipartite.
   Qed.
 End complete_bipartite.
 
+(* claw: a complete bipartite K_{1,3} *)
+Definition claw := Knm 1 3.
+
 (* 'P_n : path of n vertices P_n *)
 Section path_graph.
   Variables n : nat.
@@ -381,22 +384,6 @@ Section circuit_graph.
   Qed.
 End circuit_graph.
 
-(* Claw *)
-Let claw_adj(u v : nat) :=
-  match u, v with
-  | 0, 1 => true
-  | 0, 2 => true
-  | 0, 3 => true
-  | _, _ => false
-end.
-
-Definition claw : sgraph.
-Proof.
-  refine {| svertex := ordinal_finType 4 ;
-            sedge := give_sg claw_adj (n:=4) |}.
-  - exact: give_sg_sym. - exact: give_sg_irrefl.
-Qed.
-
 (* Bull *)
 Let bull_adj(u v : nat) :=
   match u, v with
@@ -411,7 +398,7 @@ end.
 Definition bull : sgraph.
 Proof.
   refine {| svertex := ordinal_finType 5 ;
-            sedge := give_sg claw_adj (n:=5) |}.
+            sedge := give_sg bull_adj (n:=5) |}.
   - exact: give_sg_sym. - exact: give_sg_irrefl.
 Qed.
 
