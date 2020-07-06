@@ -267,15 +267,26 @@ Hypothesis n_positive : 0 < n.
 Let somev := @Ordinal n 0 n_positive : 'I_n.
 
 Theorem min_degree_complete : @delta 'K_n somev = n - 1.
-Admitted.
+Proof.
+  rewrite /delta ; have [d some_d _] := ex_minnP.
+  suff: forall v : 'K_n, @deg 'K_n v = n - 1.
+  { by move/existsP: some_d => [x] ; move/eqP<- ; move=> /(_ x). }
+  move=> v ; rewrite /deg.
+  suff: N(v) == [set~ v] by move/eqP-> ; rewrite cardsC1 card_ord subn1.
+  rewrite /open_neigh ; rewrite eqEsubset ; apply/andP ; split.
+  - apply/subsetP=> w ; rewrite in_set in_setC ; apply: contra.
+    by rewrite in_set1 eq_sym.
+  - apply/subsetP=> w ; rewrite in_set in_setC /edge_rel /=.
+    by apply: contra ; rewrite in_set1 eq_sym.
+Qed.
 
 Lemma somev_irr : @irredundant 'K_n [set somev].
 Proof.
   apply/irredundantP ; move=> v vinD ; apply/set0Pn ; exists v.
-  apply/privateP ; split; first by exact: dominates_refl.
-  move=> u ; rewrite in_set1 ; move/eqP->.
-  rewrite /dominates ; move/orP ; case ; first by move/eqP.
-Admitted.
+  apply/privateP ; split ; first by exact: dominates_refl.
+  move=> u ; rewrite in_set1 ; move/eqP=> -> _.
+  by move: vinD ; rewrite in_set1 ; move/eqP->.
+Qed.
 
 Theorem IR_complete_1 : IR 'K_n = 1.
 Proof.
