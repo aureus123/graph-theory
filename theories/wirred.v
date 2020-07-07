@@ -142,7 +142,6 @@ Lemma positive_weights' : forall v : G', weight' v > 0.
 Proof. by rewrite /weight'. Qed.
 
 
-
 (* Function h_vv maps a vertex v in G to its counterpart vv in G' *)
 Section h_counterpart_definition.
   Variable v : G.
@@ -159,11 +158,39 @@ Section h_counterpart_definition.
   Proof. by rewrite /=. Qed.
 End h_counterpart_definition.
 
+Theorem subgraph_G_G' : G \subgraph G'.
+Proof.
+  rewrite /induced_subgraph.
+  exists h_vv.
+  (* h_vv is injective *)
+  - rewrite /injective=> x y H1.
+    by move: (h_vv1 x) <- ; move: (h_vv1 y) <- ; rewrite H1.
+  (* h_vv is an induced homomorphism *)
+  - rewrite /induced_hom=> x y ; set x' := h_vv x ; set y' := h_vv y.
+    rewrite /iff ; split.
+    (* case x -- y -> x' -- y' *)
+    + move=> adjxy.
+      suff: ((x, x) != (y, y)) && (y -*- x || y -*- x) by rewrite /=.
+      apply/andP ; split.
+      * move: (negbT (sg_edgeNeq adjxy)) ; apply: contra => /eqP.
+        by rewrite pair_equal_spec => [[xeqy _]] ; move: xeqy->.
+      * by rewrite orbb cl_sg_sym /dominates adjxy orbT.
+    (* case x' -- y' -> x -- y *)
+    + move=> adjx'y'.
+      have H2: ((x, x) != (y, y)) && (y -*- x || y -*- x) by exact: adjx'y'.
+      move/andP: H2 => [/negP x'neqy'].
+      rewrite orbb cl_sg_sym /dominates ; move/orP ; case ; last by [].
+      move/eqP=> xeqy.
+      have x'eqy': (x, x) == (y, y) by apply/eqP ; rewrite pair_equal_spec ; split=> //.
+      contradiction.
+Qed.
+
 
 (* Function h_vw maps a vertex v in D (an irredundant set) to (v,w) where w is one of its
  * private vertices, while h_vw' maps any vertex to a set of G', where it returns {(v,w)} if
  * v belongs to D, and an empty set otherwise.
- * Function h_Dw gives the set {(v,w) : v \in D, w is a private set of v}. *)
+ * Function h_Dw gives the set {(v,w) : v \in D, w is a private set of v}.
+ * Function h_inv takes a stable set S of G' and gives the set {v : (v,w) \in S} *)
 Section set_h_vertex_and_its_private_definition.
   Variable D : {set G}.
 
@@ -220,6 +247,9 @@ Section set_h_vertex_and_its_private_definition.
     by rewrite (h_vw'1 vinD) in_set1 ; move/eqP-> ; rewrite h_vw2.
   Qed.
 
+  Lemma h_Dw_stable : @stable G' h_Dw.
+  Admitted.
+
   Lemma weight_D_eq_h_Dw : W D = W' h_Dw.
   Proof.
     (* we shape the statement and prove by induction on the cardinality of D *)
@@ -241,46 +271,32 @@ Section set_h_vertex_and_its_private_definition.
         W (set1 v) = W' (set1 x).
      que son cuentitas. *)
   Admitted.
-
 End set_h_vertex_and_its_private_definition.
 
+Section set_h_inverse.
+  Variable S : {set G'}.
 
-Theorem subgraph_G_G' : G \subgraph G'.
-Proof.
-  rewrite /induced_subgraph.
-  exists h_vv.
-  (* h_vv is injective *)
-  - rewrite /injective=> x y H1.
-    by move: (h_vv1 x) <- ; move: (h_vv1 y) <- ; rewrite H1.
-  (* h_vv is an induced homomorphism *)
-  - rewrite /induced_hom=> x y ; set x' := h_vv x ; set y' := h_vv y.
-    rewrite /iff ; split.
-    (* case x -- y -> x' -- y' *)
-    + move=> adjxy.
-      suff: ((x, x) != (y, y)) && (y -*- x || y -*- x) by rewrite /=.
-      apply/andP ; split.
-      * move: (negbT (sg_edgeNeq adjxy)) ; apply: contra => /eqP.
-        by rewrite pair_equal_spec => [[xeqy _]] ; move: xeqy->.
-      * by rewrite orbb cl_sg_sym /dominates adjxy orbT.
-    (* case x' -- y' -> x -- y *)
-    + move=> adjx'y'.
-      have H2: ((x, x) != (y, y)) && (y -*- x || y -*- x) by exact: adjx'y'.
-      move/andP: H2 => [/negP x'neqy'].
-      rewrite orbb cl_sg_sym /dominates ; move/orP ; case ; last by [].
-      move/eqP=> xeqy.
-      have x'eqy': (x, x) == (y, y) by apply/eqP ; rewrite pair_equal_spec ; split=> //.
-      contradiction.
-Qed.
+  Hypothesis Sst : stable S.
+
+  Definition h_inv := \bigcup_(x in S) [set v | (val x).1 == v].
+
+  Lemma h_inv_irr : @irredundant G h_inv.
+  Admitted.
+
+  Lemma weight_S_eq_h_inv : W h_inv = W' S.
+  Admitted.
+End set_h_inverse.
+
 
 (* For a given irredundant set D of G, there exists a stable set S of G' such that w(D) = w'(S) *)
-Theorem irred_G_to_stable_G' (D : {set G}) (Dirr : irredundant D) :
+Lemma irred_G_to_stable_G' (D : {set G}) (Dirr : irredundant D) :
   exists2 S : {set G'}, stable S & W D = W' S.
-Admitted.
+Proof. exists (h_Dw Dirr) ; [ exact: h_Dw_stable | exact: weight_D_eq_h_Dw ]. Qed.
 
 (* For a given stable set S of G', there exists an irredundant set D of G such that w(D) = w'(G') *)
-Theorem stable_G'_to_irred_G (S : {set G'}) (stS : stable S) :
+Lemma stable_G'_to_irred_G (S : {set G'}) (Sst : stable S) :
   exists2 D : {set G}, irredundant D & W D = W' S.
-Admitted.
+Proof. exists (h_inv S) ; [ exact: h_inv_irr | exact: weight_S_eq_h_inv]. Qed.
 
 (* Main theorem *)
 Theorem IR_w_G_is_alpha_w_G' : IR_w G weight = alpha_w G' weight'.
