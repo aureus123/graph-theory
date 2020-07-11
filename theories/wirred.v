@@ -141,6 +141,12 @@ Let W' := weight_set weight'.
 Lemma positive_weights' : forall v : G', weight' v > 0.
 Proof. by rewrite /weight'. Qed.
 
+(* Los siguientes dos lemas no van a ser necesarios una vez que sepa como
+   volver a reescribir una definición de vuelta a su identificador. *)
+Lemma W_minus (v : G) (A : {set G}) (vnA : v \notin A) : W (v |: A) = weight v + W A.
+Admitted.
+Lemma W'_minus (v : G') (A : {set G'}) (vnA : v \notin A) : W' (v |: A) = weight' v + W' A.
+Admitted.
 
 (* Function h_vv maps a vertex v in G to its counterpart vv in G' *)
 Section h_counterpart_definition.
@@ -247,8 +253,39 @@ Section set_h_vertex_and_its_private_definition.
     by rewrite (h_vw'1 vinD) in_set1 ; move/eqP-> ; rewrite h_vw2.
   Qed.
 
+  Fact h_DwP (x : G') : x \in h_Dw -> (val x).1 \in D /\ (val x).2 \in private_set D (val x).1.
+  Proof. move=> H; split. by exact: h_Dw1. by exact: h_Dw2. Qed.
+
+  Fact h_Dw_unique (u v : G') : u \in h_Dw -> v \in h_Dw ->
+          sval u != sval v -> (sval u).1 != (sval v).1.
+  Proof.
+    move=> uDw vDw; apply/contra=> u1eqv1.
+    suff: ((sval u).1 == (sval v).1) && ((sval u).2 == (sval v).2) by auto.
+    apply/andP; split; first by []. move/eqP in u1eqv1.
+    have/bigcupP [a aD] := uDw; rewrite h_vw'1; move/set1P=>uprva.
+    have/bigcupP [b bD] := vDw; rewrite h_vw'1; move/set1P=>vprvb.
+    rewrite uprva vprvb !h_vw1 in u1eqv1.
+    have H : (fun x => x \in private_set D a) =1 (fun x => x \in private_set D b) by rewrite u1eqv1.
+    rewrite uprva vprvb /h_vw /=; apply/eqP.
+    exact: eq_xchoose (elimTF (set0Pn (private_set D a))
+     (elimTF (irredundantP D) Dirr a aD)) (elimTF (set0Pn (private_set D b))
+     (elimTF (irredundantP D) Dirr b bD)) H.
+  Qed.
+
   Lemma h_Dw_stable : @stable G' h_Dw.
-  Admitted.
+  Proof.
+    apply/stableP=> [u v uh_Dw vh_Dw].
+    have/h_DwP [u1D u2prvu1] := uh_Dw. have/h_DwP [v1D v2prvv1] := vh_Dw.
+    suff: ~~ (newgraph_rel u v) by rewrite /=.
+    apply/contraT; move/negPn; rewrite /newgraph_rel /=.
+    move/andP=> [uneqv /orP H]; elim H.
+    - move=> v1domu2; move/privateP: (u2prvu1)=> [_ prvu2].
+      move: (prvu2 (sval v).1 v1D v1domu2)=> v1equ1.
+      move/negP: (h_Dw_unique uh_Dw vh_Dw uneqv). by rewrite v1equ1 eq_refl.
+    - rewrite cl_sg_sym=> u1domv2; move/privateP: (v2prvv1)=> [_ prvu2].
+      move: (prvu2 (sval u).1 u1D u1domv2)=> v1equ1.
+      move/negP: (h_Dw_unique uh_Dw vh_Dw uneqv). by rewrite v1equ1 eq_refl.
+  Qed.
 
   Lemma weight_D_eq_h_Dw : W D = W' h_Dw.
   Proof.
@@ -260,16 +297,22 @@ Section set_h_vertex_and_its_private_definition.
       rewrite /W' ; apply/eqP ; rewrite eq_sym -(wset0 positive_weights' h_Dw).
       move: D0 ; apply: contraLR.
       move/set0Pn => [x xinhDw] ; apply/set0Pn ; exists (val x).1 ; exact: h_Dw1.
-    - 
-  (* La idea es, con el #|D| = m.+1, probar que #|D|>0 y así sacar un elemento v de D con el set0Pn.
-     Luego sacamos el elemento x := (h_vw v) de h_Dw. Deberíamos llegar a algo como:
-        W ((D :\: v) :|: v) = W' ((h_Dw :\: x) :|: x).
-     Luego, usando big_setID y setIidPr, lo convertimos en:
-        W (D :\: v) + W (set1 v) = W' (h_Dw :\: x) + W' (set1 x).
-     pero el h_Dw está ligado a D, hay que trabajar un poco para ligarlo a D :\: v.
-     Luego, con la hipótesis inductiva cancelamos los términos izquierdos y nos queda:
-        W (set1 v) = W' (set1 x).
-     que son cuentitas. *)
+    - move=> Dm1. have/eq_leq m1D : m.+1 = #|D| by auto.
+      move/card_gt0P: (leq_ltn_trans (leq0n m) m1D)=> [v vD].
+      set x := (h_vw vD). have xh_Dw : x \in h_Dw.
+      by apply/bigcupP; exists v=> [//|]; rewrite h_vw'1; apply/set1P.
+      rewrite -[in X in W X = _](setD1K vD); rewrite -[in X in _ = W' X](setD1K xh_Dw).
+      rewrite W_minus. apply/eqP; rewrite eq_sym W'_minus. rewrite eq_sym; apply/eqP. 
+      (*Unica manera que enconté de aplicar un rewrite en ambos lados de la igualdad.*)
+      (*Se puede usar rewrite /W /weight_set big_setU1 /= para no recurrir a lemas externos,
+        pero después no se como volver a hacer un "fold" de la definicion de W. *)
+      have IHp : W (D :\ v) = W' (h_Dw :\ x). {
+       (* ¿Como usar la IH para llegar a esto? h_Dw está ligado a D,
+          hay que trabajar un poco para ligarlo a D :\: v *)
+        move/eqP: Dm1; rewrite (cardsD1 v) addnC vD addn1 eqSS=> /eqP Dvm.
+      }
+      by apply/eqP; rewrite -IHp eqn_add2r /weight' h_vw1.
+      all: by rewrite setD11.
   Admitted.
 End set_h_vertex_and_its_private_definition.
 
@@ -527,214 +570,3 @@ Proof.
 Qed.
 
 End Upper_Weighted_Irredundant_Properties.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-(* A PARTIR DE ACA ES LO VIEJO!! *)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Lemma G'_vertex_def : forall x : G', (exists u v : G, u -*- v).
-Proof.
-  move=> /= [x xinV'].
-  exists x.1.
-  exists x.2.
-  move: xinV'.
-  by rewrite in_set.
-Qed.
-
-Lemma G'_edge_def : forall x y : G', x -- y -> (exists u v w r : G,
-          ([set u; v] != [set w; r]) /\ ((v -*- w) \/ (r -*- u))).
-Proof.
-  move=> [x xinV'] [y yinV'] /andP /= [x_neq_y /orP cond2_newgraph_rel].
-  have pair_neq: (x.1 != y.1) \/ (x.2 != y.2).
-  apply/orP; move: x_neq_y; apply/contraR.
-  rewrite negb_or => /andP [/negPn/eqP x1_eq /negPn/eqP x2_eq].
-  by apply/eqP/injective_projections.
-  case: (boolP ((x.1 == y.2) && (x.2 == y.1))) => [/andP [/eqP x1_eq /eqP x2_eq] | neg_perm].
-  - exists x.1.
-    exists y.2.
-    exists y.1.
-    exists x.2.
-    split.
-    + case: pair_neq => [x1_neq | x2_neq].
-      * rewrite -x1_eq x2_eq !setUid.
-        move: x1_neq; apply: contra_neq => set_eq.
-        by apply/set1P; rewrite -set_eq in_set1.
-      * rewrite x1_eq -x2_eq !setUid.
-        move: x2_neq; apply: contra_neq => set_eq.
-        by apply/set1P; rewrite set_eq in_set1.
-    + by left; rewrite /= in_set cl_sg_sym in yinV'.
-  - exists x.1.
-    exists x.2.
-    exists y.1.
-    exists y.2.
-    split.
-    + apply/contraT => doubleton_eq.
-      move/doubleton_eq_iff: (eqP (negPn doubleton_eq)) => doubleton_eq_equiv.
-      case: doubleton_eq_equiv => [[x1_eq x2_eq] | [x1_eq x2_eq]].
-      * by case: pair_neq => [x1_neq | x2_neq]; [rewrite x1_eq eq_refl in x1_neq | rewrite x2_eq eq_refl in x2_neq].
-      * by rewrite x1_eq x2_eq !eq_refl in neg_perm.
-    + by case: cond2_newgraph_rel => [? | ?]; [left; rewrite cl_sg_sym | right].
-Qed.
-
-Lemma G'_vertex_def' : forall x : G', (val x).1 -*- (val x).2.
-Proof.
-  move=> /= [x xinV'] /=.
-  move: xinV'.
-  by rewrite in_set.
-Qed.
-
-Lemma G'_edge_def' : forall x y : G', x -- y -> (val x != val y) /\
-          ((val y).1 -*- (val x).2 \/ (val y).2 -*- (val x).1).
-Proof. by move=> [x _] [y _] /andP /= [x_neq_y /orP cond2_newgraph_rel]. Qed.
-
-
-(* Function h_vw maps a vertex v in D (an irredundant set) to (v,w) where w is one of its
- * private vertices *)
-Section h_vertex_and_its_private_definition.
-
-  Variable D : {set G}.
-
-  Hypothesis Dirr : irredundant D.
-
-  Variable v: G.
-
-  Hypothesis vinD: v \in D.
-
-(*  Alternative (that uses "pick"):
-
-  Let w_opt := [pick u | private D v u].
-  Let w := if w_opt is Some u then u else v.
-
-  Local Lemma w_is_private : private D v w.
-  Proof.
-    rewrite /w /w_opt.
-    case: pickP => [? ? | private_eq_pred0]; first by done.
-    move/irredundantP: Dirr => /(_ v vinD) /(private_set_not_empty vinD).
-    elim => u.
-    by rewrite private_eq_pred0.
-  Qed. *)
-
-  Local Lemma w_exists : exists w : G, private D v w.
-  Proof. by  move/irredundantP: Dirr => /(_ v vinD) /(private_set_not_empty vinD). Qed.
-
-  Let w : G := xchoose w_exists.
-  Let w_is_private : private D v w := xchooseP w_exists.
-
-  Lemma vw_in_V' : (v, w) \in V' G.
-  Proof.
-    rewrite /V' in_set /=.
-    move: w_is_private.
-    rewrite /private.
-    by move/andP=> [ ? _ ].
-  Qed.
-
-  Definition h_vw := Sub (v, w) vw_in_V' : G'. (* i.e. {x : G * G | x \in V' G} *)
-  Definition set_h_vw := set1 h_vw.
-
-  Lemma h_vw1 : (val h_vw).1 = v.
-  Proof. by rewrite /=. Qed.
-
-  Lemma h_vw2 : private D v (val h_vw).2.
-  Proof. by rewrite /= w_is_private. Qed.
-
-End h_vertex_and_its_private_definition.
-
-Definition h_vw' (D : {set G}) (Dirr : irredundant D) (v : G) :=
-          if @idP (v \in D) is ReflectT p then set_h_vw Dirr p else set0.
-
-Lemma h_vw'P1 (D : {set G}) (Dirr : irredundant D) (v : G) (vD : v \in D) : h_vw' Dirr v = set_h_vw Dirr vD.
-Proof. rewrite /h_vw'; case: {-}_ / idP => [vD'|//]; by rewrite (bool_irrelevance vD' vD). Qed.
-
-Lemma h_vw'P0 (D : {set G}) (Dirr : irredundant D) (v : G) (vnD: v \notin D) : h_vw' Dirr v = set0.
-Proof.
-  rewrite /h_vw'; case: {-}_ / idP => [//|vnD'] ; last by rewrite /=.
-  move=> vinD; apply/eqP ; apply contraT=> _; by move/negP in vnD.
-Qed.
-
-Lemma h_vw'_not_empty (D : {set G}) (Dirr : irredundant D) (v : G) (x : G') : x \in h_vw' Dirr v -> v \in D.
-Proof.
-  move=> H; apply contraT=> vnotinD.
-  by rewrite (h_vw'P0 Dirr vnotinD) in_set0 in H.
-Qed.
-
-(* For a given irredundant set D of G, there exists a stable set S of G' such that w(D) = w'(S) *)
-Theorem irred_G_to_stable_G' (D : {set G}) (Dirr : irredundant D) : exists2 S : {set G'}, stable S & weight_set weight D = weight_set weight' S.
-Proof.
-  set S := \bigcup_(v in G) (h_vw' Dirr v).
-  exists S.
-  rewrite /stable.
-  apply/forallP=> x ; apply/forallP=> y.
-  apply/implyP=> xinS ; apply/implyP=> yinS.
-(*  move/bigcupP in xinS; move/bigcupP in yinS.*)
-  (* x = (v1,w1) *)
-  move/bigcupP: xinS ; elim=> [v1 v1inG] xinh_vw'v1.
-  move: (xinh_vw'v1)=> /h_vw'_not_empty v1inD.
-  rewrite (h_vw'P1 Dirr v1inD) in_set1 in xinh_vw'v1.
-  move/eqP in xinh_vw'v1.
-  (* y = (v2,w2) *)
-  move/bigcupP: yinS; elim=> [v2 v2inG] yinh_vw'v2.
-  move: (yinh_vw'v2)=> /h_vw'_not_empty v2inD.
-  rewrite (h_vw'P1 Dirr v2inD) in_set1 in yinh_vw'v2.
-  move/eqP in yinh_vw'v2.
-  (* stable *)
-  rewrite xinh_vw'v1 yinh_vw'v2.
-  suff H: ~~ (newgraph_rel (h_vw Dirr v1inD) (h_vw Dirr v2inD)) by rewrite /=.
-  rewrite /newgraph_rel.
-  rewrite negb_and.
-  case: (boolP (v2 == v1)) ; last first.
-  (* case v1 != v2 *)
-  move/eqP=> v1neqv2.
-  apply/orP/or_intror.
-  rewrite negb_or; apply/andP ; split.
-  rewrite h_vw1.
-  have privateV1: private D v1 (val (h_vw Dirr v1inD)).2 by exact: (h_vw2 Dirr v1inD).
-  move/privateP: privateV1=> [_ v1domw]; move: (v1domw v2 v2inD)=> v1eqv2.
-  apply contraT; rewrite negbK; move=> v2domw.
-  by move: (v1eqv2 v2domw).
-  rewrite h_vw1.
-  have privateV2: private D v2 (val (h_vw Dirr v2inD)).2 by exact: (h_vw2 Dirr v2inD).
-  move/privateP: privateV2=> [_ v2domw]; move: (v2domw v1 v1inD)=> v1eqv2.
-  apply contraT; rewrite negbK; move=> v1domw; rewrite cl_sg_sym in v1domw.
-  move: (v1eqv2 v1domw).
-  by move/eqP in v1neqv2; rewrite eq_sym in v1neqv2; move/eqP in v1neqv2.
-  (* case v1 == v2 *)
-  move/eqP=> v1eqv2.
-  apply/orP ; left.
-  rewrite negbK /= xpair_eqE; apply/andP; split ; first by rewrite v1eqv2.
-  apply/eqP.
-  have samePrivateVertex: private D v1 =1 private D v2 by rewrite v1eqv2.
-  exact: eq_xchoose (w_exists Dirr v1inD) (w_exists Dirr v2inD) samePrivateVertex.
-  (* same weight *)
-  rewrite /weight_set.
-  (* si podemos probar que la función h_vw es biyectiva para todo v en D,
-   * ¿podría ser suficiente probar "weight v = weight' (h_vw v)" ? *)
-Admitted.
-
