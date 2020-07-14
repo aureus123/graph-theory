@@ -141,13 +141,6 @@ Let W' := weight_set weight'.
 Lemma positive_weights' : forall v : G', weight' v > 0.
 Proof. by rewrite /weight'. Qed.
 
-(* Los siguientes dos lemas no van a ser necesarios una vez que sepa como
-   volver a reescribir una definición de vuelta a su identificador. *)
-Lemma W_minus (v : G) (A : {set G}) (vnA : v \notin A) : W (v |: A) = weight v + W A.
-Admitted.
-Lemma W'_minus (v : G') (A : {set G'}) (vnA : v \notin A) : W' (v |: A) = weight' v + W' A.
-Admitted.
-
 (* Function h_vv maps a vertex v in G to its counterpart vv in G' *)
 Section h_counterpart_definition.
   Variable v : G.
@@ -287,7 +280,45 @@ Section set_h_vertex_and_its_private_definition.
       move/negP: (h_Dw_unique uh_Dw vh_Dw uneqv). by rewrite v1equ1 eq_refl.
   Qed.
 
+  (* This is an adapted version of partition_disjoint_bigcup in finset.v
+   * where we force the index in the bigcup to satisfy P. *)
+  Lemma partition_disjoint_bigcup_P (F : G -> {set G'}) (P : pred G)
+      E : (forall i j, P i -> P j -> i != j -> [disjoint F i & F j]) ->
+    \sum_(x in \bigcup_(i | P i) F i) E x =
+      \sum_(i | P i) \sum_(x in F i) E x.
+  Proof.
+  move=> disjF. pose P' := [set F i | i in G & P i && (F i != set0)].
+  have trivP: trivIset P'.
+    apply/trivIsetP=> _ _ /imsetP[i iP' ->] /imsetP[j jP' ->] neqFij.
+    apply: disjF; have/setId2P [_ iP _] := iP'. exact: iP.
+    have/setId2P [_ jP _] := jP'. exact: jP. by apply: contraNneq neqFij => ->.
+  have ->: \bigcup_(i | P i) F i = cover P'.
+    apply/esym. rewrite cover_imset. 
+    under eq_bigl=> x. rewrite inE andbA [in X in X && _]andbC -andbA. over.
+    rewrite big_mkcondr; apply: eq_bigr => i _. by rewrite inE; case: eqP.
+  rewrite big_trivIset // big_imset => [|i j Pi' /setIdP[_ /andP [Pj notFj0]] eqFij].
+    under eq_bigl=> x. rewrite inE andbA [in X in X && _]andbC -andbA. over.
+    rewrite big_mkcondr; apply: eq_bigr => i _; rewrite inE.
+    by case: eqP => //= ->; rewrite big_set0. have/setId2P [_ Pi _] := Pi'.
+    by apply: contraNeq (disjF _ _ Pi Pj) _; by rewrite -setI_eq0 eqFij setIid.
+  Qed.
+
+  (* Proof not using induction. Needs lemma above. *)
   Lemma weight_D_eq_h_Dw : W D = W' h_Dw.
+  Proof.
+    rewrite /W' /weight_set /h_Dw.
+    rewrite (partition_disjoint_bigcup_P weight').
+    under eq_bigr=> v vD. rewrite (h_vw'1 vD) big_set1 /weight' h_vw1. over.
+    by [].
+    move=> i j iD jD ineqj. apply/disjointP=> x.
+    rewrite (h_vw'1 iD) (h_vw'1 jD) !in_set1=> /eqP xprvi.
+    rewrite xprvi=>/eqP H.
+    have: val (h_vw iD) == val (h_vw jD) by rewrite H.
+    rewrite xpair_eqE; move/nandP/orP. by rewrite ineqj.
+  Qed.
+
+  (* Proof using induction. Needs to solve inductive step. *)
+  Lemma weight_D_eq_h_Dw' : W D = W' h_Dw.
   Proof.
     (* we shape the statement and prove by induction on the cardinality of D *)
     suff: forall (n : nat), #|D| = n -> W D = W' h_Dw by move=> /(_ #|D| erefl).
@@ -302,17 +333,15 @@ Section set_h_vertex_and_its_private_definition.
       set x := (h_vw vD). have xh_Dw : x \in h_Dw.
       by apply/bigcupP; exists v=> [//|]; rewrite h_vw'1; apply/set1P.
       rewrite -[in X in W X = _](setD1K vD); rewrite -[in X in _ = W' X](setD1K xh_Dw).
-      rewrite W_minus. apply/eqP; rewrite eq_sym W'_minus. rewrite eq_sym; apply/eqP. 
-      (*Unica manera que enconté de aplicar un rewrite en ambos lados de la igualdad.*)
-      (*Se puede usar rewrite /W /weight_set big_setU1 /= para no recurrir a lemas externos,
-        pero después no se como volver a hacer un "fold" de la definicion de W. *)
+      rewrite /W /W' /weight_set big_setU1 /=.
+      (* No se como volver a hacer un "fold" de la definicion de W después de esto. *)
       have IHp : W (D :\ v) = W' (h_Dw :\ x). {
        (* ¿Como usar la IH para llegar a esto? h_Dw está ligado a D,
           hay que trabajar un poco para ligarlo a D :\: v *)
         move/eqP: Dm1; rewrite (cardsD1 v) addnC vD addn1 eqSS=> /eqP Dvm.
       }
-      by apply/eqP; rewrite -IHp eqn_add2r /weight' h_vw1.
-      all: by rewrite setD11.
+      (*by apply/eqP; rewrite -IHp eqn_add2r /weight' h_vw1.
+      all: by rewrite setD11.*)
   Admitted.
 End set_h_vertex_and_its_private_definition.
 
