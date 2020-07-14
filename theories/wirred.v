@@ -280,30 +280,7 @@ Section set_h_vertex_and_its_private_definition.
       move/negP: (h_Dw_unique uh_Dw vh_Dw uneqv). by rewrite v1equ1 eq_refl.
   Qed.
 
-  (* This is an adapted version of partition_disjoint_bigcup in finset.v
-   * where we force the index in the bigcup to satisfy P. *)
-  Lemma partition_disjoint_bigcup_P (F : G -> {set G'}) (P : pred G)
-      E : (forall i j, P i -> P j -> i != j -> [disjoint F i & F j]) ->
-    \sum_(x in \bigcup_(i | P i) F i) E x =
-      \sum_(i | P i) \sum_(x in F i) E x.
-  Proof.
-  move=> disjF. pose P' := [set F i | i in G & P i && (F i != set0)].
-  have trivP: trivIset P'.
-    apply/trivIsetP=> _ _ /imsetP[i iP' ->] /imsetP[j jP' ->] neqFij.
-    apply: disjF; have/setId2P [_ iP _] := iP'. exact: iP.
-    have/setId2P [_ jP _] := jP'. exact: jP. by apply: contraNneq neqFij => ->.
-  have ->: \bigcup_(i | P i) F i = cover P'.
-    apply/esym. rewrite cover_imset. 
-    under eq_bigl=> x. rewrite inE andbA [in X in X && _]andbC -andbA. over.
-    rewrite big_mkcondr; apply: eq_bigr => i _. by rewrite inE; case: eqP.
-  rewrite big_trivIset // big_imset => [|i j Pi' /setIdP[_ /andP [Pj notFj0]] eqFij].
-    under eq_bigl=> x. rewrite inE andbA [in X in X && _]andbC -andbA. over.
-    rewrite big_mkcondr; apply: eq_bigr => i _; rewrite inE.
-    by case: eqP => //= ->; rewrite big_set0. have/setId2P [_ Pi _] := Pi'.
-    by apply: contraNeq (disjF _ _ Pi Pj) _; by rewrite -setI_eq0 eqFij setIid.
-  Qed.
-
-  (* Proof not using induction. Needs lemma above. *)
+  (* Proof not using induction. Needs lemma from preliminaries. *)
   Lemma weight_D_eq_h_Dw : W D = W' h_Dw.
   Proof.
     rewrite /W' /weight_set /h_Dw.
@@ -345,17 +322,42 @@ Section set_h_vertex_and_its_private_definition.
   Admitted.
 End set_h_vertex_and_its_private_definition.
 
+Lemma aux1 (v : G') : (val v).1 -*- (val v).2.
+Admitted.
+Lemma aux2 (v : G') : val v = ((val v).1, (val v).2).
+Admitted.
+Lemma aux3 (A : finType) (x : A) (y : A) :
+            [disjoint [set x] & [set y]] <-> x != y.
+Admitted.
+
 Section set_h_inverse.
   Variable S : {set G'}.
 
   Hypothesis Sst : stable S.
 
-  Definition h_inv := \bigcup_(x in S) [set v | (val x).1 == v].
+  Definition h_inv := \bigcup_(x in S) [set (val x).1].
 
   Lemma h_inv_irr : @irredundant G h_inv.
-  Admitted.
+  Proof.
+    rewrite /irredundant /h_inv; apply/forallP=> v. apply/implyP;move/bigcupP.
+    elim=> [v' v'S v'1v]; rewrite inE in v'1v; move/eqP in v'1v. apply/set0Pn.
+    exists (val v').2; apply/privateP; split. by rewrite v'1v; exact: aux1.
+    move=> u /bigcupP [u' u'S u'1v]. rewrite inE in u'1v; move/eqP in u'1v.
+    move/stableP: Sst=> /(_ u' v' u'S v'S)=> u'nadjv'.
+    have: ~~ newgraph_rel u' v' by []; rewrite /newgraph_rel /=. move/nandP; case.
+    - move/negbNE/eqP. rewrite aux2 (aux2 v') pair_equal_spec=> [[H _] _].
+      by rewrite u'1v v'1v.
+    - move/norP=> [_ H]. rewrite u'1v cl_sg_sym. by apply/contraTeq.
+  Qed.
 
   Lemma weight_S_eq_h_inv : W h_inv = W' S.
+  Proof.
+    rewrite /W /W' /weight_set /h_inv (partition_disjoint_bigcup_P weight).
+    under eq_bigr=> v' v'S. rewrite big_set1. over. auto.
+    move=> i j iS jS ineqj. rewrite aux3.
+    have: ((val i).1, (val i).2) != ((val j).1, (val j).2)
+    by rewrite -aux2 -(aux2 j) ineqj. rewrite xpair_eqE; move/nandP.
+    case; first by [].
   Admitted.
 End set_h_inverse.
 

@@ -316,6 +316,30 @@ Lemma bigcup_set1 (T I : finType) (i0 : I) (F : I -> {set T}) :
   \bigcup_(i in [set i0]) F i = F i0.
 Proof. by rewrite (big_pred1 i0) // => i; rewrite inE. Qed.
 
+(* This is an adapted version of partition_disjoint_bigcup in finset.v
+ * where we force the index in the bigcup to satisfy P.
+ * Could be more general for all bigops, not just sum. *)
+Lemma partition_disjoint_bigcup_P (T I : finType) (F : I -> {set T}) (P : pred I)
+    E : (forall i j, P i -> P j -> i != j -> [disjoint F i & F j]) ->
+  \sum_(x in \bigcup_(i | P i) F i) E x =
+    \sum_(i | P i) \sum_(x in F i) E x.
+Proof.
+move=> disjF. pose P' := [set F i | i in I & P i && (F i != set0)].
+have trivP: trivIset P'.
+  apply/trivIsetP=> _ _ /imsetP[i iP' ->] /imsetP[j jP' ->] neqFij.
+  apply: disjF; have/setId2P [_ iP _] := iP'. exact: iP.
+  have/setId2P [_ jP _] := jP'. exact: jP. by apply: contraNneq neqFij => ->.
+have ->: \bigcup_(i | P i) F i = cover P'.
+  apply/esym. rewrite cover_imset. 
+  under eq_bigl=> x. rewrite inE andbA [in X in X && _]andbC -andbA. over.
+  rewrite big_mkcondr; apply: eq_bigr => i _. by rewrite inE; case: eqP.
+rewrite big_trivIset // big_imset => [|i j Pi' /setIdP[_ /andP [Pj notFj0]] eqFij].
+  under eq_bigl=> x. rewrite inE andbA [in X in X && _]andbC -andbA. over.
+  rewrite big_mkcondr; apply: eq_bigr => i _; rewrite inE.
+  by case: eqP => //= ->; rewrite big_set0. have/setId2P [_ Pi _] := Pi'.
+  by apply: contraNeq (disjF _ _ Pi Pj) _; by rewrite -setI_eq0 eqFij setIid.
+Qed.
+
 (** usage: [elim/(size_ind f) : x] *)
 Lemma size_ind (X : Type) (f : X -> nat) (P : X -> Type) : 
   (forall x, (forall y, (f y < f x) -> P y) -> P x) -> forall x, P x.
