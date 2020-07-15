@@ -294,6 +294,7 @@ Section set_h_vertex_and_its_private_definition.
     rewrite xpair_eqE; move/nandP/orP. by rewrite ineqj.
   Qed.
 
+(*
   (* Proof using induction. Needs to solve inductive step. *)
   Lemma weight_D_eq_h_Dw' : W D = W' h_Dw.
   Proof.
@@ -320,15 +321,30 @@ Section set_h_vertex_and_its_private_definition.
       (*by apply/eqP; rewrite -IHp eqn_add2r /weight' h_vw1.
       all: by rewrite setD11.*)
   Admitted.
+*)
 End set_h_vertex_and_its_private_definition.
 
+(* This three auxiliary lemmas are too trivial. I will try to avoid them. *)
+
 Lemma aux1 (v : G') : (val v).1 -*- (val v).2.
-Admitted.
+Proof.
+  suff: (val v) \in V' G by rewrite /V' inE.
+  by move: v; rewrite /G' /newgraph /=; move=> [a b].
+Qed.
+
 Lemma aux2 (v : G') : val v = ((val v).1, (val v).2).
-Admitted.
+Proof. move: v; rewrite /G' /newgraph /=; by move=> [[v1 v2] vG']. Qed.
+
 Lemma aux3 (A : finType) (x : A) (y : A) :
             [disjoint [set x] & [set y]] <-> x != y.
-Admitted.
+Proof.
+  rewrite /iff; split.
+  - move/disjointP=> /(_ x (set11 x)); rewrite in_set1.
+    move=> H; apply/contraT; by move/negPn.
+  - move=>xneqy. apply/disjointP=> x'. rewrite !inE.
+    move/eqP=> x'x; move/eqP=> x'y. rewrite -x'x x'y in xneqy.
+    by move/negP: xneqy.
+Qed.
 
 Section set_h_inverse.
   Variable S : {set G'}.
@@ -355,10 +371,11 @@ Section set_h_inverse.
     rewrite /W /W' /weight_set /h_inv (partition_disjoint_bigcup_P weight).
     under eq_bigr=> v' v'S. rewrite big_set1. over. auto.
     move=> i j iS jS ineqj. rewrite aux3.
-    have: ((val i).1, (val i).2) != ((val j).1, (val j).2)
-    by rewrite -aux2 -(aux2 j) ineqj. rewrite xpair_eqE; move/nandP.
-    case; first by [].
-  Admitted.
+    move/stableP: Sst=> /(_ i j iS jS). apply/contra=>/eqP i1eqj1.
+    suff: newgraph_rel i j by []; rewrite /newgraph_rel /=.
+    apply/andP; split. exact: ineqj.
+    apply/orP/or_introl. rewrite -i1eqj1; exact: aux1.
+  Qed.
 End set_h_inverse.
 
 
