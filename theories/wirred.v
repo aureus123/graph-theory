@@ -188,11 +188,9 @@ Qed.
 (* Function h_vw maps a vertex v in D (an irredundant set) to (v,w) where w is one of its
  * private vertices, while h_vw' maps any vertex to a set of G', where it returns {(v,w)} if
  * v belongs to D, and an empty set otherwise.
- * Function h_Dw gives the set {(v,w) : v \in D, w is a private set of v}.
- * Function h_inv takes a stable set S of G' and gives the set {v : (v,w) \in S} *)
+ * Function h_Dw gives the set {(v,w) : v \in D, w is a private set of v}. *)
 Section set_h_vertex_and_its_private_definition.
   Variable D : {set G}.
-
   Hypothesis Dirr : irredundant D.
 
   Section h_vertex_and_its_private_definition.
@@ -285,13 +283,12 @@ Section set_h_vertex_and_its_private_definition.
   Proof.
     rewrite /W' /weight_set /h_Dw.
     rewrite (partition_disjoint_bigcup_P weight').
-    under eq_bigr=> v vD. rewrite (h_vw'1 vD) big_set1 /weight' h_vw1. over.
-    by [].
-    move=> i j iD jD ineqj. apply/disjointP=> x.
-    rewrite (h_vw'1 iD) (h_vw'1 jD) !in_set1=> /eqP xprvi.
-    rewrite xprvi=>/eqP H.
-    have: val (h_vw iD) == val (h_vw jD) by rewrite H.
-    rewrite xpair_eqE; move/nandP/orP. by rewrite ineqj.
+    - under eq_bigr=> v vD. rewrite (h_vw'1 vD) big_set1 /weight' h_vw1. over. by [].
+    - move=> i j iD jD ineqj ; apply/disjointP=> x.
+      rewrite (h_vw'1 iD) (h_vw'1 jD) !in_set1=> /eqP xprvi.
+      rewrite xprvi => /eqP H.
+      have: val (h_vw iD) == val (h_vw jD) by rewrite H.
+      by rewrite xpair_eqE ; move/nandP/orP ; rewrite ineqj.
   Qed.
 
 (*
@@ -324,7 +321,8 @@ Section set_h_vertex_and_its_private_definition.
 *)
 End set_h_vertex_and_its_private_definition.
 
-(* This three auxiliary lemmas are too trivial. I will try to avoid them. *)
+(* This three auxiliary lemmas are too trivial. I will try to avoid them.
+   DANIEL: I removed aux3 since it can be done by rewriting disjoints1 in_set1 (def. of disjoints1 in preliminaries) *)
 
 Lemma aux1 (v : G') : (val v).1 -*- (val v).2.
 Proof.
@@ -335,20 +333,9 @@ Qed.
 Lemma aux2 (v : G') : val v = ((val v).1, (val v).2).
 Proof. move: v; rewrite /G' /newgraph /=; by move=> [[v1 v2] vG']. Qed.
 
-Lemma aux3 (A : finType) (x : A) (y : A) :
-            [disjoint [set x] & [set y]] <-> x != y.
-Proof.
-  rewrite /iff; split.
-  - move/disjointP=> /(_ x (set11 x)); rewrite in_set1.
-    move=> H; apply/contraT; by move/negPn.
-  - move=>xneqy. apply/disjointP=> x'. rewrite !inE.
-    move/eqP=> x'x; move/eqP=> x'y. rewrite -x'x x'y in xneqy.
-    by move/negP: xneqy.
-Qed.
-
+(* Function h_inv takes a stable set S of G' and gives the set {v : (v,w) \in S} *)
 Section set_h_inverse.
   Variable S : {set G'}.
-
   Hypothesis Sst : stable S.
 
   Definition h_inv := \bigcup_(x in S) [set (val x).1].
@@ -370,7 +357,7 @@ Section set_h_inverse.
   Proof.
     rewrite /W /W' /weight_set /h_inv (partition_disjoint_bigcup_P weight).
     under eq_bigr=> v' v'S. rewrite big_set1. over. auto.
-    move=> i j iS jS ineqj. rewrite aux3.
+    move=> i j iS jS ineqj. rewrite disjoints1 in_set1.
     move/stableP: Sst=> /(_ i j iS jS). apply/contra=>/eqP i1eqj1.
     suff: newgraph_rel i j by []; rewrite /newgraph_rel /=.
     apply/andP; split. exact: ineqj.
