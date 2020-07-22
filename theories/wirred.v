@@ -281,57 +281,15 @@ Section set_h_vertex_and_its_private_definition.
   (* Proof not using induction. Needs lemma from preliminaries. *)
   Lemma weight_D_eq_h_Dw : W D = W' h_Dw.
   Proof.
-    rewrite /W' /weight_set /h_Dw.
-    rewrite (partition_disjoint_bigcup_P weight').
-    - under eq_bigr=> v vD. rewrite (h_vw'1 vD) big_set1 /weight' h_vw1. over. by [].
-    - move=> i j iD jD ineqj ; apply/disjointP=> x.
+    rewrite /W' /weight_set (partition_disjoint_bigcup_P weight').
+    - by under eq_bigr=> v vD do rewrite (h_vw'1 vD) big_set1 /weight' h_vw1.
+    - move=> i j iD jD ineqj; apply/disjointP=> x.
       rewrite (h_vw'1 iD) (h_vw'1 jD) !in_set1=> /eqP xprvi.
       rewrite xprvi => /eqP H.
       have: val (h_vw iD) == val (h_vw jD) by rewrite H.
       by rewrite xpair_eqE ; move/nandP/orP ; rewrite ineqj.
   Qed.
-
-(*
-  (* Proof using induction. Needs to solve inductive step. *)
-  Lemma weight_D_eq_h_Dw' : W D = W' h_Dw.
-  Proof.
-    (* we shape the statement and prove by induction on the cardinality of D *)
-    suff: forall (n : nat), #|D| = n -> W D = W' h_Dw by move=> /(_ #|D| erefl).
-    move=> n ; elim/nat_ind: n => [| m IH].
-    - move/cards0_eq/eqP => D0.
-      move: (D0) ; rewrite /W (wset0 positive_weights D) ; move/eqP->.
-      rewrite /W' ; apply/eqP ; rewrite eq_sym -(wset0 positive_weights' h_Dw).
-      move: D0 ; apply: contraLR.
-      move/set0Pn => [x xinhDw] ; apply/set0Pn ; exists (val x).1 ; exact: h_Dw1.
-    - move=> Dm1. have/eq_leq m1D : m.+1 = #|D| by auto.
-      move/card_gt0P: (leq_ltn_trans (leq0n m) m1D)=> [v vD].
-      set x := (h_vw vD). have xh_Dw : x \in h_Dw.
-      by apply/bigcupP; exists v=> [//|]; rewrite h_vw'1; apply/set1P.
-      rewrite -[in X in W X = _](setD1K vD); rewrite -[in X in _ = W' X](setD1K xh_Dw).
-      rewrite /W /W' /weight_set big_setU1 /=.
-      (* No se como volver a hacer un "fold" de la definicion de W después de esto. *)
-      have IHp : W (D :\ v) = W' (h_Dw :\ x). {
-       (* ¿Como usar la IH para llegar a esto? h_Dw está ligado a D,
-          hay que trabajar un poco para ligarlo a D :\: v *)
-        move/eqP: Dm1; rewrite (cardsD1 v) addnC vD addn1 eqSS=> /eqP Dvm.
-      }
-      (*by apply/eqP; rewrite -IHp eqn_add2r /weight' h_vw1.
-      all: by rewrite setD11.*)
-  Admitted.
-*)
 End set_h_vertex_and_its_private_definition.
-
-(* This three auxiliary lemmas are too trivial. I will try to avoid them.
-   DANIEL: I removed aux3 since it can be done by rewriting disjoints1 in_set1 (def. of disjoints1 in preliminaries) *)
-
-Lemma aux1 (v : G') : (val v).1 -*- (val v).2.
-Proof.
-  suff: (val v) \in V' G by rewrite /V' inE.
-  by move: v; rewrite /G' /newgraph /=; move=> [a b].
-Qed.
-
-Lemma aux2 (v : G') : val v = ((val v).1, (val v).2).
-Proof. move: v; rewrite /G' /newgraph /=; by move=> [[v1 v2] vG']. Qed.
 
 (* Function h_inv takes a stable set S of G' and gives the set {v : (v,w) \in S} *)
 Section set_h_inverse.
@@ -342,26 +300,26 @@ Section set_h_inverse.
 
   Lemma h_inv_irr : @irredundant G h_inv.
   Proof.
-    rewrite /irredundant /h_inv; apply/forallP=> v. apply/implyP;move/bigcupP.
+    apply/forallP=> v. apply/implyP; move/bigcupP.
     elim=> [v' v'S v'1v]; rewrite inE in v'1v; move/eqP in v'1v. apply/set0Pn.
-    exists (val v').2; apply/privateP; split. by rewrite v'1v; exact: aux1.
+    exists (val v').2; apply/privateP; split. by move: (valP v'); rewrite v'1v !inE.
     move=> u /bigcupP [u' u'S u'1v]. rewrite inE in u'1v; move/eqP in u'1v.
     move/stableP: Sst=> /(_ u' v' u'S v'S)=> u'nadjv'.
-    have: ~~ newgraph_rel u' v' by []; rewrite /newgraph_rel /=. move/nandP; case.
-    - move/negbNE/eqP. rewrite aux2 (aux2 v') pair_equal_spec=> [[H _] _].
-      by rewrite u'1v v'1v.
-    - move/norP=> [_ H]. rewrite u'1v cl_sg_sym. by apply/contraTeq.
+    have: ~~ newgraph_rel u' v' by []; move/nandP; case.
+    - move/negbNE/eqP; rewrite [val u']surjective_pairing [val v']surjective_pairing.
+      by rewrite pair_equal_spec=> [[H _] _]; rewrite u'1v v'1v.
+    - move/norP=> [_ H]; rewrite u'1v cl_sg_sym. by apply/contraTeq.
   Qed.
 
   Lemma weight_S_eq_h_inv : W h_inv = W' S.
   Proof.
-    rewrite /W /W' /weight_set /h_inv (partition_disjoint_bigcup_P weight).
-    under eq_bigr=> v' v'S. rewrite big_set1. over. auto.
+    rewrite /W /W' /weight_set (partition_disjoint_bigcup_P weight).
+    by under eq_bigr=> v' v'S do rewrite big_set1.
     move=> i j iS jS ineqj. rewrite disjoints1 in_set1.
     move/stableP: Sst=> /(_ i j iS jS). apply/contra=>/eqP i1eqj1.
     suff: newgraph_rel i j by []; rewrite /newgraph_rel /=.
     apply/andP; split. exact: ineqj.
-    apply/orP/or_introl. rewrite -i1eqj1; exact: aux1.
+    apply/orP/or_introl. rewrite -i1eqj1. by move: (valP i); rewrite !inE.
   Qed.
 End set_h_inverse.
 
