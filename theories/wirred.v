@@ -125,6 +125,17 @@ Definition newgraph := SGraph newgraph_sym newgraph_irrefl.
 
 End Newgraph_construction.
 
+Lemma newgraph_subgraph (G H : sgraph) : G \subgraph H -> newgraph G \subgraph newgraph H.
+Proof.
+  rewrite /induced_subgraph; elim=> [h inj_h ind_hom_h].
+  have refine_img : forall v : newgraph G, h (val v).1 -*- h (val v).2. {
+    move=> v; move: (valP v); rewrite !inE.
+    rewrite [(val v).1 -*- (val v).2]/dominates; case/orP.
+    - move/eqP ->; exact: dominates_refl.
+    - by rewrite ind_hom_h=> dom; apply/orP/or_intror. }
+  pose h' := fun x : newgraph G => (h (val x).1, h (val x).2).
+  (*exists h'.*)
+Admitted.
 
 (**********************************************************************************)
 Section Upper_Weighted_Irredundant_Problem.
@@ -494,6 +505,17 @@ Definition v3_6 := @Ordinal 6 3 isT : 'I_6.
 Definition v4_6 := @Ordinal 6 4 isT : 'I_6.
 Definition v5_6 := @Ordinal 6 5 isT : 'I_6.
 
+(*
+Let h (g : 'P_4) :=
+   1 -> (4,1)
+   2 -> (3,1)
+   3 -> (2,3)
+   4 -> (2,5)
+*)
+
+Lemma P4subK23' : 'P_4 \subgraph newgraph 'K_2,3.
+Admitted.
+
 (* To prove G' P4-free => G {P4,K23}-free we do the following:
      If G has P4 as an induced subgraph, then G' does too.
      If G has K23 as an induced subgraph, then G' has a P4. *)
@@ -503,8 +525,9 @@ Proof.
   case.
   - move=> P4subG ; move: (subgraph_G_G' G) ; rewrite -/G' => GsubG'.
     exact: subgraph_trans P4subG GsubG'.
-  - (* Hay que ver la prueba escrita y trabajar un poquito *)
-Admitted.
+  - by move/newgraph_subgraph=> K23'subG; move: (subgraph_trans P4subK23' K23'subG).
+   (* Hay que ver la prueba escrita y trabajar un poquito *)
+Qed.
 
 Variables GP4 GK23 : sgraph.
 Hypothesis G_is_P4 : isomorphic GP4 'P_4.
