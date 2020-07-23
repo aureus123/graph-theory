@@ -413,7 +413,7 @@ Section Graph_definitions.
 
 (* give_sg generate the sedge relation from a function f such that:
      f u v (with 0 <= u < v < n) is true iff (u,v) is an edge of G *)
-Definition give_sg (f : nat -> nat -> bool) (n : nat) (i j : ordinal_finType n) :=
+Definition give_sg (f : nat -> nat -> bool) (n : nat) (i j : 'I_n) :=
   let u := nat_of_ord i in
     let v := nat_of_ord j in
       if (u == v) then false else
@@ -438,14 +438,13 @@ Proof. by rewrite /irreflexive /give_sg => ? ; rewrite eq_refl. Qed.
 Section complete_bipartite.
   Variables n m : nat.
 
+  Let Knm_vert := 'I_(n+m).
   Let Knm_adj (u v : nat) := (u < n) && (n <= v).
 
-  Definition Knm : sgraph.
-  Proof.
-    refine {| svertex := ordinal_finType (n+m) ;
-              sedge := give_sg Knm_adj (n:=n+m) |}.
-    - exact: give_sg_sym. - exact: give_sg_irrefl.
-  Qed.
+  Let Knm_rel := [ rel u v : Knm_vert | give_sg Knm_adj u v ].
+  Let Knm_sym : symmetric Knm_rel. Proof. exact: give_sg_sym. Qed.
+  Let Knm_irrefl : irreflexive Knm_rel. Proof. exact: give_sg_irrefl. Qed.
+  Definition Knm := SGraph Knm_sym Knm_irrefl.
 End complete_bipartite.
 
 (* claw: a complete bipartite K_{1,3} *)
@@ -453,63 +452,65 @@ Definition claw := Knm 1 3.
 
 (* 'P_n : path of n vertices P_n *)
 Section path_graph.
-  Variables n : nat.
+  Variable n : nat.
 
+  Let Pn_vert := 'I_n.
   Let Pn_adj (u v : nat) := (u == v-1).
 
-  Definition Pn : sgraph.
-  Proof.
-    refine {| svertex := ordinal_finType n ;
-              sedge := give_sg Pn_adj (n:=n) |}.
-    - exact: give_sg_sym. - exact: give_sg_irrefl.
-  Qed.
+  Let Pn_rel := [ rel u v : Pn_vert | give_sg Pn_adj u v ].
+  Let Pn_sym : symmetric Pn_rel. Proof. exact: give_sg_sym. Qed.
+  Let Pn_irrefl : irreflexive Pn_rel. Proof. exact: give_sg_irrefl. Qed.
+  Definition Pn := SGraph Pn_sym Pn_irrefl.
 End path_graph.
+
+Notation "''K_' n" := (complete n)
+  (at level 8, n at level 2, format "''K_' n").
 
 (* 'C_n : circuit of n vertices C_n *)
 Section circuit_graph.
   Variables n : nat.
 
+  Let Cn_vert := 'I_n.
   Let Cn_adj (u v : nat) := (u == v-1) || ((u == 0) && (v == n-1)).
 
-  Definition Cn : sgraph.
-  Proof.
-    refine {| svertex := ordinal_finType n ;
-              sedge := give_sg Cn_adj (n:=n) |}.
-    - exact: give_sg_sym. - exact: give_sg_irrefl.
-  Qed.
+  Let Cn_rel := [ rel u v : Cn_vert | give_sg Cn_adj u v ].
+  Let Cn_sym : symmetric Cn_rel. Proof. exact: give_sg_sym. Qed.
+  Let Cn_irrefl : irreflexive Cn_rel. Proof. exact: give_sg_irrefl. Qed.
+  Definition Cn := SGraph Cn_sym Cn_irrefl.
 End circuit_graph.
 
 (* 'CC_n : complement of circuit of n vertices *)
 Section circuit_graph.
   Variables n : nat.
 
+  Let CCn_vert := 'I_n.
   Let CCn_adj (u v : nat) := ~~ ((u == v-1) || ((u == 0) && (v == n-1))).
 
-  Definition CCn : sgraph.
-  Proof.
-    refine {| svertex := ordinal_finType n ;
-              sedge := give_sg CCn_adj (n:=n) |}.
-    - exact: give_sg_sym. - exact: give_sg_irrefl.
-  Qed.
+  Let CCn_rel := [ rel u v : CCn_vert | give_sg CCn_adj u v ].
+  Let CCn_sym : symmetric CCn_rel. Proof. exact: give_sg_sym. Qed.
+  Let CCn_irrefl : irreflexive CCn_rel. Proof. exact: give_sg_irrefl. Qed.
+  Definition CCn := SGraph CCn_sym CCn_irrefl.
 End circuit_graph.
 
-(* Bull *)
-Let bull_adj(u v : nat) :=
-  match u, v with
-  | 0, 1 => true
-  | 0, 2 => true
-  | 1, 2 => true
-  | 1, 3 => true
-  | 2, 4 => true
-  | _, _ => false
-end.
+(* Bull graph (a triangle with two appended vertices) *)
+Section bull_graph.
 
-Definition bull : sgraph.
-Proof.
-  refine {| svertex := ordinal_finType 5 ;
-            sedge := give_sg bull_adj (n:=5) |}.
-  - exact: give_sg_sym. - exact: give_sg_irrefl.
-Qed.
+  Let bull_vert := 'I_5.
+  Let bull_adj(u v : nat) :=
+    match u, v with
+    | 0, 1 => true
+    | 0, 2 => true
+    | 1, 2 => true
+    | 1, 3 => true
+    | 2, 4 => true
+    | _, _ => false
+  end.
+
+  Let bull_rel := [ rel u v : bull_vert | give_sg bull_adj u v ].
+  Let bull_sym : symmetric bull_rel. Proof. exact: give_sg_sym. Qed.
+  Let bull_irrefl : irreflexive bull_rel. Proof. exact: give_sg_irrefl. Qed.
+  Definition bull := SGraph bull_sym bull_irrefl.
+End bull_graph.
 
 End Graph_definitions.
 
