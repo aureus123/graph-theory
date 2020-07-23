@@ -147,14 +147,13 @@ Lemma h_eq (w : newgraph G) : ((val v).1 == (val w).2) = (h (val v).1 == h (val 
 Proof.
   case (boolP ((val v).1 == (val w).2)).
     - by move/eqP=> eq; rewrite eq !eq_refl.
-    - apply/contraNeq. rewrite negbK. move/eqP. by move=> hip; move: (inj_h hip); move ->.
+    - apply/contraNeq; rewrite negbK; move/eqP. by move=> hip; move: (inj_h hip); move ->.
 Qed.
 
 Lemma h_adj (w : newgraph G) : ((val v).1 -- (val w).2) = (h (val v).1 -- h (val w).2).
 Proof.
-  case (boolP ((val v).1 -- (val w).2)).
-  - by rewrite ind_hom_h.
-  - apply/contraNeq; rewrite negbK. by rewrite ind_hom_h.
+  case (boolP ((val v).1 -- (val w).2)); last first.
+  apply/contraNeq; rewrite negbK. all: by rewrite ind_hom_h.
 Qed.
 
 Definition hv := Sub (h (val v).1, h (val v).2) hv1_hv2_in_H' : H'.
@@ -165,21 +164,15 @@ Lemma newgraph_subgraph (G H : sgraph) : G \subgraph H -> newgraph G \subgraph n
 Proof.
   elim=> [h inj_h ind_hom_h].
   exists (hv ind_hom_h).
-  - move=> x y hv_idem.
-    have: (h (val x).1, h (val x).2) = (h (val y).1, h (val y).2).
-    { auto. (* Necesito probar que los valores del Sub son iguales teniendo que estos lo son *) }
-    rewrite pair_equal_spec=> [[h1 h2]].
-    have/eqP x1y1 := (inj_h (val x).1 (val y).1 h1).
-    have/eqP x2y2 := (inj_h (val x).2 (val y).2 h2). apply/eqP.
-    rewrite -val_eqE [val x]surjective_pairing [val y]surjective_pairing xpair_eqE.
-    by apply/andP.
+  - move=> x y /eqP/andP [/eqP ? /eqP ?].
+    by apply/val_inj/eqP/andP; split; apply/eqP/inj_h.
   - move=> x y.
     suff: newgraph_rel x y <-> newgraph_rel (hv ind_hom_h x) (hv ind_hom_h y) by [].
     rewrite /newgraph_rel /dominates /=.
     have eq1 : (sval x != sval y) = ((h (sval x).1, h (sval x).2) != (h (sval y).1, h (sval y).2)).
     { case (boolP (sval x != sval y)).
       + apply/contraNeq; rewrite negbK; move/eqP; rewrite pair_equal_spec=> [[h1 h2]].
-        have eq1 := inj_h (sval x).1 (sval y).1 h1; have eq2 := inj_h (sval x).2 (sval y).2 h2.
+        have ? := inj_h (sval x).1 (sval y).1 h1; have ? := inj_h (sval x).2 (sval y).2 h2.
         rewrite [val x]surjective_pairing [val y]surjective_pairing xpair_eqE; apply/andP.
         split; by apply/eqP.
       + rewrite negbK [val x]surjective_pairing [val y]surjective_pairing xpair_eqE=>/andP [/eqP h1 /eqP h2].
@@ -188,7 +181,7 @@ Proof.
     move: (h_eq inj_h x y); rewrite eq_sym [(h (val x).1 == h (val y).2)]eq_sym; move ->.
     move: (h_adj ind_hom_h x y); rewrite sg_sym [(h (val x).1 -- h (val y).2)]sg_sym; move ->.
     by rewrite eq1 (h_eq inj_h y x) (h_adj ind_hom_h y x).
-Admitted.
+Qed.
 
 (**********************************************************************************)
 Section Upper_Weighted_Irredundant_Problem.
