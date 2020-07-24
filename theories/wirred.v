@@ -572,26 +572,13 @@ Proof.
     | Ordinal _ _ => Sub (v1_5, v4_5) v4
     end.
   exists h.
-  - case => [[|[|[|i]]] Hi]; case => [[|[|[|j]]] Hj].
-    all: try (move=> _; by rewrite (bool_irrelevance Hi Hj)).
-    + move/eqP/andP; rewrite /=; by have H: v3_5 != v2_5 by []; move=> [H2 _].
-    (* Duda 1: ¿Como poder escribir esto sin hacer referencia a los vertices especificos?
-       Claramente debe haber una manera genérica de probarlo. *)
-    + move/eqP/andP; rewrite /=; by have H: v3_5 != v1_5 by []; move=> [H2 _].
-    + move/eqP/andP; rewrite /=; by have H: v3_5 != v1_5 by []; move=> [H2 _].
-    + move/eqP/andP; rewrite /=; by have H: v2_5 != v3_5 by []; move=> [H2 _].
-    + move/eqP/andP; rewrite /=; by have H: v2_5 != v1_5 by []; move=> [H2 _].
-    + move/eqP/andP; rewrite /=; by have H: v2_5 != v1_5 by []; move=> [H2 _].
-    + move/eqP/andP; rewrite /=; by have H: v1_5 != v3_5 by []; move=> [H2 _].
-    + move/eqP/andP; rewrite /=; by have H: v1_5 != v2_5 by []; move=> [H2 _].
-    + move/eqP/andP; rewrite /=; by have H: v2_5 != v4_5 by []; move=> [_ H2].
-    + move/eqP/andP; rewrite /=; by have H: v1_5 != v3_5 by []; move=> [H2 _].
-    + move/eqP/andP; rewrite /=; by have H: v1_5 != v2_5 by []; move=> [H2 _].
-    + move/eqP/andP; rewrite /=; by have H: v4_5 != v2_5 by []; move=> [_ H2].
-    + {move=> _. }
-    (* Duda 2: ¿Como deducir que Hi y Hj deben ser lo mismo? Ya que en 'I_4 los
+  - case => [[|[|[|i]]] Hi]; case => [[|[|[|j]]] Hj]; last first.
+    + move=> _.
+      (* Duda: ¿Como deducir que Hi y Hj deben ser lo mismo? Ya que en 'I_4 los
        ordinales solo pueden llegar hasta 4 y por lo tanto, para respetar la condición,
        i = j = 0 *)
+    all: try (move=> _; by rewrite (bool_irrelevance Hi Hj)).
+    all: try (move/eqP/andP=> [H1 H2]; apply/eqP; move: H1; apply/contraLR=> _; by rewrite /=).
   - case => [[|[|[|i]]] Hi]; case => [[|[|[|j]]] Hj].
     + rewrite (bool_irrelevance Hi Hj); by rewrite sg_irrefl.
     (* etc... *)
@@ -607,7 +594,6 @@ Proof.
   - move=> P4subG ; move: (subgraph_G_G' G) ; rewrite -/G' => GsubG'.
     exact: subgraph_trans P4subG GsubG'.
   - by move/newgraph_subgraph=> K23'subG; move: (subgraph_trans P4subK23' K23'subG).
-   (* Hay que ver la prueba escrita y trabajar un poquito *)
 Qed.
 
 Variables GP4 GK23 : sgraph.
