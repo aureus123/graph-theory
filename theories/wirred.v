@@ -552,15 +552,49 @@ Definition v3_6 := @Ordinal 6 3 isT : 'I_6.
 Definition v4_6 := @Ordinal 6 4 isT : 'I_6.
 Definition v5_6 := @Ordinal 6 5 isT : 'I_6.
 
-(*
-Let h (g : 'P_4) :=
-   1 -> (4,1)
-   2 -> (3,1)
-   3 -> (2,3)
-   4 -> (2,5)
-*)
+Let v1 : (v3_5, v0_5) \in V' 'K_2,3.
+Proof. by rewrite /V' inE /=; apply/orP/or_intror; rewrite /edge_rel /= /give_sg /=. Qed.
+Let v2 : (v2_5, v0_5) \in V' 'K_2,3.
+Proof. by rewrite /V' inE /=; apply/orP/or_intror; rewrite /edge_rel /= /give_sg /=. Qed.
+Let v3 : (v1_5, v2_5) \in V' 'K_2,3.
+Proof. by rewrite /V' inE /=; apply/orP/or_intror; rewrite /edge_rel /= /give_sg /=. Qed.
+Let v4 : (v1_5, v4_5) \in V' 'K_2,3.
+Proof. by rewrite /V' inE /=; apply/orP/or_intror; rewrite /edge_rel /= /give_sg /=. Qed.
 
 Lemma P4subK23' : 'P_4 \subgraph newgraph 'K_2,3.
+Proof.
+  rewrite /induced_subgraph.
+  pose h (v : 'P_4) : newgraph 'K_2,3 :=
+    match v with
+    | Ordinal 0 _ => Sub (v3_5, v0_5) v1
+    | Ordinal 1 _ => Sub (v2_5, v0_5) v2
+    | Ordinal 2 _ => Sub (v1_5, v2_5) v3
+    | Ordinal _ _ => Sub (v1_5, v4_5) v4
+    end.
+  exists h.
+  - case => [[|[|[|i]]] Hi]; case => [[|[|[|j]]] Hj].
+    all: try (move=> _; by rewrite (bool_irrelevance Hi Hj)).
+    + move/eqP/andP; rewrite /=; by have H: v3_5 != v2_5 by []; move=> [H2 _].
+    (* Duda 1: ¿Como poder escribir esto sin hacer referencia a los vertices especificos?
+       Claramente debe haber una manera genérica de probarlo. *)
+    + move/eqP/andP; rewrite /=; by have H: v3_5 != v1_5 by []; move=> [H2 _].
+    + move/eqP/andP; rewrite /=; by have H: v3_5 != v1_5 by []; move=> [H2 _].
+    + move/eqP/andP; rewrite /=; by have H: v2_5 != v3_5 by []; move=> [H2 _].
+    + move/eqP/andP; rewrite /=; by have H: v2_5 != v1_5 by []; move=> [H2 _].
+    + move/eqP/andP; rewrite /=; by have H: v2_5 != v1_5 by []; move=> [H2 _].
+    + move/eqP/andP; rewrite /=; by have H: v1_5 != v3_5 by []; move=> [H2 _].
+    + move/eqP/andP; rewrite /=; by have H: v1_5 != v2_5 by []; move=> [H2 _].
+    + move/eqP/andP; rewrite /=; by have H: v2_5 != v4_5 by []; move=> [_ H2].
+    + move/eqP/andP; rewrite /=; by have H: v1_5 != v3_5 by []; move=> [H2 _].
+    + move/eqP/andP; rewrite /=; by have H: v1_5 != v2_5 by []; move=> [H2 _].
+    + move/eqP/andP; rewrite /=; by have H: v4_5 != v2_5 by []; move=> [_ H2].
+    + {move=> _. }
+    (* Duda 2: ¿Como deducir que Hi y Hj deben ser lo mismo? Ya que en 'I_4 los
+       ordinales solo pueden llegar hasta 4 y por lo tanto, para respetar la condición,
+       i = j = 0 *)
+  - case => [[|[|[|i]]] Hi]; case => [[|[|[|j]]] Hj].
+    + rewrite (bool_irrelevance Hi Hj); by rewrite sg_irrefl.
+    (* etc... *)
 Admitted.
 
 (* To prove G' P4-free => G {P4,K23}-free we do the following:
