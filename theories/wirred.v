@@ -572,17 +572,12 @@ Proof.
     | Ordinal _ _ => Sub (v1_5, v4_5) v4
     end.
   exists h.
-  - case => [[|[|[|i]]] Hi]; case => [[|[|[|j]]] Hj]; last first.
-    + move=> _.
-      (* Duda: ¿Como deducir que Hi y Hj deben ser lo mismo? Ya que en 'I_4 los
-       ordinales solo pueden llegar hasta 4 y por lo tanto, para respetar la condición,
-       i = j = 0 *)
+  - case => [[|[|[|[|i]]]] Hi]; case => [[|[|[|[|j]]]] Hj].
     all: try (move=> _; by rewrite (bool_irrelevance Hi Hj)).
     all: try (move/eqP/andP=> [H1 H2]; apply/eqP; move: H1; apply/contraLR=> _; by rewrite /=).
-  - case => [[|[|[|i]]] Hi]; case => [[|[|[|j]]] Hj].
-    + rewrite (bool_irrelevance Hi Hj); by rewrite sg_irrefl.
-    (* etc... *)
-Admitted.
+  - case => [[|[|[|[|i]]]] Hi]; case => [[|[|[|[|j]]]] Hj].
+    all: by rewrite /=.
+Qed.
 
 (* To prove G' P4-free => G {P4,K23}-free we do the following:
      If G has P4 as an induced subgraph, then G' does too.
@@ -593,7 +588,7 @@ Proof.
   case.
   - move=> P4subG ; move: (subgraph_G_G' G) ; rewrite -/G' => GsubG'.
     exact: subgraph_trans P4subG GsubG'.
-  - by move/newgraph_subgraph=> K23'subG; move: (subgraph_trans P4subK23' K23'subG).
+  - move/newgraph_subgraph=> K23'subG'. by move: (subgraph_trans P4subK23' K23'subG').
 Qed.
 
 Variables GP4 GK23 : sgraph.
@@ -617,14 +612,23 @@ Qed.
      If G has P6 as an induced subgraph, then G' has a claw.
      If G has a complement of C6 as an induced subgraph, then G' has a claw. *)
 
+Lemma claw_sub_bull' : claw \subgraph newgraph bull.
+Admitted.
+Lemma claw_sub_P6' : claw \subgraph newgraph 'P_6.
+Admitted.
+Lemma claw_sub_CC6' : claw \subgraph newgraph 'CC_6.
+Admitted.
+
 Theorem G'clawfree : claw \subgraph G \/ bull \subgraph G \/
                      'P_6 \subgraph G \/ 'CC_6 \subgraph G -> claw \subgraph G'.
 Proof.
   case.
   { move=> clawsubG ; move: (subgraph_G_G' G) ; rewrite -/G' => GsubG'.
     exact: subgraph_trans clawsubG GsubG'. }
-  case.
-Admitted.
+  case. by move/newgraph_subgraph=> bull'subG'; move: (subgraph_trans claw_sub_bull' bull'subG').
+  case. by move/newgraph_subgraph=> P6'subG'; move: (subgraph_trans claw_sub_P6' P6'subG').
+  by move/newgraph_subgraph=> CC6'subG'; move: (subgraph_trans claw_sub_CC6' CC6'subG').
+Qed.
 
 Variables Gclaw Gbull GP6 GCC6 : sgraph.
 Hypothesis G_is_claw : isomorphic Gclaw claw.
