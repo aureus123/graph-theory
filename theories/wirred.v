@@ -498,11 +498,11 @@ Section bull_graph.
   Let bull_vert := 'I_5.
   Let bull_adj(u v : nat) :=
     match u, v with
-    | 0, 1 => true
     | 0, 2 => true
-    | 1, 2 => true
     | 1, 3 => true
+    | 2, 3 => true
     | 2, 4 => true
+    | 3, 4 => true
     | _, _ => false
   end.
 
@@ -523,7 +523,7 @@ Notation "''P_' n" := (Pn n)
 Notation "''C_' n" := (Cn n)
   (at level 8, n at level 2, format "''C_' n").
 
-Notation "''CC_' n" := (Cn n)
+Notation "''CC_' n" := (CCn n)
   (at level 8, n at level 2, format "''CC_' n").
 
 
@@ -533,7 +533,9 @@ Section Upper_Weighted_Irredundant_Properties.
 Variable G : sgraph.
 Let G' := newgraph G.
 
-(* Some vertex numbering *)
+(* Alternative Vertex numbering *)
+Notation "''v' n @ m" := (@Ordinal m n isT) (at level 0, m, n at level 8, format "''v' n @ m").
+(*
 Definition v0_4 := @Ordinal 4 0 isT : 'I_4.
 Definition v1_4 := @Ordinal 4 1 isT : 'I_4.
 Definition v2_4 := @Ordinal 4 2 isT : 'I_4.
@@ -551,33 +553,85 @@ Definition v2_6 := @Ordinal 6 2 isT : 'I_6.
 Definition v3_6 := @Ordinal 6 3 isT : 'I_6.
 Definition v4_6 := @Ordinal 6 4 isT : 'I_6.
 Definition v5_6 := @Ordinal 6 5 isT : 'I_6.
+*)
 
-Let v1 : (v3_5, v0_5) \in V' 'K_2,3.
-Proof. by rewrite /V' inE /=; apply/orP/or_intror; rewrite /edge_rel /= /give_sg /=. Qed.
-Let v2 : (v2_5, v0_5) \in V' 'K_2,3.
-Proof. by rewrite /V' inE /=; apply/orP/or_intror; rewrite /edge_rel /= /give_sg /=. Qed.
-Let v3 : (v1_5, v2_5) \in V' 'K_2,3.
-Proof. by rewrite /V' inE /=; apply/orP/or_intror; rewrite /edge_rel /= /give_sg /=. Qed.
-Let v4 : (v1_5, v4_5) \in V' 'K_2,3.
-Proof. by rewrite /V' inE /=; apply/orP/or_intror; rewrite /edge_rel /= /give_sg /=. Qed.
+Ltac subgraph_proof Hi Hj := try (by rewrite (bool_irrelevance Hi Hj)); by rewrite /=.
+
+Section Construction_of_Induced_Subgraphs.
+
+Let K23'_v1 : ('v3@5, 'v0@5) \in V' 'K_2,3. Proof. by rewrite inE. Qed.
+Let K23'_v2 : ('v2@5, 'v0@5) \in V' 'K_2,3. Proof. by rewrite inE. Qed.
+Let K23'_v3 : ('v1@5, 'v2@5) \in V' 'K_2,3. Proof. by rewrite inE. Qed.
+Let K23'_v4 : ('v1@5, 'v4@5) \in V' 'K_2,3. Proof. by rewrite inE. Qed.
+
+Let bull'_v1 : ('v2@5, 'v3@5) \in V' bull. Proof. by rewrite inE. Qed.
+Let bull'_v2 : ('v0@5, 'v0@5) \in V' bull. Proof. by rewrite inE. Qed.
+Let bull'_v3 : ('v1@5, 'v1@5) \in V' bull. Proof. by rewrite inE. Qed.
+Let bull'_v4 : ('v4@5, 'v4@5) \in V' bull. Proof. by rewrite inE. Qed.
+
+Let P6'_v1 : ('v3@6, 'v2@6) \in V' 'P_6. Proof. by rewrite inE. Qed.
+Let P6'_v2 : ('v1@6, 'v0@6) \in V' 'P_6. Proof. by rewrite inE. Qed.
+Let P6'_v3 : ('v5@6, 'v4@6) \in V' 'P_6. Proof. by rewrite inE. Qed.
+Let P6'_v4 : ('v2@6, 'v3@6) \in V' 'P_6. Proof. by rewrite inE. Qed.
+
+Let CC6'_v1 : ('v5@6, 'v5@6) \in V' 'CC_6. Proof. by rewrite inE. Qed.
+Let CC6'_v2 : ('v1@6, 'v4@6) \in V' 'CC_6. Proof. by rewrite inE. Qed.
+Let CC6'_v3 : ('v3@6, 'v0@6) \in V' 'CC_6. Proof. by rewrite inE. Qed.
+Let CC6'_v4 : ('v5@6, 'v2@6) \in V' 'CC_6. Proof. by rewrite inE. Qed.
+
+(* ¿Hay una manera de dar el objeto de la prueba 'rewrite inE' en cada una de las
+   siguientes construcciones de Sub para ahorrarme de escribir todas estas lineas
+   de pruebas idénticas? *)
 
 Lemma P4subK23' : 'P_4 \subgraph newgraph 'K_2,3.
 Proof.
-  rewrite /induced_subgraph.
   pose h (v : 'P_4) : newgraph 'K_2,3 :=
     match v with
-    | Ordinal 0 _ => Sub (v3_5, v0_5) v1
-    | Ordinal 1 _ => Sub (v2_5, v0_5) v2
-    | Ordinal 2 _ => Sub (v1_5, v2_5) v3
-    | Ordinal _ _ => Sub (v1_5, v4_5) v4
+    | Ordinal 0 _ => Sub ('v3@5, 'v0@5) K23'_v1
+    | Ordinal 1 _ => Sub ('v2@5, 'v0@5) K23'_v2
+    | Ordinal 2 _ => Sub ('v1@5, 'v2@5) K23'_v3
+    | Ordinal _ _ => Sub ('v1@5, 'v4@5) K23'_v4
     end.
-  exists h.
-  - case => [[|[|[|[|i]]]] Hi]; case => [[|[|[|[|j]]]] Hj].
-    all: try (move=> _; by rewrite (bool_irrelevance Hi Hj)).
-    all: try (move/eqP/andP=> [H1 H2]; apply/eqP; move: H1; apply/contraLR=> _; by rewrite /=).
-  - case => [[|[|[|[|i]]]] Hi]; case => [[|[|[|[|j]]]] Hj].
-    all: by rewrite /=.
+  exists h. all: case => [[|[|[|[|i]]]] Hi]; case => [[|[|[|[|j]]]] Hj]; subgraph_proof Hi Hj.
 Qed.
+
+Lemma claw_sub_bull' : claw \subgraph newgraph bull.
+Proof.
+  pose h (v : claw) : newgraph bull :=
+    match v with
+    | Ordinal 0 _ => Sub ('v2@5, 'v3@5) bull'_v1
+    | Ordinal 1 _ => Sub ('v0@5, 'v0@5) bull'_v2
+    | Ordinal 2 _ => Sub ('v1@5, 'v1@5) bull'_v3
+    | Ordinal _ _ => Sub ('v4@5, 'v4@5) bull'_v4
+    end.
+  exists h. all: case => [[|[|[|[|i]]]] Hi]; case => [[|[|[|[|j]]]] Hj]; subgraph_proof Hi Hj.
+Qed.
+
+Lemma claw_sub_P6' : claw \subgraph newgraph 'P_6.
+Proof.
+  pose h (v : claw) : newgraph 'P_6 :=
+    match v with
+    | Ordinal 0 _ => Sub ('v3@6, 'v2@6) P6'_v1
+    | Ordinal 1 _ => Sub ('v1@6, 'v0@6) P6'_v2
+    | Ordinal 2 _ => Sub ('v5@6, 'v4@6) P6'_v3
+    | Ordinal _ _ => Sub ('v2@6, 'v3@6) P6'_v4
+    end.
+  exists h. all: case => [[|[|[|[|i]]]] Hi]; case => [[|[|[|[|j]]]] Hj]; subgraph_proof Hi Hj.
+Qed.
+
+Lemma claw_sub_CC6' : claw \subgraph newgraph 'CC_6.
+Proof.
+  pose h (v : claw) : newgraph 'CC_6 :=
+    match v with
+    | Ordinal 0 _ => Sub ('v5@6, 'v5@6) CC6'_v1
+    | Ordinal 1 _ => Sub ('v1@6, 'v4@6) CC6'_v2
+    | Ordinal 2 _ => Sub ('v3@6, 'v0@6) CC6'_v3
+    | Ordinal _ _ => Sub ('v5@6, 'v2@6) CC6'_v4
+    end.
+  exists h. all: case => [[|[|[|[|i]]]] Hi]; case => [[|[|[|[|j]]]] Hj]; subgraph_proof Hi Hj.
+Qed.
+
+End Construction_of_Induced_Subgraphs.
 
 (* To prove G' P4-free => G {P4,K23}-free we do the following:
      If G has P4 as an induced subgraph, then G' does too.
@@ -611,13 +665,6 @@ Qed.
      If G has bull as an induced subgraph, then G' has a claw.
      If G has P6 as an induced subgraph, then G' has a claw.
      If G has a complement of C6 as an induced subgraph, then G' has a claw. *)
-
-Lemma claw_sub_bull' : claw \subgraph newgraph bull.
-Admitted.
-Lemma claw_sub_P6' : claw \subgraph newgraph 'P_6.
-Admitted.
-Lemma claw_sub_CC6' : claw \subgraph newgraph 'CC_6.
-Admitted.
 
 Theorem G'clawfree : claw \subgraph G \/ bull \subgraph G \/
                      'P_6 \subgraph G \/ 'CC_6 \subgraph G -> claw \subgraph G'.
