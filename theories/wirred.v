@@ -143,14 +143,14 @@ Proof.
   - by rewrite ind_hom_h=> dom; apply/orP/or_intror.
 Qed.
 
-Lemma h_eq (w : newgraph G) : ((val v).1 == (val w).2) = (h (val v).1 == h (val w).2).
+Lemma h_eq (w : G') : ((val v).1 == (val w).2) = (h (val v).1 == h (val w).2).
 Proof.
   case (boolP ((val v).1 == (val w).2)).
     - by move/eqP=> eq; rewrite eq !eq_refl.
     - apply/contraNeq; rewrite negbK; move/eqP. by move=> hip; move: (inj_h hip); move ->.
 Qed.
 
-Lemma h_adj (w : newgraph G) : ((val v).1 -- (val w).2) = (h (val v).1 -- h (val w).2).
+Lemma h_adj (w : G') : ((val v).1 -- (val w).2) = (h (val v).1 -- h (val w).2).
 Proof.
   case (boolP ((val v).1 -- (val w).2)); last first.
   apply/contraNeq; rewrite negbK. all: by rewrite ind_hom_h.
@@ -203,7 +203,7 @@ Section h_counterpart_definition.
   Variable v : G.
 
   Let vv_in_V' : (v, v) \in V' G.
-  Proof. by rewrite /V' in_set /fst /snd dominates_refl. Qed.
+  Proof. by rewrite /V' in_set /= dominates_refl. Qed.
 
   Definition h_vv := Sub (v, v) vv_in_V' : G'.
 
@@ -533,58 +533,29 @@ Section Upper_Weighted_Irredundant_Properties.
 Variable G : sgraph.
 Let G' := newgraph G.
 
-(* Alternative Vertex numbering *)
+(* vn@m refers to the nth. vertex of a graph of m vertices, with 0 <= n < m *)
 Notation "''v' n @ m" := (@Ordinal m n isT) (at level 0, m, n at level 8, format "''v' n @ m").
-(*
-Definition v0_4 := @Ordinal 4 0 isT : 'I_4.
-Definition v1_4 := @Ordinal 4 1 isT : 'I_4.
-Definition v2_4 := @Ordinal 4 2 isT : 'I_4.
-Definition v3_4 := @Ordinal 4 3 isT : 'I_4.
-
-Definition v0_5 := @Ordinal 5 0 isT : 'I_5.
-Definition v1_5 := @Ordinal 5 1 isT : 'I_5.
-Definition v2_5 := @Ordinal 5 2 isT : 'I_5.
-Definition v3_5 := @Ordinal 5 3 isT : 'I_5.
-Definition v4_5 := @Ordinal 5 4 isT : 'I_5.
-
-Definition v0_6 := @Ordinal 6 0 isT : 'I_6.
-Definition v1_6 := @Ordinal 6 1 isT : 'I_6.
-Definition v2_6 := @Ordinal 6 2 isT : 'I_6.
-Definition v3_6 := @Ordinal 6 3 isT : 'I_6.
-Definition v4_6 := @Ordinal 6 4 isT : 'I_6.
-Definition v5_6 := @Ordinal 6 5 isT : 'I_6.
-*)
 
 Ltac subgraph_proof Hi Hj := try (by rewrite (bool_irrelevance Hi Hj)); by rewrite /=.
 
 Section Construction_of_Induced_Subgraphs.
 
-Let K23'_v1 : ('v3@5, 'v0@5) \in V' 'K_2,3. Proof. by rewrite inE. Qed.
-Let K23'_v2 : ('v2@5, 'v0@5) \in V' 'K_2,3. Proof. by rewrite inE. Qed.
-Let K23'_v3 : ('v1@5, 'v2@5) \in V' 'K_2,3. Proof. by rewrite inE. Qed.
-Let K23'_v4 : ('v1@5, 'v4@5) \in V' 'K_2,3. Proof. by rewrite inE. Qed.
-
-Let bull'_v1 : ('v2@5, 'v3@5) \in V' bull. Proof. by rewrite inE. Qed.
-Let bull'_v2 : ('v0@5, 'v0@5) \in V' bull. Proof. by rewrite inE. Qed.
-Let bull'_v3 : ('v1@5, 'v1@5) \in V' bull. Proof. by rewrite inE. Qed.
-Let bull'_v4 : ('v4@5, 'v4@5) \in V' bull. Proof. by rewrite inE. Qed.
-
-Let P6'_v1 : ('v3@6, 'v2@6) \in V' 'P_6. Proof. by rewrite inE. Qed.
-Let P6'_v2 : ('v1@6, 'v0@6) \in V' 'P_6. Proof. by rewrite inE. Qed.
-Let P6'_v3 : ('v5@6, 'v4@6) \in V' 'P_6. Proof. by rewrite inE. Qed.
-Let P6'_v4 : ('v2@6, 'v3@6) \in V' 'P_6. Proof. by rewrite inE. Qed.
-
-Let CC6'_v1 : ('v5@6, 'v5@6) \in V' 'CC_6. Proof. by rewrite inE. Qed.
-Let CC6'_v2 : ('v1@6, 'v4@6) \in V' 'CC_6. Proof. by rewrite inE. Qed.
-Let CC6'_v3 : ('v3@6, 'v0@6) \in V' 'CC_6. Proof. by rewrite inE. Qed.
-Let CC6'_v4 : ('v5@6, 'v2@6) \in V' 'CC_6. Proof. by rewrite inE. Qed.
-
 (* ¿Hay una manera de dar el objeto de la prueba 'rewrite inE' en cada una de las
    siguientes construcciones de Sub para ahorrarme de escribir todas estas lineas
-   de pruebas idénticas? *)
+   de pruebas idénticas?
+
+   Daniel: Probé crear el objeto matemático con Print pero hay un problema con dar la
+   prueba de que dos vértices son -*- en el grafo original, que parece que el rewrite
+   rellena ese agujero. Es decir, el problema se puede reducir al de dar esa prueba.
+   De momento puse todo dentro de las pruebas.
+*)
 
 Lemma P4subK23' : 'P_4 \subgraph newgraph 'K_2,3.
 Proof.
+  have K23'_v1 : ('v3@5, 'v0@5) \in V' 'K_2,3 by rewrite inE.
+  have K23'_v2 : ('v2@5, 'v0@5) \in V' 'K_2,3 by rewrite inE.
+  have K23'_v3 : ('v1@5, 'v2@5) \in V' 'K_2,3 by rewrite inE.
+  have K23'_v4 : ('v1@5, 'v4@5) \in V' 'K_2,3 by rewrite inE.
   pose h (v : 'P_4) : newgraph 'K_2,3 :=
     match v with
     | Ordinal 0 _ => Sub ('v3@5, 'v0@5) K23'_v1
@@ -597,6 +568,10 @@ Qed.
 
 Lemma claw_sub_bull' : claw \subgraph newgraph bull.
 Proof.
+  have bull'_v1 : ('v2@5, 'v3@5) \in V' bull by rewrite inE.
+  have bull'_v2 : ('v0@5, 'v0@5) \in V' bull by rewrite inE.
+  have bull'_v3 : ('v1@5, 'v1@5) \in V' bull by rewrite inE.
+  have bull'_v4 : ('v4@5, 'v4@5) \in V' bull by rewrite inE.
   pose h (v : claw) : newgraph bull :=
     match v with
     | Ordinal 0 _ => Sub ('v2@5, 'v3@5) bull'_v1
@@ -609,6 +584,10 @@ Qed.
 
 Lemma claw_sub_P6' : claw \subgraph newgraph 'P_6.
 Proof.
+  have P6'_v1 : ('v3@6, 'v2@6) \in V' 'P_6 by rewrite inE.
+  have P6'_v2 : ('v1@6, 'v0@6) \in V' 'P_6 by rewrite inE.
+  have P6'_v3 : ('v5@6, 'v4@6) \in V' 'P_6 by rewrite inE.
+  have P6'_v4 : ('v2@6, 'v3@6) \in V' 'P_6 by rewrite inE.
   pose h (v : claw) : newgraph 'P_6 :=
     match v with
     | Ordinal 0 _ => Sub ('v3@6, 'v2@6) P6'_v1
@@ -621,6 +600,10 @@ Qed.
 
 Lemma claw_sub_CC6' : claw \subgraph newgraph 'CC_6.
 Proof.
+  have CC6'_v1 : ('v5@6, 'v5@6) \in V' 'CC_6 by rewrite inE.
+  have CC6'_v2 : ('v1@6, 'v4@6) \in V' 'CC_6 by rewrite inE.
+  have CC6'_v3 : ('v3@6, 'v0@6) \in V' 'CC_6 by rewrite inE.
+  have CC6'_v4 : ('v5@6, 'v2@6) \in V' 'CC_6 by rewrite inE.
   pose h (v : claw) : newgraph 'CC_6 :=
     match v with
     | Ordinal 0 _ => Sub ('v5@6, 'v5@6) CC6'_v1
@@ -652,12 +635,12 @@ Hypothesis G_is_K23 : isomorphic GK23 'K_2,3.
 Corollary G'P4free' : GP4 \subgraph G \/ GK23 \subgraph G -> GP4 \subgraph G'.
 Proof.
   case.
-  - move=> P4subG ; apply: (subgraph_trans (sub_G1_G2 G_is_P4)).
-    apply: G'P4free ; left.
-    by apply: (subgraph_trans (sub_G2_G1 G_is_P4)).
-  - move=> K23subG ; apply: (subgraph_trans (sub_G1_G2 G_is_P4)).
-    apply: G'P4free ; right.
-    by apply: (subgraph_trans (sub_G2_G1 G_is_K23)).
+  - move=> /(subgraph_trans (sub_G2_G1 G_is_P4)) P4subG.
+    apply: (subgraph_trans (sub_G1_G2 G_is_P4)).
+    by apply: G'P4free ; left.
+  - move=> /(subgraph_trans (sub_G2_G1 G_is_K23)) K23subG.
+    apply: (subgraph_trans (sub_G1_G2 G_is_P4)).
+    by apply: G'P4free ; right.
 Qed.
 
 (* To prove G' claw-free => G {claw,bull,P6,CC6}-free we do the following:
@@ -687,20 +670,198 @@ Corollary G'clawfree' : Gclaw \subgraph G \/ Gbull \subgraph G \/
                           GP6 \subgraph G \/ GCC6 \subgraph G -> Gclaw \subgraph G'.
 Proof.
   case.
-  { move=> clawsubG ; apply: (subgraph_trans (sub_G1_G2 G_is_claw)).
-    apply: G'clawfree ; left.
-    by apply: (subgraph_trans (sub_G2_G1 G_is_claw)). }
+  { move=> /(subgraph_trans (sub_G2_G1 G_is_claw)) clawsubG.
+    apply: (subgraph_trans (sub_G1_G2 G_is_claw)).
+    by apply: G'clawfree ; left. }
   case.
-  { move=> bullsubG ; apply: (subgraph_trans (sub_G1_G2 G_is_claw)).
-    apply: G'clawfree ; right ; left.
-    by apply: (subgraph_trans (sub_G2_G1 G_is_bull)). }
+  { move=> /(subgraph_trans (sub_G2_G1 G_is_bull)) bullsubG.
+    apply: (subgraph_trans (sub_G1_G2 G_is_claw)).
+    by apply: G'clawfree ; right ; left. }
   case.
-  - move=> P6subG ; apply: (subgraph_trans (sub_G1_G2 G_is_claw)).
-    apply: G'clawfree ; right ; right ; left.
-    by apply: (subgraph_trans (sub_G2_G1 G_is_P6)).
-  - move=> CC6subG ; apply: (subgraph_trans (sub_G1_G2 G_is_claw)).
-    apply: G'clawfree ; right ; right ; right.
-    by apply: (subgraph_trans (sub_G2_G1 G_is_CC6)).
+  - move=> /(subgraph_trans (sub_G2_G1 G_is_P6)) P6subG.
+    apply: (subgraph_trans (sub_G1_G2 G_is_claw)).
+    by apply: G'clawfree ; right ; right ; left.
+  - move=> /(subgraph_trans (sub_G2_G1 G_is_CC6)) CC6subG.
+    apply: (subgraph_trans (sub_G1_G2 G_is_claw)).
+    by apply: G'clawfree ; right ; right ; right.
+Qed.
+
+Ltac t_x1x2 x1 x2 :=
+  (suff : (x1, x2) \in V' G by rewrite /V' in_set /=) ;
+  rewrite /x1 /x2 -surjective_pairing ; apply/valP.
+
+Ltac t_v1v2 v1 v2 h h_hom := 
+  (have : (h v2) -- (h v1) by rewrite -h_hom /edge_rel /= /give_sg /=) ;
+  rewrite /edge_rel /= => /andP [_] ; rewrite /dominates orbA.
+
+Ltac t_x1x2y1y2 x1 x2 y1 y2 v1 v2 h h_inj := 
+  rewrite -[(x1 != y1) || (x2 != y2)]negbK negb_or !negbK -xpair_eqE ;
+  (have : h v1 != h v2 by apply/negP ; move/eqP/h_inj) ;
+  rewrite -!surjective_pairing ; apply: contra ; move/eqP/val_inj/eqP.
+
+Ltac t_x1y2x2y1 x1 x2 y1 y2 v1 v2 h h_hom := 
+  (have : ~~ (h v2) -- (h v1) by apply/negP ; rewrite -h_hom /edge_rel /= /give_sg /=) ;
+  rewrite /edge_rel /= negb_and negbK -/x1 -/x2 -/y1 -/y2 ;
+  (have : (sval (h v2) == sval (h v1) = false) by apply/negP ; move/eqP/val_inj/h_inj) ;
+  move-> ; rewrite orFb /dominates !negb_or andbA.
+
+Theorem G'P4free_rev : 'P_4 \subgraph G' -> 'P_4 \subgraph G \/ 'K_2,3 \subgraph G.
+Proof.
+  rewrite /induced_subgraph.
+  move=> [h h_inj h_hom].
+
+  (* in G', we have the path (a1,a2) - (b1,b2) - (c1,c2) - (d1,d2) *)
+  set a1 := (val (h 'v0@4)).1.
+  set a2 := (val (h 'v0@4)).2.
+  set b1 := (val (h 'v1@4)).1.
+  set b2 := (val (h 'v1@4)).2.
+  set c1 := (val (h 'v2@4)).1.
+  set c2 := (val (h 'v2@4)).2.
+  set d1 := (val (h 'v3@4)).1.
+  set d2 := (val (h 'v3@4)).2.
+
+  (* The following comes from the fact that x1x2 are vertices of G' *)
+  have a1a2 : (a1 == a2) || a1 -- a2 by t_x1x2 a1 a2.
+  have b1b2 : (b1 == b2) || b1 -- b2 by t_x1x2 b1 b2.
+  have c1c2 : (c1 == c2) || c1 -- c2 by t_x1x2 c1 c2.
+  have d1d2 : (d1 == d2) || d1 -- d2 by t_x1x2 d1 d2.
+
+  (* The following comes from the edges of the path P_4 in G' *)
+  have a1b2a2b1 : (a1 == b2) || a1 -- b2 || (a2 == b1) || (a2 -- b1)
+    by t_v1v2 'v0@4 'v1@4 h h_hom.
+  have b1c2b2c1 : (b1 == c2) || b1 -- c2 || (b2 == c1) || (b2 -- c1)
+    by t_v1v2 'v1@4 'v2@4 h h_hom.
+  have c1d2c2d1 : (c1 == d2) || c1 -- d2 || (c2 == d1) || (c2 -- d1)
+    by t_v1v2 'v2@4 'v3@4 h h_hom.
+
+  (* The following comes from the fact that vertices of P_4 are different *)
+  have a1a2b1b2 : (a1 != b1) || (a2 != b2)
+    by t_x1x2y1y2 a1 a2 b1 b2 'v0@4 'v1@4 h h_inj.
+  have a1a2c1c2 : (a1 != c1) || (a2 != c2)
+    by t_x1x2y1y2 a1 a2 c1 c2 'v0@4 'v2@4 h h_inj.
+  have a1a2d1d2 : (a1 != d1) || (a2 != d2)
+    by t_x1x2y1y2 a1 a2 d1 d2 'v0@4 'v3@4 h h_inj.
+  have b1b2c1c2 : (b1 != c1) || (b2 != c2)
+    by t_x1x2y1y2 b1 b2 c1 c2 'v1@4 'v2@4 h h_inj.
+  have b1b2d1d2 : (b1 != d1) || (b2 != d2)
+    by t_x1x2y1y2 b1 b2 d1 d2 'v1@4 'v3@4 h h_inj.
+  have c1c2d1d2 : (c1 != d1) || (c2 != d2)
+    by t_x1x2y1y2 c1 c2 d1 d2 'v2@4 'v3@4 h h_inj.
+
+  (* The following comes from the no-edges of P_4 in G' *)
+  have a1c2a2c1 : (a1 != c2) && (~~ a1 -- c2) && (a2 != c1) && (~~ a2 -- c1)
+    by t_x1y2x2y1 a1 a2 c1 c2 'v0@4 'v2@4 h h_hom.
+  have a1d2a2d1 : (a1 != d2) && (~~ a1 -- d2) && (a2 != d1) && (~~ a2 -- d1)
+    by t_x1y2x2y1 a1 a2 d1 d2 'v0@4 'v3@4 h h_hom.
+  have b1d2b2d1 : (b1 != d2) && (~~ b1 -- d2) && (b2 != d1) && (~~ b2 -- d1)
+    by t_x1y2x2y1 b1 b2 d1 d2 'v1@4 'v3@4 h h_hom.
+
+  (* Here is a proof of injectivity of a given function, by giving proofs of
+     inequalities among their vertices *)
+  have h'_inj (h' : 'P_4 -> G)
+    (v0v1 : h' 'v0@4 != h' 'v1@4) (v0v2 : h' 'v0@4 != h' 'v2@4)
+    (v0v3 : h' 'v0@4 != h' 'v3@4) (v1v2 : h' 'v1@4 != h' 'v2@4)
+    (v1v3 : h' 'v1@4 != h' 'v3@4) (v2v3 : h' 'v2@4 != h' 'v3@4)
+       : forall x1 x2 : 'P_4, h' x1 = h' x2 -> x1 = x2.
+  { admit. }
+
+  (* Here is a proof of the homomorphism of a given function, by giving proofs
+     of the edges and non-edges of the P_4 *)
+  have h'_hom (h' : 'P_4 -> G)
+    (e_v0v1 : h' 'v0@4 -- h' 'v1@4) (e_v1v2 : h' 'v1@4 -- h' 'v2@4)
+    (e_v2v3 : h' 'v2@4 -- h' 'v3@4) (n_v0v2 : ~~ h' 'v0@4 -- h' 'v2@4)
+    (n_v0v3 : ~~ h' 'v0@4 -- h' 'v3@4) (n_v1v3 : ~~ h' 'v1@4 -- h' 'v3@4)
+       : forall x1 x2 : 'P_4, x1 -- x2 <-> h' x1 -- h' x2.
+  { admit. }
+
+  (* Start separation in cases... *)
+  case/orP: a1a2 => [ a1eqa2 | a1neqa2 ].
+  - case/orP: b1b2 => [ b1eqb2 | b1neqb2 ].
+    + case/orP: c1c2 => [ c1eqc2 | c1neqc2 ].
+      * case/orP: d1d2 => [ d1eqd2 | d1neqd2 ].
+        (* a a --- b b --- c c --- d d *)
+        -- left ; pose h' (v : 'P_4) :=
+                  match v with
+                  | Ordinal 0 _ => a1
+                  | Ordinal 1 _ => b1
+                  | Ordinal 2 _ => c1
+                  | Ordinal _ _ => d1
+                  end.
+           exists h'.
+           ++ apply: h'_inj ; rewrite /=.
+              ** by move: a1a2b1b2 ; rewrite (eqP a1eqa2) (eqP b1eqb2) orbb.
+              ** by move: a1a2c1c2 ; rewrite (eqP a1eqa2) (eqP c1eqc2) orbb.
+              ** by move: a1a2d1d2 ; rewrite (eqP a1eqa2) (eqP d1eqd2) orbb.
+              ** by move: b1b2c1c2 ; rewrite (eqP b1eqb2) (eqP c1eqc2) orbb.
+              ** by move: b1b2d1d2 ; rewrite (eqP b1eqb2) (eqP d1eqd2) orbb.
+              ** by move: c1c2d1d2 ; rewrite (eqP c1eqc2) (eqP d1eqd2) orbb.
+           ++ apply: h'_hom ; rewrite /=.
+              ** move: a1a2b1b2 ; rewrite (eqP a1eqa2) (eqP b1eqb2) orbb.
+                 move: a1b2a2b1 ; rewrite (eqP a1eqa2) (eqP b1eqb2) -orbA orbb.
+                 case/orP ; [move/eqP=> ? ; move/eqP ; contradiction | by []].
+              ** move: b1b2c1c2 ; rewrite (eqP b1eqb2) (eqP c1eqc2) orbb.
+                 move: b1c2b2c1 ; rewrite (eqP b1eqb2) (eqP c1eqc2) -orbA orbb.
+                 case/orP ; [move/eqP=> ? ; move/eqP ; contradiction | by []].
+              ** move: c1c2d1d2 ; rewrite (eqP c1eqc2) (eqP d1eqd2) orbb.
+                 move: c1d2c2d1 ; rewrite (eqP c1eqc2) (eqP d1eqd2) -orbA orbb.
+                 case/orP ; [move/eqP=> ? ; move/eqP ; contradiction | by []].
+              ** by move: a1c2a2c1 => /andP [_] ; rewrite (eqP a1eqa2).
+              ** by move: a1d2a2d1 => /andP [_] ; rewrite (eqP a1eqa2).
+              ** by move: b1d2b2d1 => /andP [_] ; rewrite (eqP b1eqb2).
+        (* a a --- b b --- c c --- c d2 *)
+        -- left ; pose h' (v : 'P_4) :=
+                  match v with
+                  | Ordinal 0 _ => a1
+                  | Ordinal 1 _ => b1
+                  | Ordinal 2 _ => c1
+                  | Ordinal _ _ => if (c1 -- d1) then d1 else d2
+                  end.
+           exists h'.
+           ++ apply: h'_inj ; rewrite /=.
+              ** by move: a1a2b1b2 ; rewrite (eqP a1eqa2) (eqP b1eqb2) orbb.
+              ** by move: a1a2c1c2 ; rewrite (eqP a1eqa2) (eqP c1eqc2) orbb.
+              ** rewrite (fun_if (fun d => a1 != d)) ; case: (boolP (c1 -- d1)).
+                 --- by move: a1d2a2d1 => /andP [/andP [_ ?]] ; rewrite (eqP a1eqa2).
+                 --- by move: a1d2a2d1 => /andP [/andP [ /andP [? _]]].
+              ** by move: b1b2c1c2 ; rewrite (eqP b1eqb2) (eqP c1eqc2) orbb.
+              ** rewrite (fun_if (fun d => b1 != d)) ; case: (boolP (c1 -- d1)).
+                 --- by move: b1d2b2d1 => /andP [/andP [_ ?]] ; rewrite (eqP b1eqb2).
+                 --- by move: b1d2b2d1 => /andP [/andP [ /andP [? _]]].
+              ** rewrite (fun_if (fun d => c1 != d)) ; case: (boolP (c1 -- d1)).
+                 --- by apply: contraL ; move/eqP-> ; rewrite sg_irrefl.
+                 --- by apply: contra ; move/eqP-> ; rewrite sg_sym.
+           ++ apply: h'_hom ; rewrite /=.
+              ** move: a1a2b1b2 ; rewrite (eqP a1eqa2) (eqP b1eqb2) orbb.
+                 move: a1b2a2b1 ; rewrite (eqP a1eqa2) (eqP b1eqb2) -orbA orbb.
+                 case/orP ; [move/eqP=> ? ; move/eqP ; contradiction | by []].
+              ** move: b1b2c1c2 ; rewrite (eqP b1eqb2) (eqP c1eqc2) orbb.
+                 move: b1c2b2c1 ; rewrite (eqP b1eqb2) (eqP c1eqc2) -orbA orbb.
+                 case/orP ; [move/eqP=> ? ; move/eqP ; contradiction | by []].
+              ** rewrite (fun_if (fun d => c1 -- d)) ; case: (boolP (c1 -- d1)).
+                 --- by move=> _.
+                 --- move: c1d2c2d1 ; rewrite (eqP c1eqc2) ; case/orP ; last
+                       by move=> ? /negP ; contradiction.
+                     case/orP ; last by move/eqP->.
+                     case/orP ; last by [].
+                     by move/eqP-> ; apply: contraR ; rewrite sg_sym.
+              ** by move: a1c2a2c1 => /andP [_] ; rewrite (eqP a1eqa2).
+              ** rewrite (fun_if (fun d => a1 -- d)) ; case: (boolP (c1 -- d1)).
+                 --- by move: a1d2a2d1 => /andP [/andP [_ ?]] ; rewrite (eqP a1eqa2).
+                 --- by move: a1d2a2d1 => /andP [/andP [ /andP [_ ?]]].
+              ** rewrite (fun_if (fun d => b1 -- d)) ; case: (boolP (c1 -- d1)).
+                 --- by move: b1d2b2d1 => /andP [/andP [_ ?]] ; rewrite (eqP b1eqb2).
+                 --- by move: b1d2b2d1 => /andP [/andP [ /andP [_ ?]]].
+      * admit.
+    + admit.
+  - admit.
+Admitted.
+
+Corollary G'P4free'_rev : GP4 \subgraph G' -> GP4 \subgraph G \/ GK23 \subgraph G.
+Proof.
+  move=> /(subgraph_trans (sub_G2_G1 G_is_P4)) P4subG'.
+  move: (G'P4free_rev P4subG') ; case.
+  - by left ; apply: (subgraph_trans (sub_G1_G2 G_is_P4)).
+  - by right ; apply: (subgraph_trans (sub_G1_G2 G_is_K23)).
 Qed.
 
 End Upper_Weighted_Irredundant_Properties.
