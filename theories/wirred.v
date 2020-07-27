@@ -542,13 +542,7 @@ Section Construction_of_Induced_Subgraphs.
 
 (* ¿Hay una manera de dar el objeto de la prueba 'rewrite inE' en cada una de las
    siguientes construcciones de Sub para ahorrarme de escribir todas estas lineas
-   de pruebas idénticas?
-
-   Daniel: Probé crear el objeto matemático con Print pero hay un problema con dar la
-   prueba de que dos vértices son -*- en el grafo original, que parece que el rewrite
-   rellena ese agujero. Es decir, el problema se puede reducir al de dar esa prueba.
-   De momento puse todo dentro de las pruebas.
-*)
+   de pruebas idénticas? *)
 
 Lemma P4subK23' : 'P_4 \subgraph newgraph 'K_2,3.
 Proof.
@@ -686,6 +680,10 @@ Proof.
     by apply: G'clawfree ; right ; right ; right.
 Qed.
 
+Lemma forallOrdinalP4 (p : 'P_4 -> Prop) :
+  (forall v : 'P_4, p v) = (p 'v0@4 /\ p 'v1@4 /\ p 'v2@4 /\ p 'v3@4).
+Admitted.
+
 Ltac t_x1x2 x1 x2 :=
   (suff : (x1, x2) \in V' G by rewrite /V' in_set /=) ;
   rewrite /x1 /x2 -surjective_pairing ; apply/valP.
@@ -763,7 +761,13 @@ Proof.
     (v0v3 : h' 'v0@4 != h' 'v3@4) (v1v2 : h' 'v1@4 != h' 'v2@4)
     (v1v3 : h' 'v1@4 != h' 'v3@4) (v2v3 : h' 'v2@4 != h' 'v3@4)
        : forall x1 x2 : 'P_4, h' x1 = h' x2 -> x1 = x2.
-  { admit. }
+  { move: (negP v0v1) => ?. move: (negP v0v2) => ?. move: (negP v0v3) => ?.
+    move: (negP v1v2) => ?. move: (negP v1v3) => ?. move: (negP v2v3) => ?.
+    rewrite !forallOrdinalP4 ; do 6 try split.
+    all : try by [].
+    all : try by move/eqP ; contradiction.
+    all : try by move/eqP ; rewrite eq_sym ; contradiction.
+  }
 
   (* Here is a proof of the homomorphism of a given function, by giving proofs
      of the edges and non-edges of the P_4 *)
@@ -772,7 +776,13 @@ Proof.
     (e_v2v3 : h' 'v2@4 -- h' 'v3@4) (n_v0v2 : ~~ h' 'v0@4 -- h' 'v2@4)
     (n_v0v3 : ~~ h' 'v0@4 -- h' 'v3@4) (n_v1v3 : ~~ h' 'v1@4 -- h' 'v3@4)
        : forall x1 x2 : 'P_4, x1 -- x2 <-> h' x1 -- h' x2.
-  { admit. }
+  { rewrite !forallOrdinalP4 ; do 7 try split.
+    all : try by [].
+    all : try by rewrite !sg_irrefl ; apply/implyP.
+    all : try by rewrite [in X in _ -> X]sg_sym.
+    all : try by apply: contraLR.
+    all : try by rewrite [in X in X -> _]sg_sym ; apply: contraLR.
+  }
 
   (* Start separation in cases... *)
   case/orP: a1a2 => [ a1eqa2 | a1neqa2 ].
