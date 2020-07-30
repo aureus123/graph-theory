@@ -304,7 +304,7 @@ Section set_h_vertex_and_its_private_definition.
   Fact h_DwP (x : G') : x \in h_Dw -> (val x).1 \in D /\ (val x).2 \in private_set D (val x).1.
   Proof. move=> H; split. by exact: h_Dw1. by exact: h_Dw2. Qed.
 
-  Fact h_Dw_unique (u v : G') : u \in h_Dw -> v \in h_Dw ->
+(*  Fact h_Dw_unique (u v : G') : u \in h_Dw -> v \in h_Dw ->
           sval u != sval v -> (sval u).1 != (sval v).1.
   Proof.
     move=> uDw vDw; apply/contra=> u1eqv1.
@@ -318,10 +318,22 @@ Section set_h_vertex_and_its_private_definition.
     exact: eq_xchoose (elimTF (set0Pn (private_set D a))
      (elimTF (irredundantP D) Dirr a aD)) (elimTF (set0Pn (private_set D b))
      (elimTF (irredundantP D) Dirr b bD)) H.
+  Qed. *)
+Fact fst_inj_on_h_Dw (u v : G') : u \in h_Dw -> v \in h_Dw ->
+          (sval u).1 = (sval v).1 -> u = v.
+  Proof.
+    move=> /bigcupP [? ?]; rewrite h_vw'1 => /set1P uprva.
+    move=> /bigcupP [? ?]; rewrite h_vw'1 => /set1P vprvb u1eqv1.
+    apply/eqP/andP; split; apply/eqP; first exact: u1eqv1.
+    rewrite uprva vprvb !h_vw1 in u1eqv1.
+    rewrite uprva vprvb.
+    apply/eq_xchoose.
+    by rewrite u1eqv1.
   Qed.
 
   Lemma h_Dw_stable : @stable G' h_Dw.
   Proof.
+(* RK: Proof using h_Dw_unique.
     apply/stableP=> [u v uh_Dw vh_Dw].
     have/h_DwP [u1D u2prvu1] := uh_Dw. have/h_DwP [v1D v2prvv1] := vh_Dw.
     suff: ~~ (newgraph_rel u v) by rewrite /=.
@@ -332,7 +344,16 @@ Section set_h_vertex_and_its_private_definition.
       move/negP: (h_Dw_unique uh_Dw vh_Dw uneqv). by rewrite v1equ1 eq_refl.
     - rewrite cl_sg_sym=> u1domv2; move/privateP: (v2prvv1)=> [_ prvu2].
       move: (prvu2 (sval u).1 u1D u1domv2)=> v1equ1.
-      move/negP: (h_Dw_unique uh_Dw vh_Dw uneqv). by rewrite v1equ1 eq_refl.
+      move/negP: (h_Dw_unique uh_Dw vh_Dw uneqv). by rewrite v1equ1 eq_refl. *)
+    apply/stableP=> [u v uh_Dw vh_Dw].
+    have/h_DwP [u1D u2prvu1] := uh_Dw; have/h_DwP [v1D v2prvv1] := vh_Dw.
+    apply/contraT; move/negPn.
+    move/andP=> [uneqv /orP H].
+    case: H => [v1domu2 | ].
+    - move/privateP: (u2prvu1)=> [_ prvu2].
+      by rewrite (fst_inj_on_h_Dw vh_Dw uh_Dw (prvu2 (sval v).1 v1D v1domu2)) eq_refl in uneqv.
+    - rewrite cl_sg_sym=> u1domv2; move/privateP: (v2prvv1)=> [_ prvu2].
+      by rewrite (fst_inj_on_h_Dw uh_Dw vh_Dw (prvu2 (sval u).1 u1D u1domv2)) eq_refl in uneqv.
   Qed.
 
   (* Proof not using induction. Needs lemma from preliminaries. *)
