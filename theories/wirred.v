@@ -694,11 +694,7 @@ Lemma forallOrdinalI4 (p : 'I_4 -> Prop) :
   (forall v : 'I_4, p v) <-> (p 'v0@4 /\ p 'v1@4 /\ p 'v2@4 /\ p 'v3@4).
 Proof.
   split.
-  - move=> H ; do 3 try split.
-    + by move: (H 'v0@4).
-    + by move: (H 'v1@4).
-    + by move: (H 'v2@4).
-    + by move: (H 'v3@4).
+  - by move=> H; do 3 try split; apply: H.
   - move=> [pv0 [pv1 [pv2 pv3]]] [v vlt4].
     do 4 try destruct v.
     all : try by rewrite (bool_irrelevance vlt4 isT).
