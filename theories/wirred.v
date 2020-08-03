@@ -27,8 +27,8 @@ Proof.
   suff: N[v] = NS[D :&: [set v]] by move->.
   rewrite (setIidPr _) ?sub1set //.
   apply/eqP ; rewrite eqEsubset ; apply/andP ; split.
-  - apply: cln_sub_clns. by rewrite in_set1.
-  - apply/subsetP => x. move/bigcupP. elim=> z ; rewrite in_set1. by move/eqP->.
+  - by apply: cln_sub_clns; rewrite in_set1.
+  - apply/subsetP => x. move/bigcupP. move=> [z] ; rewrite in_set1. by move/eqP->.
 Qed.
 
 Lemma eq0prvs' (v : G) : v \notinD -> (private_set' v == set0).
@@ -99,87 +99,122 @@ Notation "A \subgraph B" := (induced_subgraph A B) (at level 70, no associativit
 
 
 (**********************************************************************************)
-Section Newgraph_construction.
+Section TrfGraph_construction.
 
 Variable G : sgraph.
 
-Definition V' := [set x : G * G | x.1 -*- x.2].
+(*Definition V' := [set x : G * G | x.1 -*- x.2].
 
-Definition newgraph_type := sig [eta mem V'].
+Definition newgraph_type := sig [eta mem V'].*)
 
-Definition newgraph_rel := [rel x y : newgraph_type | (val x != val y)
-                                                   && (((val y).1 -*- (val x).2)
-                                                   || ((val y).2 -*- (val x).1))].
+Inductive trfgraph_vert_type := TrfGraphVert (x : G * G) of (x.1 -*- x.2).
+Coercion of_trfgraph_vert_type x := let: TrfGraphVert s _ := x in s.
+Canonical trfgraph_vert_subType := [subType for of_trfgraph_vert_type].
+Definition trfgraph_vert_eqMixin := Eval hnf in [eqMixin of trfgraph_vert_type by <:].
+Canonical trfgraph_vert_eqType := Eval hnf in EqType trfgraph_vert_type trfgraph_vert_eqMixin.
+Definition trfgraph_vert_choiceMixin := [choiceMixin of trfgraph_vert_type by <:].
+Canonical trfgraph_vert_choiceType := Eval hnf in ChoiceType trfgraph_vert_type trfgraph_vert_choiceMixin.
+Definition trfgraph_vert_countMixin := [countMixin of trfgraph_vert_type by <:].
+Canonical trfgraph_vert_countType := Eval hnf in CountType trfgraph_vert_type trfgraph_vert_countMixin.
+Canonical trfgraph_vert_subCountType := [subCountType of trfgraph_vert_type].
 
-Lemma newgraph_sym : symmetric newgraph_rel.
+Definition trfgraph_vert_enum : seq trfgraph_vert_type :=
+  pmap insub (enum [set x : G * G | (x.1 -*- x.2)]).
+
+Fact trfgraph_vert_enum_uniq : uniq trfgraph_vert_enum.
 Proof.
-  rewrite /symmetric /newgraph_rel /= => x y.
+by apply: pmap_sub_uniq; apply: enum_uniq.
+Qed.
+
+Fact mem_trfgraph_vert_enum x : x \in trfgraph_vert_enum.
+Proof.
+rewrite mem_pmap_sub mem_enum in_set.
+by move: (valP x).
+Qed.
+
+Definition trfgraph_vert_finMixin :=
+  Eval hnf in UniqFinMixin trfgraph_vert_enum_uniq mem_trfgraph_vert_enum.
+Canonical trfgraph_vert_finType := Eval hnf in FinType trfgraph_vert_type trfgraph_vert_finMixin.
+Canonical trfgraph_vert_subFinType := Eval hnf in [subFinType of trfgraph_vert_type].
+
+
+(*Definition newgraph_rel := [rel x y : newgraph_type | (val x != val y)
+                                                   && (((val y).1 -*- (val x).2)
+                                                   || ((val y).2 -*- (val x).1))].*)
+Definition trfgraph_rel := [rel x y : trfgraph_vert_type | (x != y)
+                                                   && ((y.1 -*- x.2)
+                                                   || (y.2 -*- x.1))].
+
+Lemma trfgraph_sym : symmetric trfgraph_rel.
+Proof.
+  rewrite /symmetric /trfgraph_rel /= => x y.
   rewrite eq_sym ; apply: andb_id2l => _ ; rewrite cl_sg_sym orbC ; apply: orb_id2r => _.
   by rewrite cl_sg_sym.
 Qed.
 
-Lemma newgraph_irrefl : irreflexive newgraph_rel.
-Proof. rewrite /irreflexive /newgraph_rel /= ; move=> x ; rewrite eq_refl //. Qed.
+Lemma trfgraph_irrefl : irreflexive trfgraph_rel.
+Proof. rewrite /irreflexive /trfgraph_rel /= ; move=> x ; rewrite eq_refl //. Qed.
 
-Definition newgraph := SGraph newgraph_sym newgraph_irrefl.
+Definition trfgraph := SGraph trfgraph_sym trfgraph_irrefl.
 
-End Newgraph_construction.
+End TrfGraph_construction.
 
-Section Newgraph_Subgraph.
+Section TrfGraph_Subgraph.
 
 Variable G H : sgraph.
-Let G' := newgraph G.
-Let H' := newgraph H.
+Let G' := trfgraph G.
+Let H' := trfgraph H.
 Variable h : G -> H.
 Hypothesis inj_h : injective h.
 Hypothesis ind_hom_h : induced_hom h.
 Variable v : G'.
 
-Let hv1_hv2_in_H' : (h (val v).1, h (val v).2) \in V' H.
+Let hv1_hv2_in_H' : (h v.1, h v.2).1 -*- (h v.1, h v.2).2.
 Proof.
-  rewrite inE /=. move: (valP v); rewrite !inE.
-  rewrite [(val v).1 -*- (val v).2]/dominates; case/orP.
-  - move/eqP ->; exact: dominates_refl.
-  - by rewrite ind_hom_h=> dom; apply/orP/or_intror.
+by case/orP: (valP v) => [/eqP -> | /ind_hom_h ?];
+  [exact: dominates_refl | apply/orP; right].
 Qed.
 
-Lemma h_eq (w : G') : ((val v).1 == (val w).2) = (h (val v).1 == h (val w).2).
+Lemma h_eq (w : G') : (v.1 == w.2) = (h v.1 == h w.2).
 Proof.
-  case (boolP ((val v).1 == (val w).2)).
+  case (boolP (v.1 == w.2)).
     - by move/eqP=> eq; rewrite eq !eq_refl.
-    - apply/contraNeq; rewrite negbK; move/eqP. by move=> hip; move: (inj_h hip); move ->.
+    - apply/contraNeq; rewrite negbK; move/eqP.
+      by move=> hip; move: (inj_h hip); move ->.
 Qed.
 
-Lemma h_adj (w : G') : ((val v).1 -- (val w).2) = (h (val v).1 -- h (val w).2).
+Lemma h_adj (w : G') : (v.1 -- w.2) = (h v.1 -- h w.2).
 Proof.
-  case (boolP ((val v).1 -- (val w).2)); last first.
-  apply/contraNeq; rewrite negbK. all: by rewrite ind_hom_h.
+by case: (boolP (v.1 -- w.2));
+  [ | apply/contraNeq; rewrite negbK]; rewrite ind_hom_h.
 Qed.
 
-Definition hv := Sub (h (val v).1, h (val v).2) hv1_hv2_in_H' : H'.
+(*Definition hv := Sub (h (val v).1, h (val v).2) hv1_hv2_in_H' : H'.*)
+Definition hv := TrfGraphVert hv1_hv2_in_H'.
 
-End Newgraph_Subgraph.
+End TrfGraph_Subgraph.
 
-Lemma newgraph_subgraph (G H : sgraph) : G \subgraph H -> newgraph G \subgraph newgraph H.
+Lemma trfgraph_subgraph (G H : sgraph) : G \subgraph H -> trfgraph G \subgraph trfgraph H.
 Proof.
-  elim=> [h inj_h ind_hom_h].
+  move=> [h inj_h ind_hom_h].
   exists (hv ind_hom_h).
   - move=> x y /eqP/andP [/eqP ? /eqP ?].
     by apply/val_inj/eqP/andP; split; apply/eqP/inj_h.
   - move=> x y.
-    suff: newgraph_rel x y <-> newgraph_rel (hv ind_hom_h x) (hv ind_hom_h y) by [].
-    rewrite /newgraph_rel /dominates /=.
-    have eq1 : (sval x != sval y) = ((h (sval x).1, h (sval x).2) != (h (sval y).1, h (sval y).2)).
-    { case (boolP (sval x != sval y)).
+    suff: trfgraph_rel x y <-> trfgraph_rel (hv ind_hom_h x) (hv ind_hom_h y) by [].
+    rewrite /trfgraph_rel /dominates /=.
+    have eq1 : (x != y) = ((h x.1, h x.2) != (h y.1, h y.2)).
+    { case (boolP (x != y)).
       + apply/contraNeq; rewrite negbK; move/eqP; rewrite pair_equal_spec=> [[h1 h2]].
-        have ? := inj_h (sval x).1 (sval y).1 h1; have ? := inj_h (sval x).2 (sval y).2 h2.
-        rewrite [val x]surjective_pairing [val y]surjective_pairing xpair_eqE; apply/andP.
+        have ? := inj_h x.1 y.1 h1; have ? := inj_h x.2 y.2 h2.
+        apply/eqP/val_inj; rewrite [val x]surjective_pairing [val y]surjective_pairing.
+        apply/eqP; rewrite xpair_eqE; apply/andP.
         split; by apply/eqP.
       + rewrite negbK [val x]surjective_pairing [val y]surjective_pairing xpair_eqE=>/andP [/eqP h1 /eqP h2].
-        by rewrite h1 h2 /= eq_refl.
+        by rewrite h1 h2 //= !eq_refl.
     }
-    move: (h_eq inj_h x y); rewrite eq_sym [(h (val x).1 == h (val y).2)]eq_sym; move ->.
-    move: (h_adj ind_hom_h x y); rewrite sg_sym [(h (val x).1 -- h (val y).2)]sg_sym; move ->.
+    move: (h_eq inj_h x y); rewrite eq_sym [(h x.1 == h y.2)]eq_sym; move ->.
+    move: (h_adj ind_hom_h x y); rewrite sg_sym [(h x.1 -- h y.2)]sg_sym; move ->.
     by rewrite eq1 (h_eq inj_h y x) (h_adj ind_hom_h y x).
 Qed.
 
@@ -190,8 +225,8 @@ Variable G : sgraph.
 Variable weight : G -> nat.
 Hypothesis positive_weights : forall v : G, weight v > 0.
 
-Let G' := newgraph G.
-Let weight' := fun x : G' => weight (val x).1.
+Let G' := trfgraph G.
+Let weight' := fun x : G' => weight x.1.
 Let W := weight_set weight.
 Let W' := weight_set weight'.
 
@@ -202,15 +237,17 @@ Proof. by rewrite /weight'. Qed.
 Section h_counterpart_definition.
   Variable v : G.
 
-  Let vv_in_V' : (v, v) \in V' G.
-  Proof. by rewrite /V' in_set /= dominates_refl. Qed.
 
-  Definition h_vv := Sub (v, v) vv_in_V' : G'.
+  Let vv_in_V' : (v, v).1 -*- (v, v).2.
+  Proof. exact: dominates_refl. Qed.
 
-  Fact h_vv1 : (val h_vv).1 = v.
+  (*Definition h_vv := Sub (v, v) vv_in_V' : G'.*)
+  Definition h_vv := TrfGraphVert vv_in_V' : G'.
+
+Fact h_vv1 : h_vv.1 = v.
   Proof. by rewrite /=. Qed.
 
-  Fact h_vv2 : (val h_vv).2 = v.
+  Fact h_vv2 : h_vv.2 = v.
   Proof. by rewrite /=. Qed.
 End h_counterpart_definition.
 
@@ -262,15 +299,16 @@ Section set_h_vertex_and_its_private_definition.
       Let w : G := xchoose w_exists.
       Let w_is_private : w \in private_set D v := xchooseP w_exists.
 
-      Let vw_in_V' : (v, w) \in V' G.
-      Proof. by rewrite /V' in_set /= ; move/privateP: w_is_private => [? _]. Qed.
+      Let vw_in_V' : (v, w).1 -*- (v, w).2.
+      Proof. by move/privateP: w_is_private => [? _]. Qed.
 
-      Definition h_vw := Sub (v, w) vw_in_V' : G'.
+      (*Definition h_vw := Sub (v, w) vw_in_V' : G'.*)
+      Definition h_vw := TrfGraphVert vw_in_V'.
 
-      Fact h_vw1 : (val h_vw).1 = v.
+      Fact h_vw1 : h_vw.1 = v.
       Proof. by rewrite /=. Qed.
 
-      Fact h_vw2 : (val h_vw).2 \in private_set D v.
+      Fact h_vw2 : h_vw.2 \in private_set D v.
       Proof. by rewrite /=. Qed.
     End h_vertex_in_D_and_its_private_definition.
 
@@ -289,38 +327,24 @@ Section set_h_vertex_and_its_private_definition.
 
   Definition h_Dw := \bigcup_(v in D) (h_vw' v).
 
-  Fact h_Dw1 (x : G') : x \in h_Dw -> (val x).1 \in D.
+  Fact h_Dw1 (x : G') : x \in h_Dw -> x.1 \in D.
   Proof.
     rewrite /h_Dw ; move/bigcupP=> [v vinD].
     by rewrite (h_vw'1 vinD) in_set1 ; move/eqP-> ; rewrite h_vw1.
   Qed.
 
-  Fact h_Dw2 (x : G') : x \in h_Dw -> (val x).2 \in private_set D (val x).1.
+  Fact h_Dw2 (x : G') : x \in h_Dw -> x.2 \in private_set D x.1.
   Proof.
     rewrite /h_Dw ; move/bigcupP=> [v vinD].
     by rewrite (h_vw'1 vinD) in_set1 ; move/eqP-> ; rewrite h_vw2.
   Qed.
 
-  Fact h_DwP (x : G') : x \in h_Dw -> (val x).1 \in D /\ (val x).2 \in private_set D (val x).1.
-  Proof. move=> H; split. by exact: h_Dw1. by exact: h_Dw2. Qed.
+  Fact h_DwP (x : G') : x \in h_Dw -> x.1 \in D /\ x.2 \in private_set D x.1.
+  Proof. by  move=> ?; split; [exact: h_Dw1 | exact: h_Dw2]. Qed.
 
-(*  Fact h_Dw_unique (u v : G') : u \in h_Dw -> v \in h_Dw ->
-          sval u != sval v -> (sval u).1 != (sval v).1.
-  Proof.
-    move=> uDw vDw; apply/contra=> u1eqv1.
-    suff: ((sval u).1 == (sval v).1) && ((sval u).2 == (sval v).2) by auto.
-    apply/andP; split; first by []. move/eqP in u1eqv1.
-    have/bigcupP [a aD] := uDw; rewrite h_vw'1; move/set1P=>uprva.
-    have/bigcupP [b bD] := vDw; rewrite h_vw'1; move/set1P=>vprvb.
-    rewrite uprva vprvb !h_vw1 in u1eqv1.
-    have H : (fun x => x \in private_set D a) =1 (fun x => x \in private_set D b) by rewrite u1eqv1.
-    rewrite uprva vprvb /h_vw /=; apply/eqP.
-    exact: eq_xchoose (elimTF (set0Pn (private_set D a))
-     (elimTF (irredundantP D) Dirr a aD)) (elimTF (set0Pn (private_set D b))
-     (elimTF (irredundantP D) Dirr b bD)) H.
-  Qed. *)
+
 Fact fst_inj_on_h_Dw (u v : G') : u \in h_Dw -> v \in h_Dw ->
-          (sval u).1 = (sval v).1 -> u = v.
+          u.1 = v.1 -> u = v.
   Proof.
     move=> /bigcupP [? ?]; rewrite h_vw'1 => /set1P uprva.
     move=> /bigcupP [? ?]; rewrite h_vw'1 => /set1P vprvb u1eqv1.
@@ -333,27 +357,15 @@ Fact fst_inj_on_h_Dw (u v : G') : u \in h_Dw -> v \in h_Dw ->
 
   Lemma h_Dw_stable : @stable G' h_Dw.
   Proof.
-(* RK: Proof using h_Dw_unique.
-    apply/stableP=> [u v uh_Dw vh_Dw].
-    have/h_DwP [u1D u2prvu1] := uh_Dw. have/h_DwP [v1D v2prvv1] := vh_Dw.
-    suff: ~~ (newgraph_rel u v) by rewrite /=.
-    apply/contraT; move/negPn; rewrite /newgraph_rel /=.
-    move/andP=> [uneqv /orP H]; elim H.
-    - move=> v1domu2; move/privateP: (u2prvu1)=> [_ prvu2].
-      move: (prvu2 (sval v).1 v1D v1domu2)=> v1equ1.
-      move/negP: (h_Dw_unique uh_Dw vh_Dw uneqv). by rewrite v1equ1 eq_refl.
-    - rewrite cl_sg_sym=> u1domv2; move/privateP: (v2prvv1)=> [_ prvu2].
-      move: (prvu2 (sval u).1 u1D u1domv2)=> v1equ1.
-      move/negP: (h_Dw_unique uh_Dw vh_Dw uneqv). by rewrite v1equ1 eq_refl. *)
     apply/stableP=> [u v uh_Dw vh_Dw].
     have/h_DwP [u1D u2prvu1] := uh_Dw; have/h_DwP [v1D v2prvv1] := vh_Dw.
     apply/contraT; move/negPn.
     move/andP=> [uneqv /orP H].
     case: H => [v1domu2 | ].
     - move/privateP: (u2prvu1)=> [_ prvu2].
-      by rewrite (fst_inj_on_h_Dw vh_Dw uh_Dw (prvu2 (sval v).1 v1D v1domu2)) eq_refl in uneqv.
+      by rewrite (fst_inj_on_h_Dw vh_Dw uh_Dw (prvu2 v.1 v1D v1domu2)) eq_refl in uneqv.
     - rewrite cl_sg_sym=> u1domv2; move/privateP: (v2prvv1)=> [_ prvu2].
-      by rewrite (fst_inj_on_h_Dw uh_Dw vh_Dw (prvu2 (sval u).1 u1D u1domv2)) eq_refl in uneqv.
+      by rewrite (fst_inj_on_h_Dw uh_Dw vh_Dw (prvu2 u.1 u1D u1domv2)) eq_refl in uneqv.
   Qed.
 
   (* Proof not using induction. Needs lemma from preliminaries. *)
@@ -374,19 +386,20 @@ Section set_h_inverse.
   Variable S : {set G'}.
   Hypothesis Sst : stable S.
 
-  Definition h_inv := \bigcup_(x in S) [set (val x).1].
+(*  Definition h_inv := \bigcup_(x in S) [set (val x).1].*)
+  Definition h_inv := \bigcup_(x in S) [set x.1].
 
   Lemma h_inv_irr : @irredundant G h_inv.
   Proof.
     apply/forallP=> v. apply/implyP; move/bigcupP.
     elim=> [v' v'S v'1v]; rewrite inE in v'1v; move/eqP in v'1v. apply/set0Pn.
-    exists (val v').2; apply/privateP; split. by move: (valP v'); rewrite v'1v !inE.
-    move=> u /bigcupP [u' u'S u'1v]. rewrite inE in u'1v; move/eqP in u'1v.
+    exists v'.2; apply/privateP; split; first by move: (valP v'); rewrite v'1v.
+    move=> u /bigcupP [u' u'S u'1v].
+    rewrite inE in u'1v; move/eqP in u'1v.
     move/stableP: Sst=> /(_ u' v' u'S v'S)=> u'nadjv'.
-    have: ~~ newgraph_rel u' v' by []; move/nandP; case.
-    - move/negbNE/eqP; rewrite [val u']surjective_pairing [val v']surjective_pairing.
-      by rewrite pair_equal_spec=> [[H _] _]; rewrite u'1v v'1v.
-    - move/norP=> [_ H]; rewrite u'1v cl_sg_sym. by apply/contraTeq.
+    have: ~~ trfgraph_rel u' v' by []; move/nandP; case.
+    - by move/negbNE/andP => [/eqP ? _] _; rewrite u'1v v'1v.
+    - by move/norP=> [_ ?]; rewrite u'1v cl_sg_sym; apply/contraTeq.
   Qed.
 
   Lemma weight_S_eq_h_inv : W h_inv = W' S.
@@ -394,10 +407,11 @@ Section set_h_inverse.
     rewrite /W /W' /weight_set (partition_disjoint_bigcup_P weight).
     by under eq_bigr=> v' v'S do rewrite big_set1.
     move=> i j iS jS ineqj. rewrite disjoints1 in_set1.
-    move/stableP: Sst=> /(_ i j iS jS). apply/contra=>/eqP i1eqj1.
-    suff: newgraph_rel i j by []; rewrite /newgraph_rel /=.
-    apply/andP; split. exact: ineqj.
-    apply/orP/or_introl. rewrite -i1eqj1. by move: (valP i); rewrite !inE.
+    move/stableP: Sst=> /(_ i j iS jS); apply/contra=>/eqP i1eqj1.
+    suff: trfgraph_rel i j by [].
+    apply/andP; split; first exact: ineqj.
+    apply/orP/or_introl; rewrite -i1eqj1.
+    exact: (valP i).
   Qed.
 End set_h_inverse.
 
@@ -552,7 +566,7 @@ Notation "''CC_' n" := (CCn n)
 Section Upper_Weighted_Irredundant_Properties.
 
 Variable G : sgraph.
-Let G' := newgraph G.
+Let G' := trfgraph G.
 
 (* vn@m refers to the nth. vertex of a graph of m vertices, with 0 <= n < m *)
 Notation "''v' n @ m" := (@Ordinal m n isT) (at level 0, m, n at level 8, format "''v' n @ m").
@@ -561,76 +575,76 @@ Ltac subgraph_proof Hi Hj := try (by rewrite (bool_irrelevance Hi Hj)); by rewri
 
 Section Construction_of_Induced_Subgraphs.
 
-Lemma P4_sub_P4' : 'P_4 \subgraph newgraph 'P_4.
+Lemma P4_sub_P4' : 'P_4 \subgraph trfgraph 'P_4.
 Proof. exact: subgraph_G_G'. Qed.
 
 (* ¿Hay una manera de dar el objeto de la prueba 'rewrite inE' en cada una de las
    siguientes construcciones de Sub para ahorrarme de escribir todas estas lineas
    de pruebas idénticas? *)
 
-Lemma P4_sub_K23' : 'P_4 \subgraph newgraph 'K_2,3.
+Lemma P4_sub_K23' : 'P_4 \subgraph trfgraph 'K_2,3.
 Proof.
-  have K23'_v1 : ('v3@5, 'v0@5) \in V' 'K_2,3 by rewrite inE.
-  have K23'_v2 : ('v2@5, 'v0@5) \in V' 'K_2,3 by rewrite inE.
-  have K23'_v3 : ('v1@5, 'v2@5) \in V' 'K_2,3 by rewrite inE.
-  have K23'_v4 : ('v1@5, 'v4@5) \in V' 'K_2,3 by rewrite inE.
-  pose h (v : 'P_4) : newgraph 'K_2,3 :=
+  have K23'_v1 : @dominates 'K_2,3 ('v3@5, 'v0@5).1 ('v3@5, 'v0@5).2 by done.
+  have K23'_v2 : @dominates 'K_2,3 ('v2@5, 'v0@5).1 ('v2@5, 'v0@5).2 by done.
+  have K23'_v3 : @dominates 'K_2,3 ('v1@5, 'v2@5).1 ('v1@5, 'v2@5).2 by done.
+  have K23'_v4 : @dominates 'K_2,3 ('v1@5, 'v4@5).1 ('v1@5, 'v4@5).2 by done.
+  pose h (v : 'P_4) : trfgraph 'K_2,3 :=
     match v with
-    | Ordinal 0 _ => Sub ('v3@5, 'v0@5) K23'_v1
-    | Ordinal 1 _ => Sub ('v2@5, 'v0@5) K23'_v2
-    | Ordinal 2 _ => Sub ('v1@5, 'v2@5) K23'_v3
-    | Ordinal _ _ => Sub ('v1@5, 'v4@5) K23'_v4
+    | Ordinal 0 _ => TrfGraphVert K23'_v1
+    | Ordinal 1 _ => TrfGraphVert K23'_v2
+    | Ordinal 2 _ => TrfGraphVert K23'_v3
+    | Ordinal _ _ => TrfGraphVert K23'_v4
     end.
   exists h. all: case => [[|[|[|[|i]]]] Hi]; case => [[|[|[|[|j]]]] Hj]; subgraph_proof Hi Hj.
 Qed.
 
-Lemma claw_sub_claw' : claw \subgraph newgraph claw.
+Lemma claw_sub_claw' : claw \subgraph trfgraph claw.
 Proof. exact: subgraph_G_G'. Qed.
 
-Lemma claw_sub_bull' : claw \subgraph newgraph bull.
+Lemma claw_sub_bull' : claw \subgraph trfgraph bull.
 Proof.
-  have bull'_v1 : ('v2@5, 'v3@5) \in V' bull by rewrite inE.
-  have bull'_v2 : ('v0@5, 'v0@5) \in V' bull by rewrite inE.
-  have bull'_v3 : ('v1@5, 'v1@5) \in V' bull by rewrite inE.
-  have bull'_v4 : ('v4@5, 'v4@5) \in V' bull by rewrite inE.
-  pose h (v : claw) : newgraph bull :=
+  have bull'_v1 : @dominates bull ('v2@5, 'v3@5).1 ('v2@5, 'v3@5).2 by done.
+  have bull'_v2 : @dominates bull ('v0@5, 'v0@5).1 ('v0@5, 'v0@5).2 by done.
+  have bull'_v3 : @dominates bull ('v1@5, 'v1@5).1 ('v1@5, 'v1@5).2 by done.
+  have bull'_v4 : @dominates bull ('v4@5, 'v4@5).1 ('v4@5, 'v4@5).2 by done.
+  pose h (v : claw) : trfgraph bull :=
     match v with
-    | Ordinal 0 _ => Sub ('v2@5, 'v3@5) bull'_v1
-    | Ordinal 1 _ => Sub ('v0@5, 'v0@5) bull'_v2
-    | Ordinal 2 _ => Sub ('v1@5, 'v1@5) bull'_v3
-    | Ordinal _ _ => Sub ('v4@5, 'v4@5) bull'_v4
+    | Ordinal 0 _ => TrfGraphVert bull'_v1
+    | Ordinal 1 _ => TrfGraphVert bull'_v2
+    | Ordinal 2 _ => TrfGraphVert bull'_v3
+    | Ordinal _ _ => TrfGraphVert bull'_v4
     end.
   exists h. all: case => [[|[|[|[|i]]]] Hi]; case => [[|[|[|[|j]]]] Hj]; subgraph_proof Hi Hj.
 Qed.
 
-Lemma claw_sub_P6' : claw \subgraph newgraph 'P_6.
+Lemma claw_sub_P6' : claw \subgraph trfgraph 'P_6.
 Proof.
-  have P6'_v1 : ('v3@6, 'v2@6) \in V' 'P_6 by rewrite inE.
-  have P6'_v2 : ('v1@6, 'v0@6) \in V' 'P_6 by rewrite inE.
-  have P6'_v3 : ('v5@6, 'v4@6) \in V' 'P_6 by rewrite inE.
-  have P6'_v4 : ('v2@6, 'v3@6) \in V' 'P_6 by rewrite inE.
-  pose h (v : claw) : newgraph 'P_6 :=
+  have P6'_v1 : @dominates 'P_6 ('v3@6, 'v2@6).1 ('v3@6, 'v2@6).2 by done.
+  have P6'_v2 : @dominates 'P_6 ('v1@6, 'v0@6).1 ('v1@6, 'v0@6).2 by done.
+  have P6'_v3 : @dominates 'P_6 ('v5@6, 'v4@6).1 ('v5@6, 'v4@6).2 by done.
+  have P6'_v4 : @dominates 'P_6 ('v2@6, 'v3@6).1 ('v2@6, 'v3@6).2 by done.
+  pose h (v : claw) : trfgraph 'P_6 :=
     match v with
-    | Ordinal 0 _ => Sub ('v3@6, 'v2@6) P6'_v1
-    | Ordinal 1 _ => Sub ('v1@6, 'v0@6) P6'_v2
-    | Ordinal 2 _ => Sub ('v5@6, 'v4@6) P6'_v3
-    | Ordinal _ _ => Sub ('v2@6, 'v3@6) P6'_v4
+    | Ordinal 0 _ => TrfGraphVert P6'_v1
+    | Ordinal 1 _ => TrfGraphVert P6'_v2
+    | Ordinal 2 _ => TrfGraphVert P6'_v3
+    | Ordinal _ _ => TrfGraphVert P6'_v4
     end.
   exists h. all: case => [[|[|[|[|i]]]] Hi]; case => [[|[|[|[|j]]]] Hj]; subgraph_proof Hi Hj.
 Qed.
 
-Lemma claw_sub_CC6' : claw \subgraph newgraph 'CC_6.
+Lemma claw_sub_CC6' : claw \subgraph trfgraph 'CC_6.
 Proof.
-  have CC6'_v1 : ('v5@6, 'v5@6) \in V' 'CC_6 by rewrite inE.
-  have CC6'_v2 : ('v1@6, 'v4@6) \in V' 'CC_6 by rewrite inE.
-  have CC6'_v3 : ('v3@6, 'v0@6) \in V' 'CC_6 by rewrite inE.
-  have CC6'_v4 : ('v5@6, 'v2@6) \in V' 'CC_6 by rewrite inE.
-  pose h (v : claw) : newgraph 'CC_6 :=
+  have CC6'_v1 : @dominates 'CC_6 ('v5@6, 'v5@6).1 ('v5@6, 'v5@6).2 by done.
+  have CC6'_v2 : @dominates 'CC_6 ('v1@6, 'v4@6).1 ('v1@6, 'v4@6).2 by done.
+  have CC6'_v3 : @dominates 'CC_6 ('v3@6, 'v0@6).1 ('v3@6, 'v0@6).2 by done.
+  have CC6'_v4 : @dominates 'CC_6 ('v5@6, 'v2@6).1 ('v5@6, 'v2@6).2 by done.
+  pose h (v : claw) : trfgraph 'CC_6 :=
     match v with
-    | Ordinal 0 _ => Sub ('v5@6, 'v5@6) CC6'_v1
-    | Ordinal 1 _ => Sub ('v1@6, 'v4@6) CC6'_v2
-    | Ordinal 2 _ => Sub ('v3@6, 'v0@6) CC6'_v3
-    | Ordinal _ _ => Sub ('v5@6, 'v2@6) CC6'_v4
+    | Ordinal 0 _ => TrfGraphVert CC6'_v1
+    | Ordinal 1 _ => TrfGraphVert CC6'_v2
+    | Ordinal 2 _ => TrfGraphVert CC6'_v3
+    | Ordinal _ _ => TrfGraphVert CC6'_v4
     end.
   exists h. all: case => [[|[|[|[|i]]]] Hi]; case => [[|[|[|[|j]]]] Hj]; subgraph_proof Hi Hj.
 Qed.
@@ -644,9 +658,9 @@ End Construction_of_Induced_Subgraphs.
 Theorem G'P4free : 'P_4 \subgraph G \/ 'K_2,3 \subgraph G -> 'P_4 \subgraph G'.
 Proof.
   case.
-  - move/newgraph_subgraph=> P4'subG' ;
+  - move/trfgraph_subgraph=> P4'subG' ;
     by move: (subgraph_trans P4_sub_P4' P4'subG').
-  - move/newgraph_subgraph=> K23'subG' ;
+  - move/trfgraph_subgraph=> K23'subG' ;
     by move: (subgraph_trans P4_sub_K23' K23'subG').
 Qed.
 
@@ -673,15 +687,15 @@ Theorem G'clawfree : claw \subgraph G \/ bull \subgraph G \/
                      'P_6 \subgraph G \/ 'CC_6 \subgraph G -> claw \subgraph G'.
 Proof.
   case.
-  { move/newgraph_subgraph=> claw'subG' ;
+  { move/trfgraph_subgraph=> claw'subG' ;
     by move: (subgraph_trans claw_sub_claw' claw'subG'). }
   case.
-  { move/newgraph_subgraph=> bull'subG' ;
+  { move/trfgraph_subgraph=> bull'subG' ;
     by move: (subgraph_trans claw_sub_bull' bull'subG'). }
   case. 
-  - move/newgraph_subgraph=> P6'subG' ;
+  - move/trfgraph_subgraph=> P6'subG' ;
     by move: (subgraph_trans claw_sub_P6' P6'subG'). 
-  - move/newgraph_subgraph=> CC6'subG' ;
+  - move/trfgraph_subgraph=> CC6'subG' ;
     by move: (subgraph_trans claw_sub_CC6' CC6'subG'). 
 Qed.
 
@@ -722,11 +736,11 @@ Proof.
     suff: ~ (v.+4 < 4) by contradiction.
     by apply/negP ; rewrite /=.
 Qed.
-
+(*RK
 Ltac t_x1x2 x1 x2 :=
   (suff : (x1, x2) \in V' G by rewrite /V' in_set /=) ;
   rewrite /x1 /x2 -surjective_pairing ; apply/valP.
-
+RK*)
 Ltac t_v1v2 v1 v2 h h_hom := 
   (have : (h v2) -- (h v1) by rewrite -h_hom /edge_rel /= /give_sg /=) ;
   rewrite /edge_rel /= => /andP [_] ; rewrite /dominates orbA.
@@ -739,8 +753,9 @@ Ltac t_x1x2y1y2 x1 x2 y1 y2 v1 v2 h h_inj :=
 Ltac t_x1y2x2y1 x1 x2 y1 y2 v1 v2 h h_hom := 
   (have : ~~ (h v2) -- (h v1) by apply/negP ; rewrite -h_hom /edge_rel /= /give_sg /=) ;
   rewrite /edge_rel /= negb_and negbK -/x1 -/x2 -/y1 -/y2 ;
-  (have : (sval (h v2) == sval (h v1) = false) by apply/negP ; move/eqP/val_inj/h_inj) ;
-  move-> ; rewrite orFb /dominates !negb_or andbA.
+  (have : ((h v2) == (h v1) = false) by apply/negP ; move/eqP/h_inj) ;
+  by move-> ; rewrite orFb !negb_or andbA eq_sym sg_sym' [x1 -- y2]sg_sym' [x2 == y1]eq_sym => /andP [/andP [/andP [-> ->] ->] ->].
+
 
 Theorem G'P4free_rev : 'P_4 \subgraph G' -> 'P_4 \subgraph G \/ 'K_2,3 \subgraph G.
 Proof.
@@ -748,20 +763,20 @@ Proof.
   move=> [h h_inj h_hom].
 
   (* in G', we have the path (a1,a2) - (b1,b2) - (c1,c2) - (d1,d2) *)
-  set a1 := (val (h 'v0@4)).1.
-  set a2 := (val (h 'v0@4)).2.
-  set b1 := (val (h 'v1@4)).1.
-  set b2 := (val (h 'v1@4)).2.
-  set c1 := (val (h 'v2@4)).1.
-  set c2 := (val (h 'v2@4)).2.
-  set d1 := (val (h 'v3@4)).1.
-  set d2 := (val (h 'v3@4)).2.
+  set a1 := (h 'v0@4).1.
+  set a2 := (h 'v0@4).2.
+  set b1 := (h 'v1@4).1.
+  set b2 := (h 'v1@4).2.
+  set c1 := (h 'v2@4).1.
+  set c2 := (h 'v2@4).2.
+  set d1 := (h 'v3@4).1.
+  set d2 := (h 'v3@4).2.
 
   (* The following comes from the fact that x1x2 are vertices of G' *)
-  have a1a2 : (a1 == a2) || a1 -- a2 by t_x1x2 a1 a2.
-  have b1b2 : (b1 == b2) || b1 -- b2 by t_x1x2 b1 b2.
-  have c1c2 : (c1 == c2) || c1 -- c2 by t_x1x2 c1 c2.
-  have d1d2 : (d1 == d2) || d1 -- d2 by t_x1x2 d1 d2.
+  have a1a2 : (a1 == a2) || a1 -- a2 by exact: (valP (h 'v0@4)).
+  have b1b2 : (b1 == b2) || b1 -- b2 by exact: (valP (h 'v1@4)).
+  have c1c2 : (c1 == c2) || c1 -- c2 by exact: (valP (h 'v2@4)).
+  have d1d2 : (d1 == d2) || d1 -- d2 by exact: (valP (h 'v3@4)).
 
   (* The following comes from the edges of the path P_4 in G' *)
   have a1b2a2b1 : (a1 == b2) || a1 -- b2 || (a2 == b1) || (a2 -- b1)
@@ -786,11 +801,11 @@ Proof.
     by t_x1x2y1y2 c1 c2 d1 d2 'v2@4 'v3@4 h h_inj.
 
   (* The following comes from the no-edges of P_4 in G' *)
-  have a1c2a2c1 : (a1 != c2) && (~~ a1 -- c2) && (a2 != c1) && (~~ a2 -- c1)
+  have a1c2a2c1 : (a1 != c2) && (~~ a1 -- c2) && (a2 != c1) && (~~ a2 -- c1).
     by t_x1y2x2y1 a1 a2 c1 c2 'v0@4 'v2@4 h h_hom.
-  have a1d2a2d1 : (a1 != d2) && (~~ a1 -- d2) && (a2 != d1) && (~~ a2 -- d1)
+  have a1d2a2d1 : (a1 != d2) && (~~ a1 -- d2) && (a2 != d1) && (~~ a2 -- d1).
     by t_x1y2x2y1 a1 a2 d1 d2 'v0@4 'v3@4 h h_hom.
-  have b1d2b2d1 : (b1 != d2) && (~~ b1 -- d2) && (b2 != d1) && (~~ b2 -- d1)
+  have b1d2b2d1 : (b1 != d2) && (~~ b1 -- d2) && (b2 != d1) && (~~ b2 -- d1).
     by t_x1y2x2y1 b1 b2 d1 d2 'v1@4 'v3@4 h h_hom.
 
   (* Here is a proof of injectivity of a given function, by giving proofs of
@@ -921,20 +936,20 @@ Proof.
 
   (* in G', we have the claw (b1,b2) - (a1,a2) - (c1,c2) *)
   (*                                   (d1,d2)           *)
-  set a1 := (val (h 'v0@4)).1.
-  set a2 := (val (h 'v0@4)).2.
-  set b1 := (val (h 'v1@4)).1.
-  set b2 := (val (h 'v1@4)).2.
-  set c1 := (val (h 'v2@4)).1.
-  set c2 := (val (h 'v2@4)).2.
-  set d1 := (val (h 'v3@4)).1.
-  set d2 := (val (h 'v3@4)).2.
+  set a1 := (h 'v0@4).1.
+  set a2 := (h 'v0@4).2.
+  set b1 := (h 'v1@4).1.
+  set b2 := (h 'v1@4).2.
+  set c1 := (h 'v2@4).1.
+  set c2 := (h 'v2@4).2.
+  set d1 := (h 'v3@4).1.
+  set d2 := (h 'v3@4).2.
 
   (* The following comes from the fact that x1x2 are vertices of G' *)
-  have a1a2 : (a1 == a2) || a1 -- a2 by t_x1x2 a1 a2.
-  have b1b2 : (b1 == b2) || b1 -- b2 by t_x1x2 b1 b2.
-  have c1c2 : (c1 == c2) || c1 -- c2 by t_x1x2 c1 c2.
-  have d1d2 : (d1 == d2) || d1 -- d2 by t_x1x2 d1 d2.
+  have a1a2 : (a1 == a2) || a1 -- a2 by exact: (valP (h 'v0@4)). 
+  have b1b2 : (b1 == b2) || b1 -- b2 by exact: (valP (h 'v1@4)).
+  have c1c2 : (c1 == c2) || c1 -- c2 by exact: (valP (h 'v2@4)).
+  have d1d2 : (d1 == d2) || d1 -- d2 by exact: (valP (h 'v3@4)).
 
   (* The following comes from the edges of the claw in G' *)
   have a1b2a2b1 : (a1 == b2) || a1 -- b2 || (a2 == b1) || (a2 -- b1)
