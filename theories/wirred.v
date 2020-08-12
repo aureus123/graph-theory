@@ -440,6 +440,45 @@ Proof.
     by move<- ; apply: IR_max.
 Qed.
 
+(* Section originaly in IR_upperbound.v, then moved here *)
+
+Section IR_w_upper_bound.
+
+Variable x : G.
+Let M (n : nat) := [exists v, [exists u, W(N[v] :\ u) == n]].
+Local Fact exM : exists n : nat, M n.
+Proof.
+  exists (W N(x)); do 2 (apply/existsP; exists x).
+  rewrite setU1K; auto. by rewrite in_opn sg_irrefl.
+Qed.
+Definition delta_w' := ex_minn exM.
+
+Fact delta_w'_min (u v : G) : delta_w' <= W (N[v] :\ u).
+Proof.
+  rewrite /delta_w'; have [n _ n_min] := ex_minnP.
+  apply/(n_min (W (N[v] :\ u))).
+  by apply/existsP; exists v; apply/existsP; exists u.
+Qed.
+
+Theorem IR_w_leq_V_minus_delta_w' : IR_w G weight <= W [set: G] - delta_w'.
+Proof.
+  rewrite /IR_w.
+  have [S irrS _] := arg_maxnP (fun D : {set G} => W(D)) (irr0 G).
+  case (boolP (S == set0)); first by move/eqP->; rewrite /weight_set big_set0.
+  move/set0Pn=> [u uS]. move/irredundantP in irrS.
+  move/set0Pn: (irrS u uS)=> [v /privateP [udomv H]].
+  have ?: [disjoint S & (N[v] :\ u)].
+   apply/disjointP=> w wS.
+   move/setD1P=> [wnequ wNv]. rewrite in_cln cl_sg_sym in wNv.
+   by move/negP: wnequ; rewrite (H w wS wNv).
+  have: W S <= W ([set: G] :\: (N[v] :\ u)) by apply/sub_leq_sum/subsetDP; split=>[//|//].
+  rewrite /W /weight_set sub_diff_sum; auto; move=> leq_1.
+  move: (leq_sub2l (\sum_(i in [set: G]) weight i) (delta_w'_min u v))=> leq_2.
+  exact: leq_trans leq_1 leq_2.
+Qed.
+
+End IR_w_upper_bound.
+
 End Upper_Weighted_Irredundant_Problem.
 
 

@@ -340,6 +340,24 @@ rewrite big_trivIset // big_imset => [|i j Pi' /setIdP[_ /andP [Pj notFj0]] eqFi
   by apply: contraNeq (disjF _ _ Pi Pj) _; by rewrite -setI_eq0 eqFij setIid.
 Qed.
 
+Lemma sub_diff_sum (T : finType) (A B : {set T}) (F : T -> nat) :
+ B \subset A -> \sum_(i in A :\: B) F i = \sum_(i in A) F i - \sum_(i in B) F i.
+Proof.
+  move/setIidPr=> BsubA.
+  rewrite [in X in _ = X - _](big_setID B) /=.
+  under [in X in _ = X + _ - _]eq_bigl do rewrite BsubA.
+  rewrite addnC -addnBA. by rewrite subnn addn0. auto.
+Qed.
+
+Lemma sub_leq_sum (T : finType) (A B : {set T}) (F : T -> nat) :
+ A \subset B -> \sum_(i in A) F i <= \sum_(i in B) F i.
+Proof.
+  move/setIidPr=> AsubB.
+  rewrite [in X in _ <= X](big_setID A) /=.
+  under [in X in _ <= X + _]eq_bigl do rewrite AsubB.
+  by rewrite leq_addr.
+Qed.
+
 (** usage: [elim/(size_ind f) : x] *)
 Lemma size_ind (X : Type) (f : X -> nat) (P : X -> Type) : 
   (forall x, (forall y, (f y < f x) -> P y) -> P x) -> forall x, P x.
