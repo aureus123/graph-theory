@@ -10,35 +10,6 @@ Unset Printing Implicit Defensive.
 
 Set Bullet Behavior "Strict Subproofs".
 
-(** * Alternative versions of private_set for irredundant sets *)
-Section alternative_private_set.
-
-Variable G : sgraph.
-
-Variable D : {set G}.
-
-(* This alternative definition of private_set contemplates cases where v \notin D.
- * If v belongs to D, it returns the set of private vertices; otherwise, it returns an empty set. *)
-Definition private_set' (v : G) := NS[D :&: [set v]] :\: NS[D :\: [set v]].
-
-Lemma eq_prvs_prvs' (v : G) : v \in D -> private_set' v == private_set D v.
-Proof.
-  move=> ?; rewrite /private_set /private_set'.
-  suff: N[v] = NS[D :&: [set v]] by move->.
-  rewrite (setIidPr _) ?sub1set //.
-  apply/eqP ; rewrite eqEsubset ; apply/andP ; split.
-  - by apply/cln_sub_clns/set1P.
-  - by apply/subsetP => x; move/bigcupP => [?]; move/set1P ->.
-Qed.
-
-Lemma eq0prvs' (v : G) : v \notinD -> (private_set' v == set0).
-Proof.
-  move=> vnotinD ; rewrite /private_set' disjoint_setI0 1?disjoint_sym ?disjoints1 //.
-  by rewrite clns0 set0D.
-Qed.
-
-End alternative_private_set.
-
 
 (** * Homomorphisms, isomorphisms and subgraphs. All "induced"! *)
 Section Basic_Facts_Induced_Homomorphism_Isomorphism.
@@ -103,10 +74,6 @@ Section TrfGraph_construction.
 
 Variable G : sgraph.
 
-(*Definition V' := [set x : G * G | x.1 -*- x.2].
-
-Definition newgraph_type := sig [eta mem V'].*)
-
 Inductive trfgraph_vert_type := TrfGraphVert (x : G * G) of (x.1 -*- x.2).
 Coercion of_trfgraph_vert_type x := let: TrfGraphVert s _ := x in s.
 Canonical trfgraph_vert_subType := [subType for of_trfgraph_vert_type].
@@ -137,10 +104,6 @@ Definition trfgraph_vert_finMixin :=
 Canonical trfgraph_vert_finType := Eval hnf in FinType trfgraph_vert_type trfgraph_vert_finMixin.
 Canonical trfgraph_vert_subFinType := Eval hnf in [subFinType of trfgraph_vert_type].
 
-
-(*Definition newgraph_rel := [rel x y : newgraph_type | (val x != val y)
-                                                   && (((val y).1 -*- (val x).2)
-                                                   || ((val y).2 -*- (val x).1))].*)
 Definition trfgraph_rel := [rel x y : trfgraph_vert_type | (x != y)
                                                    && ((y.1 -*- x.2)
                                                    || (y.2 -*- x.1))].
@@ -242,9 +205,7 @@ Section h_counterpart_definition.
   Let vv_in_V' : (v, v).1 -*- (v, v).2.
   Proof. exact: dominates_refl. Qed.
 
-  (*Definition h_vv := Sub (v, v) vv_in_V' : G'.*)
   Definition h_vv := TrfGraphVert vv_in_V' : G'.
-
 End h_counterpart_definition.
 
 Theorem subgraph_G_G' : G \subgraph G'.
@@ -337,9 +298,8 @@ Section set_h_vertex_and_its_private_definition.
   Fact h_DwP (x : G') : x \in h_Dw -> x.1 \in D /\ x.2 \in private_set D x.1.
   Proof. by  move=> ?; split; [exact: h_Dw1 | exact: h_Dw2]. Qed.
 
-
-Fact fst_inj_on_h_Dw (u v : G') : u \in h_Dw -> v \in h_Dw ->
-          u.1 = v.1 -> u = v.
+  Fact fst_inj_on_h_Dw (u v : G') : u \in h_Dw -> v \in h_Dw ->
+            u.1 = v.1 -> u = v.
   Proof.
     move=> /bigcupP [? ?]; rewrite h_vw'1 => /set1P uprva.
     move=> /bigcupP [? ?]; rewrite h_vw'1 => /set1P vprvb u1eqv1.
@@ -1470,5 +1430,35 @@ Proof.
 Qed.
 
 End Upper_Weighted_Irredundant_Properties.
+
+
+(** * Alternative versions of private_set for irredundant sets *)
+Section alternative_private_set.
+
+Variable G : sgraph.
+
+Variable D : {set G}.
+
+(* This alternative definition of private_set contemplates cases where v \notin D.
+ * If v belongs to D, it returns the set of private vertices; otherwise, it returns an empty set. *)
+Definition private_set' (v : G) := NS[D :&: [set v]] :\: NS[D :\: [set v]].
+
+Lemma eq_prvs_prvs' (v : G) : v \in D -> private_set' v == private_set D v.
+Proof.
+  move=> ?; rewrite /private_set /private_set'.
+  suff: N[v] = NS[D :&: [set v]] by move->.
+  rewrite (setIidPr _) ?sub1set //.
+  apply/eqP ; rewrite eqEsubset ; apply/andP ; split.
+  - by apply/cln_sub_clns/set1P.
+  - by apply/subsetP => x; move/bigcupP => [?]; move/set1P ->.
+Qed.
+
+Lemma eq0prvs' (v : G) : v \notinD -> (private_set' v == set0).
+Proof.
+  move=> vnotinD ; rewrite /private_set' disjoint_setI0 1?disjoint_sym ?disjoints1 //.
+  by rewrite clns0 set0D.
+Qed.
+
+End alternative_private_set.
 
 
