@@ -23,12 +23,12 @@ Definition private_set' (v : G) := NS[D :&: [set v]] :\: NS[D :\: [set v]].
 
 Lemma eq_prvs_prvs' (v : G) : v \in D -> private_set' v == private_set D v.
 Proof.
-  move=> vinD ; rewrite /private_set /private_set'.
+  move=> ?; rewrite /private_set /private_set'.
   suff: N[v] = NS[D :&: [set v]] by move->.
   rewrite (setIidPr _) ?sub1set //.
   apply/eqP ; rewrite eqEsubset ; apply/andP ; split.
-  - by apply: cln_sub_clns; rewrite in_set1.
-  - apply/subsetP => x. move/bigcupP. move=> [z] ; rewrite in_set1. by move/eqP->.
+  - by apply/cln_sub_clns/set1P.
+  - by apply/subsetP => x; move/bigcupP => [?]; move/set1P ->.
 Qed.
 
 Lemma eq0prvs' (v : G) : v \notinD -> (private_set' v == set0).
@@ -49,8 +49,8 @@ Definition induced_hom (G1 G2 : sgraph) (h : G1 -> G2) :=
 Lemma induced_hom_comp (G1 G2 G3 : sgraph) (h : G1 -> G2) (h' : G2 -> G3) :
   induced_hom h -> induced_hom h' -> induced_hom (h' \o h).
 Proof.
-  rewrite /induced_hom => hom_h hom_h' x y ; rewrite /comp /iff ; split.
-  all: by rewrite (hom_h x y) (hom_h' (h x) (h y)).
+  move => hom_h hom_h' x y.
+  by rewrite (hom_h x y) (hom_h' (h x) (h y)).
 Qed.
 
 Definition induced_subgraph (G1 G2 : sgraph) :=
@@ -92,7 +92,7 @@ Lemma subgraph_trans (G1 G2 G3 : sgraph) :
   induced_subgraph G2 G3 -> induced_subgraph G1 G3.
 Proof.
   rewrite /induced_subgraph => [[h inj_h hom_h] [h' inj_h' hom_h']].
-  exists (h' \o h) ; [ by apply: inj_comp | by apply: induced_hom_comp ].
+  by exists (h' \o h); [apply: inj_comp | apply: induced_hom_comp].
 Qed.
 
 Notation "A \subgraph B" := (induced_subgraph A B) (at level 70, no associativity).
@@ -147,13 +147,15 @@ Definition trfgraph_rel := [rel x y : trfgraph_vert_type | (x != y)
 
 Lemma trfgraph_sym : symmetric trfgraph_rel.
 Proof.
-  rewrite /symmetric /trfgraph_rel /= => x y.
+  move => ? ? /=.
   rewrite eq_sym ; apply: andb_id2l => _ ; rewrite cl_sg_sym orbC ; apply: orb_id2r => _.
   by rewrite cl_sg_sym.
 Qed.
 
 Lemma trfgraph_irrefl : irreflexive trfgraph_rel.
-Proof. rewrite /irreflexive /trfgraph_rel /= ; move=> x ; rewrite eq_refl //. Qed.
+Proof.
+  by move=> ?; rewrite /= eq_refl.
+Qed.
 
 Definition trfgraph := SGraph trfgraph_sym trfgraph_irrefl.
 
@@ -178,7 +180,7 @@ Qed.
 Lemma h_eq (w : G') : (v.1 == w.2) = (h v.1 == h w.2).
 Proof.
   case (boolP (v.1 == w.2)).
-    - by move/eqP=> eq; rewrite eq !eq_refl.
+    - by move/eqP=> ->; rewrite !eq_refl.
     - apply/contraNeq; rewrite negbK; move/eqP.
       by move=> hip; move: (inj_h hip); move ->.
 Qed.
@@ -237,18 +239,12 @@ Proof. by rewrite /weight'. Qed.
 Section h_counterpart_definition.
   Variable v : G.
 
-
   Let vv_in_V' : (v, v).1 -*- (v, v).2.
   Proof. exact: dominates_refl. Qed.
 
   (*Definition h_vv := Sub (v, v) vv_in_V' : G'.*)
   Definition h_vv := TrfGraphVert vv_in_V' : G'.
 
-Fact h_vv1 : h_vv.1 = v.
-  Proof. by rewrite /=. Qed.
-
-  Fact h_vv2 : h_vv.2 = v.
-  Proof. by rewrite /=. Qed.
 End h_counterpart_definition.
 
 Theorem subgraph_G_G' : G \subgraph G'.
@@ -256,8 +252,7 @@ Proof.
   rewrite /induced_subgraph.
   exists h_vv.
   (* h_vv is injective *)
-  - rewrite /injective=> x y H1.
-    by move: (h_vv1 x) <- ; move: (h_vv1 y) <- ; rewrite H1.
+  - by move=> ? ? [_ ?].
   (* h_vv is an induced homomorphism *)
   - rewrite /induced_hom=> x y ; set x' := h_vv x ; set y' := h_vv y.
     rewrite /iff ; split.
@@ -391,11 +386,11 @@ Section set_h_inverse.
 
   Lemma h_inv_irr : @irredundant G h_inv.
   Proof.
-    apply/forallP=> v. apply/implyP; move/bigcupP.
-    elim=> [v' v'S v'1v]; rewrite inE in v'1v; move/eqP in v'1v. apply/set0Pn.
-    exists v'.2; apply/privateP; split; first by move: (valP v'); rewrite v'1v.
-    move=> u /bigcupP [u' u'S u'1v].
-    rewrite inE in u'1v; move/eqP in u'1v.
+    apply/forallP=> v; apply/implyP; move/bigcupP.
+    move=> [v' v'S /set1P v'1v].
+    apply/set0Pn; exists v'.2.
+    apply/privateP; split; first by move: (valP v'); rewrite v'1v.
+    move=> u /bigcupP [u' u'S /set1P u'1v].
     move/stableP: Sst=> /(_ u' v' u'S v'S)=> u'nadjv'.
     have: ~~ trfgraph_rel u' v' by []; move/nandP; case.
     - by move/negbNE/andP => [/eqP ? _] _; rewrite u'1v v'1v.
