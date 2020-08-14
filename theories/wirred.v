@@ -440,17 +440,18 @@ Proof.
     by move<- ; apply: IR_max.
 Qed.
 
-(* Section originaly in IR_upperbound.v, then moved here *)
-
+(**********************************************************************************)
 Section IR_w_upper_bound.
 
-Variable x : G.
+Variable x : G. (* the evidence that G has at least one vertex *)
+
 Let M (n : nat) := [exists v, [exists u, W(N[v] :\ u) == n]].
 Local Fact exM : exists n : nat, M n.
 Proof.
   exists (W N(x)); do 2 (apply/existsP; exists x).
   rewrite setU1K; auto. by rewrite in_opn sg_irrefl.
 Qed.
+
 Definition delta_w' := ex_minn exM.
 
 Fact delta_w'_min (u v : G) : delta_w' <= W (N[v] :\ u).
@@ -468,9 +469,9 @@ Proof.
   move/set0Pn=> [u uS]. move/irredundantP in irrS.
   move/set0Pn: (irrS u uS)=> [v /privateP [udomv H]].
   have ?: [disjoint S & (N[v] :\ u)].
-   apply/disjointP=> w wS.
-   move/setD1P=> [wnequ wNv]. rewrite in_cln cl_sg_sym in wNv.
-   by move/negP: wnequ; rewrite (H w wS wNv).
+  { apply/disjointP=> w wS.
+    move/setD1P=> [wnequ wNv]. rewrite in_cln cl_sg_sym in wNv.
+    by move/negP: wnequ; rewrite (H w wS wNv). }
   have: W S <= W ([set: G] :\: (N[v] :\ u)) by apply/sub_leq_sum/subsetDP; split=>[//|//].
   rewrite /W /weight_set sub_diff_sum; auto; move=> leq_1.
   move: (leq_sub2l (\sum_(i in [set: G]) weight i) (delta_w'_min u v))=> leq_2.
@@ -566,6 +567,23 @@ Section circuit_graph.
   Definition CCn := SGraph CCn_sym CCn_irrefl.
 End circuit_graph.
 
+(* co-paw graph (a path of 3 vertices + an isolated vertex *)
+Section copaw_graph.
+
+  Let copaw_vert := 'I_4.
+  Let copaw_adj(u v : nat) :=
+    match u, v with
+    | 0, 1 => true
+    | 1, 2 => true
+    | _, _ => false
+  end.
+
+  Let copaw_rel := [ rel u v : copaw_vert | give_sg copaw_adj u v ].
+  Let copaw_sym : symmetric copaw_rel. Proof. exact: give_sg_sym. Qed.
+  Let copaw_irrefl : irreflexive copaw_rel. Proof. exact: give_sg_irrefl. Qed.
+  Definition copaw := SGraph copaw_sym copaw_irrefl.
+End copaw_graph.
+
 (* Bull graph (a triangle with two appended vertices) *)
 Section bull_graph.
 
@@ -585,6 +603,63 @@ Section bull_graph.
   Let bull_irrefl : irreflexive bull_rel. Proof. exact: give_sg_irrefl. Qed.
   Definition bull := SGraph bull_sym bull_irrefl.
 End bull_graph.
+
+(* G7_1 (a certain graph with 7 vertices and 13 edges) *)
+Section G7_1_graph.
+
+  Let G7_1_vert := 'I_7.
+  Let G7_1_adj(u v : nat) :=
+    match u, v with
+    | 0, 2 => true
+    | 0, 3 => true
+    | 0, 4 => true
+    | 0, 6 => true
+    | 1, 3 => true
+    | 1, 4 => true
+    | 1, 5 => true
+    | 1, 6 => true
+    | 2, 4 => true
+    | 2, 5 => true
+    | 3, 5 => true
+    | 3, 6 => true
+    | 4, 6 => true
+    | _, _ => false
+  end.
+
+  Let G7_1_rel := [ rel u v : G7_1_vert | give_sg G7_1_adj u v ].
+  Let G7_1_sym : symmetric G7_1_rel. Proof. exact: give_sg_sym. Qed.
+  Let G7_1_irrefl : irreflexive G7_1_rel. Proof. exact: give_sg_irrefl. Qed.
+  Definition G7_1 := SGraph G7_1_sym G7_1_irrefl.
+End G7_1_graph.
+
+(* G7_2 = G7_1 + an extra edge (2,6) *)
+Section G7_2_graph.
+
+  Let G7_2_vert := 'I_7.
+  Let G7_2_adj(u v : nat) :=
+    match u, v with
+    | 0, 2 => true
+    | 0, 3 => true
+    | 0, 4 => true
+    | 0, 6 => true
+    | 1, 3 => true
+    | 1, 4 => true
+    | 1, 5 => true
+    | 1, 6 => true
+    | 2, 4 => true
+    | 2, 5 => true
+    | 2, 6 => true
+    | 3, 5 => true
+    | 3, 6 => true
+    | 4, 6 => true
+    | _, _ => false
+  end.
+
+  Let G7_2_rel := [ rel u v : G7_2_vert | give_sg G7_2_adj u v ].
+  Let G7_2_sym : symmetric G7_2_rel. Proof. exact: give_sg_sym. Qed.
+  Let G7_2_irrefl : irreflexive G7_2_rel. Proof. exact: give_sg_irrefl. Qed.
+  Definition G7_2 := SGraph G7_2_sym G7_2_irrefl.
+End G7_2_graph.
 
 End Graph_definitions.
 
@@ -614,108 +689,135 @@ Ltac subgraph_proof Hi Hj := try (by rewrite (bool_irrelevance Hi Hj)); by rewri
 
 Section Construction_of_Induced_Subgraphs.
 
-Lemma P4_sub_P4' : 'P_4 \subgraph trfgraph 'P_4.
-Proof. exact: subgraph_G_G'. Qed.
+  Lemma copaw_sub_copaw' : copaw \subgraph trfgraph copaw.
+  Proof. exact: subgraph_G_G'. Qed.
 
-(* ¿Hay una manera de dar el objeto de la prueba 'rewrite inE' en cada una de las
-   siguientes construcciones de Sub para ahorrarme de escribir todas estas lineas
-   de pruebas idénticas? *)
+  Lemma copaw_sub_G7_1' : copaw \subgraph trfgraph G7_1.
+  Proof.
+    have G7_1'_v1 : @dominates G7_1 ('v0@7, 'v3@7).1 ('v0@7, 'v3@7).2 by done.
+    have G7_1'_v2 : @dominates G7_1 ('v6@7, 'v1@7).1 ('v6@7, 'v1@7).2 by done.
+    have G7_1'_v3 : @dominates G7_1 ('v4@7, 'v1@7).1 ('v4@7, 'v1@7).2 by done.
+    have G7_1'_v4 : @dominates G7_1 ('v2@7, 'v5@7).1 ('v2@7, 'v5@7).2 by done.
+    pose h (v : copaw) : trfgraph G7_1 :=
+      match v with
+      | Ordinal 0 _ => TrfGraphVert G7_1'_v1
+      | Ordinal 1 _ => TrfGraphVert G7_1'_v2
+      | Ordinal 2 _ => TrfGraphVert G7_1'_v3
+      | Ordinal _ _ => TrfGraphVert G7_1'_v4
+      end.
+    exists h. all: case => [[|[|[|[|i]]]] Hi];
+      case => [[|[|[|[|j]]]] Hj]; subgraph_proof Hi Hj.
+  Qed.
 
-Lemma P4_sub_K23' : 'P_4 \subgraph trfgraph 'K_2,3.
-Proof.
-  have K23'_v1 : @dominates 'K_2,3 ('v3@5, 'v0@5).1 ('v3@5, 'v0@5).2 by done.
-  have K23'_v2 : @dominates 'K_2,3 ('v2@5, 'v0@5).1 ('v2@5, 'v0@5).2 by done.
-  have K23'_v3 : @dominates 'K_2,3 ('v1@5, 'v2@5).1 ('v1@5, 'v2@5).2 by done.
-  have K23'_v4 : @dominates 'K_2,3 ('v1@5, 'v4@5).1 ('v1@5, 'v4@5).2 by done.
-  pose h (v : 'P_4) : trfgraph 'K_2,3 :=
-    match v with
-    | Ordinal 0 _ => TrfGraphVert K23'_v1
-    | Ordinal 1 _ => TrfGraphVert K23'_v2
-    | Ordinal 2 _ => TrfGraphVert K23'_v3
-    | Ordinal _ _ => TrfGraphVert K23'_v4
-    end.
-  exists h. all: case => [[|[|[|[|i]]]] Hi]; case => [[|[|[|[|j]]]] Hj]; subgraph_proof Hi Hj.
-Qed.
+  Lemma copaw_sub_G7_2' : copaw \subgraph trfgraph G7_2.
+  Proof.
+    have G7_2'_v1 : @dominates G7_2 ('v0@7, 'v3@7).1 ('v0@7, 'v3@7).2 by done.
+    have G7_2'_v2 : @dominates G7_2 ('v6@7, 'v1@7).1 ('v6@7, 'v1@7).2 by done.
+    have G7_2'_v3 : @dominates G7_2 ('v4@7, 'v1@7).1 ('v4@7, 'v1@7).2 by done.
+    have G7_2'_v4 : @dominates G7_2 ('v2@7, 'v5@7).1 ('v2@7, 'v5@7).2 by done.
+    pose h (v : copaw) : trfgraph G7_2 :=
+      match v with
+      | Ordinal 0 _ => TrfGraphVert G7_2'_v1
+      | Ordinal 1 _ => TrfGraphVert G7_2'_v2
+      | Ordinal 2 _ => TrfGraphVert G7_2'_v3
+      | Ordinal _ _ => TrfGraphVert G7_2'_v4
+      end.
+    exists h. all: case => [[|[|[|[|i]]]] Hi];
+      case => [[|[|[|[|j]]]] Hj]; subgraph_proof Hi Hj.
+  Qed.
 
-Lemma claw_sub_claw' : claw \subgraph trfgraph claw.
-Proof. exact: subgraph_G_G'. Qed.
+  Lemma claw_sub_claw' : claw \subgraph trfgraph claw.
+  Proof. exact: subgraph_G_G'. Qed.
 
-Lemma claw_sub_bull' : claw \subgraph trfgraph bull.
-Proof.
-  have bull'_v1 : @dominates bull ('v2@5, 'v3@5).1 ('v2@5, 'v3@5).2 by done.
-  have bull'_v2 : @dominates bull ('v0@5, 'v0@5).1 ('v0@5, 'v0@5).2 by done.
-  have bull'_v3 : @dominates bull ('v1@5, 'v1@5).1 ('v1@5, 'v1@5).2 by done.
-  have bull'_v4 : @dominates bull ('v4@5, 'v4@5).1 ('v4@5, 'v4@5).2 by done.
-  pose h (v : claw) : trfgraph bull :=
-    match v with
-    | Ordinal 0 _ => TrfGraphVert bull'_v1
-    | Ordinal 1 _ => TrfGraphVert bull'_v2
-    | Ordinal 2 _ => TrfGraphVert bull'_v3
-    | Ordinal _ _ => TrfGraphVert bull'_v4
-    end.
-  exists h. all: case => [[|[|[|[|i]]]] Hi]; case => [[|[|[|[|j]]]] Hj]; subgraph_proof Hi Hj.
-Qed.
+  Lemma claw_sub_bull' : claw \subgraph trfgraph bull.
+  Proof.
+    have bull'_v1 : @dominates bull ('v2@5, 'v3@5).1 ('v2@5, 'v3@5).2 by done.
+    have bull'_v2 : @dominates bull ('v0@5, 'v0@5).1 ('v0@5, 'v0@5).2 by done.
+    have bull'_v3 : @dominates bull ('v1@5, 'v1@5).1 ('v1@5, 'v1@5).2 by done.
+    have bull'_v4 : @dominates bull ('v4@5, 'v4@5).1 ('v4@5, 'v4@5).2 by done.
+    pose h (v : claw) : trfgraph bull :=
+      match v with
+      | Ordinal 0 _ => TrfGraphVert bull'_v1
+      | Ordinal 1 _ => TrfGraphVert bull'_v2
+      | Ordinal 2 _ => TrfGraphVert bull'_v3
+      | Ordinal _ _ => TrfGraphVert bull'_v4
+      end.
+    exists h. all: case => [[|[|[|[|i]]]] Hi];
+      case => [[|[|[|[|j]]]] Hj]; subgraph_proof Hi Hj.
+  Qed.
 
-Lemma claw_sub_P6' : claw \subgraph trfgraph 'P_6.
-Proof.
-  have P6'_v1 : @dominates 'P_6 ('v3@6, 'v2@6).1 ('v3@6, 'v2@6).2 by done.
-  have P6'_v2 : @dominates 'P_6 ('v1@6, 'v0@6).1 ('v1@6, 'v0@6).2 by done.
-  have P6'_v3 : @dominates 'P_6 ('v5@6, 'v4@6).1 ('v5@6, 'v4@6).2 by done.
-  have P6'_v4 : @dominates 'P_6 ('v2@6, 'v3@6).1 ('v2@6, 'v3@6).2 by done.
-  pose h (v : claw) : trfgraph 'P_6 :=
-    match v with
-    | Ordinal 0 _ => TrfGraphVert P6'_v1
-    | Ordinal 1 _ => TrfGraphVert P6'_v2
-    | Ordinal 2 _ => TrfGraphVert P6'_v3
-    | Ordinal _ _ => TrfGraphVert P6'_v4
-    end.
-  exists h. all: case => [[|[|[|[|i]]]] Hi]; case => [[|[|[|[|j]]]] Hj]; subgraph_proof Hi Hj.
-Qed.
+  Lemma claw_sub_P6' : claw \subgraph trfgraph 'P_6.
+  Proof.
+    have P6'_v1 : @dominates 'P_6 ('v3@6, 'v2@6).1 ('v3@6, 'v2@6).2 by done.
+    have P6'_v2 : @dominates 'P_6 ('v1@6, 'v0@6).1 ('v1@6, 'v0@6).2 by done.
+    have P6'_v3 : @dominates 'P_6 ('v5@6, 'v4@6).1 ('v5@6, 'v4@6).2 by done.
+    have P6'_v4 : @dominates 'P_6 ('v2@6, 'v3@6).1 ('v2@6, 'v3@6).2 by done.
+    pose h (v : claw) : trfgraph 'P_6 :=
+      match v with
+      | Ordinal 0 _ => TrfGraphVert P6'_v1
+      | Ordinal 1 _ => TrfGraphVert P6'_v2
+      | Ordinal 2 _ => TrfGraphVert P6'_v3
+      | Ordinal _ _ => TrfGraphVert P6'_v4
+      end.
+    exists h. all: case => [[|[|[|[|i]]]] Hi];
+      case => [[|[|[|[|j]]]] Hj]; subgraph_proof Hi Hj.
+  Qed.
 
-Lemma claw_sub_CC6' : claw \subgraph trfgraph 'CC_6.
-Proof.
-  have CC6'_v1 : @dominates 'CC_6 ('v5@6, 'v5@6).1 ('v5@6, 'v5@6).2 by done.
-  have CC6'_v2 : @dominates 'CC_6 ('v1@6, 'v4@6).1 ('v1@6, 'v4@6).2 by done.
-  have CC6'_v3 : @dominates 'CC_6 ('v3@6, 'v0@6).1 ('v3@6, 'v0@6).2 by done.
-  have CC6'_v4 : @dominates 'CC_6 ('v5@6, 'v2@6).1 ('v5@6, 'v2@6).2 by done.
-  pose h (v : claw) : trfgraph 'CC_6 :=
-    match v with
-    | Ordinal 0 _ => TrfGraphVert CC6'_v1
-    | Ordinal 1 _ => TrfGraphVert CC6'_v2
-    | Ordinal 2 _ => TrfGraphVert CC6'_v3
-    | Ordinal _ _ => TrfGraphVert CC6'_v4
-    end.
-  exists h. all: case => [[|[|[|[|i]]]] Hi]; case => [[|[|[|[|j]]]] Hj]; subgraph_proof Hi Hj.
-Qed.
+  Lemma claw_sub_CC6' : claw \subgraph trfgraph 'CC_6.
+  Proof.
+    have CC6'_v1 : @dominates 'CC_6 ('v5@6, 'v5@6).1 ('v5@6, 'v5@6).2 by done.
+    have CC6'_v2 : @dominates 'CC_6 ('v1@6, 'v4@6).1 ('v1@6, 'v4@6).2 by done.
+    have CC6'_v3 : @dominates 'CC_6 ('v3@6, 'v0@6).1 ('v3@6, 'v0@6).2 by done.
+    have CC6'_v4 : @dominates 'CC_6 ('v5@6, 'v2@6).1 ('v5@6, 'v2@6).2 by done.
+    pose h (v : claw) : trfgraph 'CC_6 :=
+      match v with
+      | Ordinal 0 _ => TrfGraphVert CC6'_v1
+      | Ordinal 1 _ => TrfGraphVert CC6'_v2
+      | Ordinal 2 _ => TrfGraphVert CC6'_v3
+      | Ordinal _ _ => TrfGraphVert CC6'_v4
+      end.
+    exists h. all: case => [[|[|[|[|i]]]] Hi];
+      case => [[|[|[|[|j]]]] Hj]; subgraph_proof Hi Hj.
+  Qed.
 
 End Construction_of_Induced_Subgraphs.
 
-(* To prove G' P4-free => G {P4,K23}-free we do the following:
-     If G has P4 as an induced subgraph, then G' does too.
-     If G has K23 as an induced subgraph, then G' has a P4. *)
+(* To prove G' co-paw-free => G {co-paw,G7_1,G7_2}-free we do the following:
+     If G has a co-paw as an induced subgraph, then G' does too.
+     If G has G7_1 or G7_2 as an induced subgraph, then G' has a co-paw. *)
 
-Theorem G'P4free : 'P_4 \subgraph G \/ 'K_2,3 \subgraph G -> 'P_4 \subgraph G'.
+Theorem G'copawfree : copaw \subgraph G \/ G7_1 \subgraph G \/
+                      G7_2 \subgraph G -> copaw \subgraph G'.
 Proof.
   case.
-  - move/trfgraph_subgraph=> P4'subG' ;
-    by move: (subgraph_trans P4_sub_P4' P4'subG').
-  - move/trfgraph_subgraph=> K23'subG' ;
-    by move: (subgraph_trans P4_sub_K23' K23'subG').
+  { move/trfgraph_subgraph=> copaw'subG' ;
+    by move: (subgraph_trans copaw_sub_copaw' copaw'subG'). }
+  case.
+  - move/trfgraph_subgraph=> G7_1'subG' ;
+    by move: (subgraph_trans copaw_sub_G7_1' G7_1'subG').
+  - move/trfgraph_subgraph=> G7_2'subG' ;
+    by move: (subgraph_trans copaw_sub_G7_2' G7_2'subG').
 Qed.
 
-Variables GP4 GK23 : sgraph.
-Hypothesis G_is_P4 : isomorphic GP4 'P_4.
-Hypothesis G_is_K23 : isomorphic GK23 'K_2,3.
+Variables Gcopaw GG7_1 GG7_2 : sgraph.
+Hypothesis G_is_copaw : isomorphic Gcopaw copaw.
+Hypothesis G_is_G7_1 : isomorphic GG7_1 G7_1.
+Hypothesis G_is_G7_2 : isomorphic GG7_2 G7_2.
 
-Corollary G'P4free' : GP4 \subgraph G \/ GK23 \subgraph G -> GP4 \subgraph G'.
+Corollary G'copawfree' : Gcopaw \subgraph G \/ GG7_1 \subgraph G \/
+                         GG7_2 \subgraph G -> Gcopaw \subgraph G'.
 Proof.
   case.
-  - move=> /(subgraph_trans (sub_G2_G1 G_is_P4)) P4subG.
-    apply: (subgraph_trans (sub_G1_G2 G_is_P4)).
-    by apply: G'P4free ; left.
-  - move=> /(subgraph_trans (sub_G2_G1 G_is_K23)) K23subG.
-    apply: (subgraph_trans (sub_G1_G2 G_is_P4)).
-    by apply: G'P4free ; right.
+  { move=> /(subgraph_trans (sub_G2_G1 G_is_copaw)) copawsubG.
+    apply: (subgraph_trans (sub_G1_G2 G_is_copaw)).
+    by apply: G'copawfree ; left. }
+  case.
+  - move=> /(subgraph_trans (sub_G2_G1 G_is_G7_1)) G7_1subG.
+    apply: (subgraph_trans (sub_G1_G2 G_is_copaw)).
+    by apply: G'copawfree ; right ; left.
+  - move=> /(subgraph_trans (sub_G2_G1 G_is_G7_2)) G7_2subG.
+    apply: (subgraph_trans (sub_G1_G2 G_is_copaw)).
+    by apply: G'copawfree ; right ; right.
 Qed.
 
 (* To prove G' claw-free => G {claw,bull,P6,CC6}-free we do the following:
@@ -764,6 +866,8 @@ Proof.
     by apply: G'clawfree ; right ; right ; right.
 Qed.
 
+(* converse results *)
+
 Lemma forallOrdinalI4 (p : 'I_4 -> Prop) :
   (forall v : 'I_4, p v) <-> (p 'v0@4 /\ p 'v1@4 /\ p 'v2@4 /\ p 'v3@4).
 Proof.
@@ -796,12 +900,13 @@ Ltac t_x1y2x2y1 x1 x2 y1 y2 v1 v2 h h_hom :=
   by move-> ; rewrite orFb !negb_or andbA eq_sym sg_sym' [x1 -- y2]sg_sym' [x2 == y1]eq_sym => /andP [/andP [/andP [-> ->] ->] ->].
 
 
-Theorem G'P4free_rev : 'P_4 \subgraph G' -> 'P_4 \subgraph G \/ 'K_2,3 \subgraph G.
+Theorem G'copawfree_rev : copaw \subgraph G' -> copaw \subgraph G \/
+                                                G7_1 \subgraph G \/ G7_2 \subgraph G.
 Proof.
   rewrite /induced_subgraph.
   move=> [h h_inj h_hom].
 
-  (* in G', we have the path (a1,a2) - (b1,b2) - (c1,c2) - (d1,d2) *)
+  (* in G', we have the path (a1,a2) - (b1,b2) - (c1,c2) and the isolate vert. (d1,d2) *)
   set a1 := (h 'v0@4).1.
   set a2 := (h 'v0@4).2.
   set b1 := (h 'v1@4).1.
@@ -817,15 +922,13 @@ Proof.
   have c1c2 : (c1 == c2) || c1 -- c2 by exact: (valP (h 'v2@4)).
   have d1d2 : (d1 == d2) || d1 -- d2 by exact: (valP (h 'v3@4)).
 
-  (* The following comes from the edges of the path P_4 in G' *)
+  (* The following comes from the edges of the path in G' *)
   have a1b2a2b1 : (a1 == b2) || a1 -- b2 || (a2 == b1) || (a2 -- b1)
     by t_v1v2 'v0@4 'v1@4 h h_hom.
   have b1c2b2c1 : (b1 == c2) || b1 -- c2 || (b2 == c1) || (b2 -- c1)
     by t_v1v2 'v1@4 'v2@4 h h_hom.
-  have c1d2c2d1 : (c1 == d2) || c1 -- d2 || (c2 == d1) || (c2 -- d1)
-    by t_v1v2 'v2@4 'v3@4 h h_hom.
 
-  (* The following comes from the fact that vertices of P_4 are different *)
+  (* The following comes from the fact that vertices of the co-paw are different *)
   have a1a2b1b2 : (a1 != b1) || (a2 != b2)
     by t_x1x2y1y2 a1 a2 b1 b2 'v0@4 'v1@4 h h_inj.
   have a1a2c1c2 : (a1 != c1) || (a2 != c2)
@@ -839,21 +942,23 @@ Proof.
   have c1c2d1d2 : (c1 != d1) || (c2 != d2)
     by t_x1x2y1y2 c1 c2 d1 d2 'v2@4 'v3@4 h h_inj.
 
-  (* The following comes from the no-edges of P_4 in G' *)
+  (* The following comes from the no-edges of the co-paw in G' *)
   have a1c2a2c1 : (a1 != c2) && (~~ a1 -- c2) && (a2 != c1) && (~~ a2 -- c1).
     by t_x1y2x2y1 a1 a2 c1 c2 'v0@4 'v2@4 h h_hom.
   have a1d2a2d1 : (a1 != d2) && (~~ a1 -- d2) && (a2 != d1) && (~~ a2 -- d1).
     by t_x1y2x2y1 a1 a2 d1 d2 'v0@4 'v3@4 h h_hom.
   have b1d2b2d1 : (b1 != d2) && (~~ b1 -- d2) && (b2 != d1) && (~~ b2 -- d1).
     by t_x1y2x2y1 b1 b2 d1 d2 'v1@4 'v3@4 h h_hom.
+  have c1d2c2d1 : (c1 != d2) && (~~ c1 -- d2) && (c2 != d1) && (~~ c2 -- d1).
+    by t_x1y2x2y1 c1 c2 d1 d2 'v2@4 'v3@4 h h_hom.
 
   (* Here is a proof of injectivity of a given function, by giving proofs of
      inequalities among their vertices *)
-  have h'_inj (h' : 'P_4 -> G)
+  have h'_inj (h' : copaw -> G)
     (v0v1 : h' 'v0@4 != h' 'v1@4) (v0v2 : h' 'v0@4 != h' 'v2@4)
     (v0v3 : h' 'v0@4 != h' 'v3@4) (v1v2 : h' 'v1@4 != h' 'v2@4)
     (v1v3 : h' 'v1@4 != h' 'v3@4) (v2v3 : h' 'v2@4 != h' 'v3@4)
-       : forall x1 x2 : 'P_4, h' x1 = h' x2 -> x1 = x2.
+       : forall x1 x2 : copaw, h' x1 = h' x2 -> x1 = x2.
   { move: (negP v0v1) => ?. move: (negP v0v2) => ?. move: (negP v0v3) => ?.
     move: (negP v1v2) => ?. move: (negP v1v3) => ?. move: (negP v2v3) => ?.
     rewrite !forallOrdinalI4 ; do 6 try split.
@@ -863,12 +968,12 @@ Proof.
   }
 
   (* Here is a proof of the homomorphism of a given function, by giving proofs
-     of the edges and non-edges of the P_4 *)
-  have h'_hom (h' : 'P_4 -> G)
+     of the edges and non-edges of the co-paw *)
+  have h'_hom (h' : copaw -> G)
     (e_v0v1 : h' 'v0@4 -- h' 'v1@4) (e_v1v2 : h' 'v1@4 -- h' 'v2@4)
-    (e_v2v3 : h' 'v2@4 -- h' 'v3@4) (n_v0v2 : ~~ h' 'v0@4 -- h' 'v2@4)
-    (n_v0v3 : ~~ h' 'v0@4 -- h' 'v3@4) (n_v1v3 : ~~ h' 'v1@4 -- h' 'v3@4)
-       : forall x1 x2 : 'P_4, x1 -- x2 <-> h' x1 -- h' x2.
+    (n_v0v2 : ~~ h' 'v0@4 -- h' 'v2@4) (n_v0v3 : ~~ h' 'v0@4 -- h' 'v3@4)
+    (n_v1v3 : ~~ h' 'v1@4 -- h' 'v3@4) (n_v2v3 : ~~ h' 'v2@4 -- h' 'v3@4)
+       : forall x1 x2 : copaw, x1 -- x2 <-> h' x1 -- h' x2.
   { rewrite !forallOrdinalI4 ; do 7 try split.
     all : try by [].
     all : try by rewrite !sg_irrefl ; apply/implyP.
@@ -881,90 +986,47 @@ Proof.
   case/orP: a1a2 => [ a1eqa2 | a1neqa2 ].
   - case/orP: b1b2 => [ b1eqb2 | b1neqb2 ].
     + case/orP: c1c2 => [ c1eqc2 | c1neqc2 ].
-      * case/orP: d1d2 => [ d1eqd2 | d1neqd2 ].
-        (* a a --- b b --- c c --- d d *)
-        -- left ; pose h' (v : 'P_4) :=
-                  match v with
-                  | Ordinal 0 _ => a1
-                  | Ordinal 1 _ => b1
-                  | Ordinal 2 _ => c1
-                  | Ordinal _ _ => d1
-                  end.
-           exists h'.
-           ++ apply: h'_inj ; rewrite /=.
-              ** by move: a1a2b1b2 ; rewrite (eqP a1eqa2) (eqP b1eqb2) orbb.
-              ** by move: a1a2c1c2 ; rewrite (eqP a1eqa2) (eqP c1eqc2) orbb.
-              ** by move: a1a2d1d2 ; rewrite (eqP a1eqa2) (eqP d1eqd2) orbb.
-              ** by move: b1b2c1c2 ; rewrite (eqP b1eqb2) (eqP c1eqc2) orbb.
-              ** by move: b1b2d1d2 ; rewrite (eqP b1eqb2) (eqP d1eqd2) orbb.
-              ** by move: c1c2d1d2 ; rewrite (eqP c1eqc2) (eqP d1eqd2) orbb.
-           ++ apply: h'_hom ; rewrite /=.
+      (* a a --- b b --- c c *)
+      * left ; pose h' (v : copaw) :=
+               match v with
+               | Ordinal 0 _ => a1
+               | Ordinal 1 _ => b1
+               | Ordinal 2 _ => c1
+               | Ordinal _ _ => d1
+               end.
+        exists h'.
+        -- apply: h'_inj ; rewrite /=.
+           ++ by move: a1a2b1b2 ; rewrite (eqP a1eqa2) (eqP b1eqb2) orbb.
+           ++ by move: a1a2c1c2 ; rewrite (eqP a1eqa2) (eqP c1eqc2) orbb.
+           ++ by move: a1d2a2d1 => /andP [/andP [_ ?]] ; rewrite (eqP a1eqa2).
+           ++ by move: b1b2c1c2 ; rewrite (eqP b1eqb2) (eqP c1eqc2) orbb.
+           ++ by move: b1d2b2d1 => /andP [/andP [_ ?]] ; rewrite (eqP b1eqb2).
+           ++ by move: c1d2c2d1 => /andP [/andP [_ ?]] ; rewrite (eqP c1eqc2).
+        -- apply: h'_hom ; rewrite /=.
               ** move: a1a2b1b2 ; rewrite (eqP a1eqa2) (eqP b1eqb2) orbb.
                  move: a1b2a2b1 ; rewrite (eqP a1eqa2) (eqP b1eqb2) -orbA orbb.
                  case/orP ; [move/eqP=> ? ; move/eqP ; contradiction | by []].
               ** move: b1b2c1c2 ; rewrite (eqP b1eqb2) (eqP c1eqc2) orbb.
                  move: b1c2b2c1 ; rewrite (eqP b1eqb2) (eqP c1eqc2) -orbA orbb.
-                 case/orP ; [move/eqP=> ? ; move/eqP ; contradiction | by []].
-              ** move: c1c2d1d2 ; rewrite (eqP c1eqc2) (eqP d1eqd2) orbb.
-                 move: c1d2c2d1 ; rewrite (eqP c1eqc2) (eqP d1eqd2) -orbA orbb.
                  case/orP ; [move/eqP=> ? ; move/eqP ; contradiction | by []].
               ** by move: a1c2a2c1 => /andP [_] ; rewrite (eqP a1eqa2).
               ** by move: a1d2a2d1 => /andP [_] ; rewrite (eqP a1eqa2).
               ** by move: b1d2b2d1 => /andP [_] ; rewrite (eqP b1eqb2).
-        (* a a --- b b --- c c --- c d2 *)
-        -- left ; pose h' (v : 'P_4) :=
-                  match v with
-                  | Ordinal 0 _ => a1
-                  | Ordinal 1 _ => b1
-                  | Ordinal 2 _ => c1
-                  | Ordinal _ _ => if (c1 -- d1) then d1 else d2
-                  end.
-           exists h'.
-           ++ apply: h'_inj ; rewrite /=.
-              ** by move: a1a2b1b2 ; rewrite (eqP a1eqa2) (eqP b1eqb2) orbb.
-              ** by move: a1a2c1c2 ; rewrite (eqP a1eqa2) (eqP c1eqc2) orbb.
-              ** rewrite (fun_if (fun d => a1 != d)) ; case: (boolP (c1 -- d1)).
-                 --- by move: a1d2a2d1 => /andP [/andP [_ ?]] ; rewrite (eqP a1eqa2).
-                 --- by move: a1d2a2d1 => /andP [/andP [ /andP [? _]]].
-              ** by move: b1b2c1c2 ; rewrite (eqP b1eqb2) (eqP c1eqc2) orbb.
-              ** rewrite (fun_if (fun d => b1 != d)) ; case: (boolP (c1 -- d1)).
-                 --- by move: b1d2b2d1 => /andP [/andP [_ ?]] ; rewrite (eqP b1eqb2).
-                 --- by move: b1d2b2d1 => /andP [/andP [ /andP [? _]]].
-              ** rewrite (fun_if (fun d => c1 != d)) ; case: (boolP (c1 -- d1)).
-                 --- by apply: contraL ; move/eqP-> ; rewrite sg_irrefl.
-                 --- by apply: contra ; move/eqP-> ; rewrite sg_sym.
-           ++ apply: h'_hom ; rewrite /=.
-              ** move: a1a2b1b2 ; rewrite (eqP a1eqa2) (eqP b1eqb2) orbb.
-                 move: a1b2a2b1 ; rewrite (eqP a1eqa2) (eqP b1eqb2) -orbA orbb.
-                 case/orP ; [move/eqP=> ? ; move/eqP ; contradiction | by []].
-              ** move: b1b2c1c2 ; rewrite (eqP b1eqb2) (eqP c1eqc2) orbb.
-                 move: b1c2b2c1 ; rewrite (eqP b1eqb2) (eqP c1eqc2) -orbA orbb.
-                 case/orP ; [move/eqP=> ? ; move/eqP ; contradiction | by []].
-              ** rewrite (fun_if (fun d => c1 -- d)) ; case: (boolP (c1 -- d1)).
-                 --- by move=> _.
-                 --- move: c1d2c2d1 ; rewrite (eqP c1eqc2) ; case/orP ; last
-                       by move=> ? /negP ; contradiction.
-                     case/orP ; last by move/eqP->.
-                     case/orP ; last by [].
-                     by move/eqP-> ; apply: contraR ; rewrite sg_sym.
-              ** by move: a1c2a2c1 => /andP [_] ; rewrite (eqP a1eqa2).
-              ** rewrite (fun_if (fun d => a1 -- d)) ; case: (boolP (c1 -- d1)).
-                 --- by move: a1d2a2d1 => /andP [/andP [_ ?]] ; rewrite (eqP a1eqa2).
-                 --- by move: a1d2a2d1 => /andP [/andP [ /andP [_ ?]]].
-              ** rewrite (fun_if (fun d => b1 -- d)) ; case: (boolP (c1 -- d1)).
-                 --- by move: b1d2b2d1 => /andP [/andP [_ ?]] ; rewrite (eqP b1eqb2).
-                 --- by move: b1d2b2d1 => /andP [/andP [ /andP [_ ?]]].
+              ** by move: c1d2c2d1 => /andP [_] ; rewrite (eqP c1eqc2).
       * admit.
     + admit.
   - admit.
 Admitted.
 
-Corollary G'P4free'_rev : GP4 \subgraph G' -> GP4 \subgraph G \/ GK23 \subgraph G.
+Corollary G'copawfree'_rev : Gcopaw \subgraph G' -> Gcopaw \subgraph G \/
+                                                    GG7_1 \subgraph G \/ GG7_2 \subgraph G.
 Proof.
-  move=> /(subgraph_trans (sub_G2_G1 G_is_P4)) P4subG'.
-  move: (G'P4free_rev P4subG') ; case.
-  - by left ; apply: (subgraph_trans (sub_G1_G2 G_is_P4)).
-  - by right ; apply: (subgraph_trans (sub_G1_G2 G_is_K23)).
+  move=> /(subgraph_trans (sub_G2_G1 G_is_copaw)) copawsubG'.
+  move: (G'copawfree_rev copawsubG') ; case.
+  { by left ; apply: (subgraph_trans (sub_G1_G2 G_is_copaw)). }
+  case.
+  - by right ; left ; apply: (subgraph_trans (sub_G1_G2 G_is_G7_1)).
+  - by right ; right ; apply: (subgraph_trans (sub_G1_G2 G_is_G7_2)).
 Qed.
 
 Theorem G'clawfree_rev : claw \subgraph G' -> claw \subgraph G \/ bull \subgraph G \/
@@ -1147,4 +1209,271 @@ Proof.
   - by right ; right ; right ; apply: (subgraph_trans (sub_G1_G2 G_is_CC6)).
 Qed.
 
+(*End Upper_Weighted_Irredundant_Properties.*)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(* ************************ ATENCION! **************************)
+
+(* DEJE ACA TODO LO QUE CREO QUE NO VA A ENTRAR EN LA VERSION FINAL
+   De momento lo de G {P4, K23}-free <==> G' P4-free *)
+
+Lemma P4_sub_P4' : 'P_4 \subgraph trfgraph 'P_4.
+Proof. exact: subgraph_G_G'. Qed.
+
+Lemma P4_sub_K23' : 'P_4 \subgraph trfgraph 'K_2,3.
+Proof.
+  have K23'_v1 : @dominates 'K_2,3 ('v3@5, 'v0@5).1 ('v3@5, 'v0@5).2 by done.
+  have K23'_v2 : @dominates 'K_2,3 ('v2@5, 'v0@5).1 ('v2@5, 'v0@5).2 by done.
+  have K23'_v3 : @dominates 'K_2,3 ('v1@5, 'v2@5).1 ('v1@5, 'v2@5).2 by done.
+  have K23'_v4 : @dominates 'K_2,3 ('v1@5, 'v4@5).1 ('v1@5, 'v4@5).2 by done.
+  pose h (v : 'P_4) : trfgraph 'K_2,3 :=
+    match v with
+    | Ordinal 0 _ => TrfGraphVert K23'_v1
+    | Ordinal 1 _ => TrfGraphVert K23'_v2
+    | Ordinal 2 _ => TrfGraphVert K23'_v3
+    | Ordinal _ _ => TrfGraphVert K23'_v4
+    end.
+  exists h. all: case => [[|[|[|[|i]]]] Hi]; case => [[|[|[|[|j]]]] Hj]; subgraph_proof Hi Hj.
+Qed.
+
+(* To prove G' P4-free => G {P4,K23}-free we do the following:
+     If G has P4 as an induced subgraph, then G' does too.
+     If G has K23 as an induced subgraph, then G' has a P4. *)
+
+Theorem G'P4free : 'P_4 \subgraph G \/ 'K_2,3 \subgraph G -> 'P_4 \subgraph G'.
+Proof.
+  case.
+  - move/trfgraph_subgraph=> P4'subG' ;
+    by move: (subgraph_trans P4_sub_P4' P4'subG').
+  - move/trfgraph_subgraph=> K23'subG' ;
+    by move: (subgraph_trans P4_sub_K23' K23'subG').
+Qed.
+
+Variables GP4 GK23 : sgraph.
+Hypothesis G_is_P4 : isomorphic GP4 'P_4.
+Hypothesis G_is_K23 : isomorphic GK23 'K_2,3.
+
+Corollary G'P4free' : GP4 \subgraph G \/ GK23 \subgraph G -> GP4 \subgraph G'.
+Proof.
+  case.
+  - move=> /(subgraph_trans (sub_G2_G1 G_is_P4)) P4subG.
+    apply: (subgraph_trans (sub_G1_G2 G_is_P4)).
+    by apply: G'P4free ; left.
+  - move=> /(subgraph_trans (sub_G2_G1 G_is_K23)) K23subG.
+    apply: (subgraph_trans (sub_G1_G2 G_is_P4)).
+    by apply: G'P4free ; right.
+Qed.
+
+Theorem G'P4free_rev : 'P_4 \subgraph G' -> 'P_4 \subgraph G \/ 'K_2,3 \subgraph G.
+Proof.
+  rewrite /induced_subgraph.
+  move=> [h h_inj h_hom].
+
+  (* in G', we have the path (a1,a2) - (b1,b2) - (c1,c2) - (d1,d2) *)
+  set a1 := (h 'v0@4).1.
+  set a2 := (h 'v0@4).2.
+  set b1 := (h 'v1@4).1.
+  set b2 := (h 'v1@4).2.
+  set c1 := (h 'v2@4).1.
+  set c2 := (h 'v2@4).2.
+  set d1 := (h 'v3@4).1.
+  set d2 := (h 'v3@4).2.
+
+  (* The following comes from the fact that x1x2 are vertices of G' *)
+  have a1a2 : (a1 == a2) || a1 -- a2 by exact: (valP (h 'v0@4)).
+  have b1b2 : (b1 == b2) || b1 -- b2 by exact: (valP (h 'v1@4)).
+  have c1c2 : (c1 == c2) || c1 -- c2 by exact: (valP (h 'v2@4)).
+  have d1d2 : (d1 == d2) || d1 -- d2 by exact: (valP (h 'v3@4)).
+
+  (* The following comes from the edges of the path P_4 in G' *)
+  have a1b2a2b1 : (a1 == b2) || a1 -- b2 || (a2 == b1) || (a2 -- b1)
+    by t_v1v2 'v0@4 'v1@4 h h_hom.
+  have b1c2b2c1 : (b1 == c2) || b1 -- c2 || (b2 == c1) || (b2 -- c1)
+    by t_v1v2 'v1@4 'v2@4 h h_hom.
+  have c1d2c2d1 : (c1 == d2) || c1 -- d2 || (c2 == d1) || (c2 -- d1)
+    by t_v1v2 'v2@4 'v3@4 h h_hom.
+
+  (* The following comes from the fact that vertices of P_4 are different *)
+  have a1a2b1b2 : (a1 != b1) || (a2 != b2)
+    by t_x1x2y1y2 a1 a2 b1 b2 'v0@4 'v1@4 h h_inj.
+  have a1a2c1c2 : (a1 != c1) || (a2 != c2)
+    by t_x1x2y1y2 a1 a2 c1 c2 'v0@4 'v2@4 h h_inj.
+  have a1a2d1d2 : (a1 != d1) || (a2 != d2)
+    by t_x1x2y1y2 a1 a2 d1 d2 'v0@4 'v3@4 h h_inj.
+  have b1b2c1c2 : (b1 != c1) || (b2 != c2)
+    by t_x1x2y1y2 b1 b2 c1 c2 'v1@4 'v2@4 h h_inj.
+  have b1b2d1d2 : (b1 != d1) || (b2 != d2)
+    by t_x1x2y1y2 b1 b2 d1 d2 'v1@4 'v3@4 h h_inj.
+  have c1c2d1d2 : (c1 != d1) || (c2 != d2)
+    by t_x1x2y1y2 c1 c2 d1 d2 'v2@4 'v3@4 h h_inj.
+
+  (* The following comes from the no-edges of P_4 in G' *)
+  have a1c2a2c1 : (a1 != c2) && (~~ a1 -- c2) && (a2 != c1) && (~~ a2 -- c1).
+    by t_x1y2x2y1 a1 a2 c1 c2 'v0@4 'v2@4 h h_hom.
+  have a1d2a2d1 : (a1 != d2) && (~~ a1 -- d2) && (a2 != d1) && (~~ a2 -- d1).
+    by t_x1y2x2y1 a1 a2 d1 d2 'v0@4 'v3@4 h h_hom.
+  have b1d2b2d1 : (b1 != d2) && (~~ b1 -- d2) && (b2 != d1) && (~~ b2 -- d1).
+    by t_x1y2x2y1 b1 b2 d1 d2 'v1@4 'v3@4 h h_hom.
+
+  (* Here is a proof of injectivity of a given function, by giving proofs of
+     inequalities among their vertices *)
+  have h'_inj (h' : 'P_4 -> G)
+    (v0v1 : h' 'v0@4 != h' 'v1@4) (v0v2 : h' 'v0@4 != h' 'v2@4)
+    (v0v3 : h' 'v0@4 != h' 'v3@4) (v1v2 : h' 'v1@4 != h' 'v2@4)
+    (v1v3 : h' 'v1@4 != h' 'v3@4) (v2v3 : h' 'v2@4 != h' 'v3@4)
+       : forall x1 x2 : 'P_4, h' x1 = h' x2 -> x1 = x2.
+  { move: (negP v0v1) => ?. move: (negP v0v2) => ?. move: (negP v0v3) => ?.
+    move: (negP v1v2) => ?. move: (negP v1v3) => ?. move: (negP v2v3) => ?.
+    rewrite !forallOrdinalI4 ; do 6 try split.
+    all : try by [].
+    all : try by move/eqP ; contradiction.
+    all : try by move/eqP ; rewrite eq_sym ; contradiction.
+  }
+
+  (* Here is a proof of the homomorphism of a given function, by giving proofs
+     of the edges and non-edges of the P_4 *)
+  have h'_hom (h' : 'P_4 -> G)
+    (e_v0v1 : h' 'v0@4 -- h' 'v1@4) (e_v1v2 : h' 'v1@4 -- h' 'v2@4)
+    (e_v2v3 : h' 'v2@4 -- h' 'v3@4) (n_v0v2 : ~~ h' 'v0@4 -- h' 'v2@4)
+    (n_v0v3 : ~~ h' 'v0@4 -- h' 'v3@4) (n_v1v3 : ~~ h' 'v1@4 -- h' 'v3@4)
+       : forall x1 x2 : 'P_4, x1 -- x2 <-> h' x1 -- h' x2.
+  { rewrite !forallOrdinalI4 ; do 7 try split.
+    all : try by [].
+    all : try by rewrite !sg_irrefl ; apply/implyP.
+    all : try by rewrite [in X in _ -> X]sg_sym.
+    all : try by apply: contraLR.
+    all : try by rewrite [in X in X -> _]sg_sym ; apply: contraLR.
+  }
+
+  (* Start separation in cases... *)
+  case/orP: a1a2 => [ a1eqa2 | a1neqa2 ].
+  - case/orP: b1b2 => [ b1eqb2 | b1neqb2 ].
+    + case/orP: c1c2 => [ c1eqc2 | c1neqc2 ].
+      * case/orP: d1d2 => [ d1eqd2 | d1neqd2 ].
+        (* a a --- b b --- c c --- d d *)
+        -- left ; pose h' (v : 'P_4) :=
+                  match v with
+                  | Ordinal 0 _ => a1
+                  | Ordinal 1 _ => b1
+                  | Ordinal 2 _ => c1
+                  | Ordinal _ _ => d1
+                  end.
+           exists h'.
+           ++ apply: h'_inj ; rewrite /=.
+              ** by move: a1a2b1b2 ; rewrite (eqP a1eqa2) (eqP b1eqb2) orbb.
+              ** by move: a1a2c1c2 ; rewrite (eqP a1eqa2) (eqP c1eqc2) orbb.
+              ** by move: a1a2d1d2 ; rewrite (eqP a1eqa2) (eqP d1eqd2) orbb.
+              ** by move: b1b2c1c2 ; rewrite (eqP b1eqb2) (eqP c1eqc2) orbb.
+              ** by move: b1b2d1d2 ; rewrite (eqP b1eqb2) (eqP d1eqd2) orbb.
+              ** by move: c1c2d1d2 ; rewrite (eqP c1eqc2) (eqP d1eqd2) orbb.
+           ++ apply: h'_hom ; rewrite /=.
+              ** move: a1a2b1b2 ; rewrite (eqP a1eqa2) (eqP b1eqb2) orbb.
+                 move: a1b2a2b1 ; rewrite (eqP a1eqa2) (eqP b1eqb2) -orbA orbb.
+                 case/orP ; [move/eqP=> ? ; move/eqP ; contradiction | by []].
+              ** move: b1b2c1c2 ; rewrite (eqP b1eqb2) (eqP c1eqc2) orbb.
+                 move: b1c2b2c1 ; rewrite (eqP b1eqb2) (eqP c1eqc2) -orbA orbb.
+                 case/orP ; [move/eqP=> ? ; move/eqP ; contradiction | by []].
+              ** move: c1c2d1d2 ; rewrite (eqP c1eqc2) (eqP d1eqd2) orbb.
+                 move: c1d2c2d1 ; rewrite (eqP c1eqc2) (eqP d1eqd2) -orbA orbb.
+                 case/orP ; [move/eqP=> ? ; move/eqP ; contradiction | by []].
+              ** by move: a1c2a2c1 => /andP [_] ; rewrite (eqP a1eqa2).
+              ** by move: a1d2a2d1 => /andP [_] ; rewrite (eqP a1eqa2).
+              ** by move: b1d2b2d1 => /andP [_] ; rewrite (eqP b1eqb2).
+        (* a a --- b b --- c c --- c d2 *)
+        -- left ; pose h' (v : 'P_4) :=
+                  match v with
+                  | Ordinal 0 _ => a1
+                  | Ordinal 1 _ => b1
+                  | Ordinal 2 _ => c1
+                  | Ordinal _ _ => if (c1 -- d1) then d1 else d2
+                  end.
+           exists h'.
+           ++ apply: h'_inj ; rewrite /=.
+              ** by move: a1a2b1b2 ; rewrite (eqP a1eqa2) (eqP b1eqb2) orbb.
+              ** by move: a1a2c1c2 ; rewrite (eqP a1eqa2) (eqP c1eqc2) orbb.
+              ** rewrite (fun_if (fun d => a1 != d)) ; case: (boolP (c1 -- d1)).
+                 --- by move: a1d2a2d1 => /andP [/andP [_ ?]] ; rewrite (eqP a1eqa2).
+                 --- by move: a1d2a2d1 => /andP [/andP [ /andP [? _]]].
+              ** by move: b1b2c1c2 ; rewrite (eqP b1eqb2) (eqP c1eqc2) orbb.
+              ** rewrite (fun_if (fun d => b1 != d)) ; case: (boolP (c1 -- d1)).
+                 --- by move: b1d2b2d1 => /andP [/andP [_ ?]] ; rewrite (eqP b1eqb2).
+                 --- by move: b1d2b2d1 => /andP [/andP [ /andP [? _]]].
+              ** rewrite (fun_if (fun d => c1 != d)) ; case: (boolP (c1 -- d1)).
+                 --- by apply: contraL ; move/eqP-> ; rewrite sg_irrefl.
+                 --- by apply: contra ; move/eqP-> ; rewrite sg_sym.
+           ++ apply: h'_hom ; rewrite /=.
+              ** move: a1a2b1b2 ; rewrite (eqP a1eqa2) (eqP b1eqb2) orbb.
+                 move: a1b2a2b1 ; rewrite (eqP a1eqa2) (eqP b1eqb2) -orbA orbb.
+                 case/orP ; [move/eqP=> ? ; move/eqP ; contradiction | by []].
+              ** move: b1b2c1c2 ; rewrite (eqP b1eqb2) (eqP c1eqc2) orbb.
+                 move: b1c2b2c1 ; rewrite (eqP b1eqb2) (eqP c1eqc2) -orbA orbb.
+                 case/orP ; [move/eqP=> ? ; move/eqP ; contradiction | by []].
+              ** rewrite (fun_if (fun d => c1 -- d)) ; case: (boolP (c1 -- d1)).
+                 --- by move=> _.
+                 --- move: c1d2c2d1 ; rewrite (eqP c1eqc2) ; case/orP ; last
+                       by move=> ? /negP ; contradiction.
+                     case/orP ; last by move/eqP->.
+                     case/orP ; last by [].
+                     by move/eqP-> ; apply: contraR ; rewrite sg_sym.
+              ** by move: a1c2a2c1 => /andP [_] ; rewrite (eqP a1eqa2).
+              ** rewrite (fun_if (fun d => a1 -- d)) ; case: (boolP (c1 -- d1)).
+                 --- by move: a1d2a2d1 => /andP [/andP [_ ?]] ; rewrite (eqP a1eqa2).
+                 --- by move: a1d2a2d1 => /andP [/andP [ /andP [_ ?]]].
+              ** rewrite (fun_if (fun d => b1 -- d)) ; case: (boolP (c1 -- d1)).
+                 --- by move: b1d2b2d1 => /andP [/andP [_ ?]] ; rewrite (eqP b1eqb2).
+                 --- by move: b1d2b2d1 => /andP [/andP [ /andP [_ ?]]].
+      * admit.
+    + admit.
+  - admit.
+Admitted.
+
+Corollary G'P4free'_rev : GP4 \subgraph G' -> GP4 \subgraph G \/ GK23 \subgraph G.
+Proof.
+  move=> /(subgraph_trans (sub_G2_G1 G_is_P4)) P4subG'.
+  move: (G'P4free_rev P4subG') ; case.
+  - by left ; apply: (subgraph_trans (sub_G1_G2 G_is_P4)).
+  - by right ; apply: (subgraph_trans (sub_G1_G2 G_is_K23)).
+Qed.
+
 End Upper_Weighted_Irredundant_Properties.
+
+
