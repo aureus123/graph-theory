@@ -38,20 +38,20 @@ Hypothesis iso_G1_G2 : isomorphic G1 G2.
 
 Lemma sub_G1_G2 : induced_subgraph G1 G2.
 Proof.
-  elim: iso_G1_G2 => f [g can_f_g can_g_f hom_f].
+  move: iso_G1_G2 => [f [g can_f_g can_g_f hom_f]].
   rewrite /induced_subgraph ; exists f => // ; exact: (can_inj can_f_g).
 Qed.
 
 Lemma iso_G2_G1 : isomorphic G2 G1.
 Proof.
-  elim: iso_G1_G2 => f [g can_f_g can_g_f hom_f].
+  move: iso_G1_G2 => [f [g can_f_g can_g_f hom_f]].
   rewrite /isomorphic ; exists g ; first by exists f => //.
   rewrite /induced_hom => x y. set x' := g x. set y' := g y.
   by rewrite -(can_g_f x) -(can_g_f y) -/x' -/y' hom_f.
 Qed.
 
 Lemma induced_hom_bijective : exists h : G1 -> G2, bijective h.
-Proof. by elim: iso_G1_G2 => h [invh ? ? _] ; exists h ; exists invh. Qed.
+Proof. by move: iso_G1_G2 => [h [invh ? ? _]] ; exists h ; exists invh. Qed.
 
 End Basic_Facts_Induced_Homomorphism_Isomorphism.
 
@@ -286,13 +286,13 @@ Section set_h_vertex_and_its_private_definition.
   Fact h_Dw1 (x : G') : x \in h_Dw -> x.1 \in D.
   Proof.
     rewrite /h_Dw ; move/bigcupP=> [v vinD].
-    by rewrite (h_vw'1 vinD) in_set1 ; move/eqP-> ; rewrite h_vw1.
+    by rewrite (h_vw'1 vinD) in_set1 ; move/eqP->.
   Qed.
 
   Fact h_Dw2 (x : G') : x \in h_Dw -> x.2 \in private_set D x.1.
   Proof.
     rewrite /h_Dw ; move/bigcupP=> [v vinD].
-    by rewrite (h_vw'1 vinD) in_set1 ; move/eqP-> ; rewrite h_vw2.
+    by rewrite (h_vw'1 vinD) in_set1 ; move/eqP->; rewrite h_vw2.
   Qed.
 
   Fact h_DwP (x : G') : x \in h_Dw -> x.1 \in D /\ x.2 \in private_set D x.1.
@@ -304,7 +304,7 @@ Section set_h_vertex_and_its_private_definition.
     move=> /bigcupP [? ?]; rewrite h_vw'1 => /set1P uprva.
     move=> /bigcupP [? ?]; rewrite h_vw'1 => /set1P vprvb u1eqv1.
     apply/eqP/andP; split; apply/eqP; first exact: u1eqv1.
-    rewrite uprva vprvb !h_vw1 in u1eqv1.
+    rewrite uprva vprvb /= in u1eqv1.
     rewrite uprva vprvb.
     apply/eq_xchoose.
     by rewrite u1eqv1.
@@ -327,7 +327,7 @@ Section set_h_vertex_and_its_private_definition.
   Lemma weight_D_eq_h_Dw : W D = W' h_Dw.
   Proof.
     rewrite /W' /weight_set (partition_disjoint_bigcup_P weight').
-    - by under eq_bigr=> v vD do rewrite (h_vw'1 vD) big_set1 /weight' h_vw1.
+    - by under eq_bigr=> v vD do rewrite (h_vw'1 vD) big_set1 /weight' /=.
     - move=> i j iD jD ineqj; apply/disjointP=> x.
       rewrite (h_vw'1 iD) (h_vw'1 jD) !in_set1=> /eqP xprvi.
       rewrite xprvi => /eqP H.
@@ -398,39 +398,53 @@ Qed.
 (**********************************************************************************)
 Section IR_w_upper_bound.
 
-Variable x : G. (* the evidence that G has at least one vertex *)
+Let M (n : nat) := ([set: G] == set0) || [exists v, [exists u, (u \in N[v]) && (W(N[v] :\ u) == n)]].
 
-Let M (n : nat) := [exists v, [exists u, W(N[v] :\ u) == n]].
 Local Fact exM : exists n : nat, M n.
 Proof.
-  exists (W N(x)); do 2 (apply/existsP; exists x).
-  rewrite setU1K; auto. by rewrite in_opn sg_irrefl.
+rewrite /M.
+case: (boolP ([set: G] == set0)) => [_ |/set0Pn [x _]].
+- by exists 0; apply/orP; left.
+- exists (W N(x)).
+  apply/orP; right.
+  do 2 (apply/existsP; exists x).
+  rewrite setU1K; last exact: v_notin_opneigh.
+  by apply/andP; split; [exact: v_in_clneigh | done].
 Qed.
 
 Definition delta_w' := ex_minn exM.
 
-Fact delta_w'_min (u v : G) : delta_w' <= W (N[v] :\ u).
+Fact delta_w'_min (u v : G) : (u \in N[v]) -> delta_w' <= W (N[v] :\ u).
 Proof.
-  rewrite /delta_w'; have [n _ n_min] := ex_minnP.
-  apply/(n_min (W (N[v] :\ u))).
-  by apply/existsP; exists v; apply/existsP; exists u.
+move => ?; rewrite /delta_w'.
+move: (ex_minnP exM) => [n _ n_min].
+apply/n_min.
+rewrite /M; apply/orP; right.
+apply/existsP; exists v; apply/existsP; exists u.
+by apply/andP.
+Qed.
+
+Lemma bound_weight_irredundant S :
+  (irredundant S) -> W S <= W [set: G] - delta_w'.
+Proof.
+move/irredundantP=> irrS.
+case: (boolP (S == set0)) => [/eqP-> | /set0Pn [u u_in_S]];
+  first by rewrite /W /weight_set big_set0.
+move/set0Pn: (irrS _ u_in_S)=> [v /privateP [udomv H]].
+rewrite cl_sg_sym -in_cln in udomv.
+apply/(@leq_trans ((\sum_(i in [set: G]) weight i) - W (N[v] :\ u)));
+  last exact: (leq_sub2l (\sum_(i in [set: G]) weight i) (delta_w'_min udomv)).
+rewrite -sub_diff_sum; last by done.
+apply/sub_leq_sum/subsetDP; split; first by done.
+apply/disjointP=> w w_in_S.
+move/setD1P=> [wnequ w_in_Nv]; rewrite in_cln cl_sg_sym in w_in_Nv.
+by move/negP: wnequ; rewrite (H w w_in_S w_in_Nv).
 Qed.
 
 Theorem IR_w_leq_V_minus_delta_w' : IR_w G weight <= W [set: G] - delta_w'.
 Proof.
-  rewrite /IR_w.
-  have [S irrS _] := arg_maxnP (fun D : {set G} => W(D)) (irr0 G).
-  case (boolP (S == set0)); first by move/eqP->; rewrite /weight_set big_set0.
-  move/set0Pn=> [u uS]. move/irredundantP in irrS.
-  move/set0Pn: (irrS u uS)=> [v /privateP [udomv H]].
-  have ?: [disjoint S & (N[v] :\ u)].
-  { apply/disjointP=> w wS.
-    move/setD1P=> [wnequ wNv]. rewrite in_cln cl_sg_sym in wNv.
-    by move/negP: wnequ; rewrite (H w wS wNv). }
-  have: W S <= W ([set: G] :\: (N[v] :\ u)) by apply/sub_leq_sum/subsetDP; split=>[//|//].
-  rewrite /W /weight_set sub_diff_sum; auto; move=> leq_1.
-  move: (leq_sub2l (\sum_(i in [set: G]) weight i) (delta_w'_min u v))=> leq_2.
-  exact: leq_trans leq_1 leq_2.
+move: (IR_witness weight) => [?] ? <-.
+by apply: bound_weight_irredundant.
 Qed.
 
 End IR_w_upper_bound.
