@@ -2344,7 +2344,230 @@ Proof.
                      +++ by done.
                      +++ by rewrite -d1_eq_d2.
                      +++ by done.
-        -- admit.
+        --  (* a1 a2 -- b b -- c1 c2 *)
+            (*         d1 d2         *)
+           case: (boolP (a1 -- c1))=> [a1_adj_c1 | a1_nadj_c1].
+           ++ case: (boolP (a2 -- d2))=> [a2_adj_d2 | a2_nadj_d2]; last first.
+              ** pose h' (v : copaw) :=
+                   match v with
+                   | Ordinal 0 _ => a2
+                   | Ordinal 1 _ => a1
+                   | Ordinal 2 _ => c1
+                   | Ordinal _ _ => d2
+                   end.
+                 left; exists h'.
+                 --- apply: h'_inj ; rewrite /=.
+                     +++ by rewrite eq_sym (sg_edgeNeq a1_adj_a2).
+                     +++ by done.
+                     +++ by move: d1_adj_d2; apply/contraTneq => <-; rewrite sg_sym.
+                     +++ by rewrite (sg_edgeNeq a1_adj_c1).
+                     +++ by done.
+                     +++ by done.
+                 --- apply: h'_hom ; rewrite /=.
+                     +++ by rewrite sg_sym.
+                     +++ by done.
+                     +++ by done.
+                     +++ by done.
+                     +++ by done.
+                     +++ by done.
+              ** case: (boolP (a2 -- b1))=> [a2_adj_b1 | a2_nadj_b1]; last first.
+                 --- pose h' (v : copaw) :=
+                       match v with
+                       | Ordinal 0 _ => a2
+                       | Ordinal 1 _ => d2
+                       | Ordinal 2 _ => d1
+                       | Ordinal _ _ => b1
+                     end.
+                     left; exists h'.
+                     +++ apply: h'_inj ; rewrite /=.
+                         *** by rewrite (sg_edgeNeq a2_adj_d2).
+                         *** by done.
+                         *** by move: a2_adj_d2; apply/contraTneq => ->.
+                         *** by rewrite eq_sym (sg_edgeNeq d1_adj_d2).
+                         *** by rewrite eq_sym.
+                         *** by rewrite b1_eq_b2 eq_sym.
+                     +++ apply: h'_hom ; rewrite /=.
+                         *** by done.
+                         *** by rewrite sg_sym.
+                         *** by done.
+                         *** by done.
+                         *** by rewrite sg_sym.
+                         *** by rewrite b1_eq_b2 sg_sym.
+                 --- case: (boolP (b2 -- c1))=> [b2_adj_c1 | b2_nadj_c1]; last first.
+                     +++ pose h' (v : copaw) :=
+                           match v with
+                           | Ordinal 0 _ => d2
+                           | Ordinal 1 _ => a2
+                           | Ordinal 2 _ => b1
+                           | Ordinal _ _ => c1
+                           end.
+                         left; exists h'.
+                         *** apply: h'_inj ; rewrite /=.
+                             ---- by rewrite eq_sym (sg_edgeNeq a2_adj_d2).
+                             ---- by rewrite eq_sym.
+                             ---- by rewrite eq_sym.
+                             ---- by rewrite (sg_edgeNeq a2_adj_b1).
+                             ---- by done.
+                             ---- by move: a2_adj_b1; apply/contraTneq => ->.
+                         *** apply: h'_hom ; rewrite /=.
+                             ---- by rewrite sg_sym.
+                             ---- by done.
+                             ---- by rewrite sg_sym.
+                             ---- by rewrite sg_sym.
+                             ---- by done.
+                             ---- by rewrite b1_eq_b2.
+                     +++ case: (boolP (c1 -- d1))=> [c1_adj_d1 | c1_nadj_d1]; last first.
+                         *** pose h' (v : copaw) :=
+                               match v with
+                               | Ordinal 0 _ => a2
+                               | Ordinal 1 _ => d2
+                               | Ordinal 2 _ => d1
+                               | Ordinal _ _ => c1
+                               end.
+                             left; exists h'.
+                             ---- apply: h'_inj ; rewrite /=.
+                                  ++++ by rewrite (sg_edgeNeq a2_adj_d2).
+                                  ++++ by done.
+                                  ++++ by done.
+                                  ++++ by rewrite eq_sym (sg_edgeNeq d1_adj_d2).
+                                  ++++ by rewrite eq_sym.
+                                  ++++ by move: d1_adj_d2; apply/contraTneq => ->.
+                             ---- apply: h'_hom ; rewrite /=.
+                                  ++++ by done.
+                                  ++++ by rewrite sg_sym.
+                                  ++++ by done.
+                                  ++++ by done.
+                                  ++++ by rewrite sg_sym.
+                                  ++++ by rewrite sg_sym.
+                         *** case: (boolP (a2 -- c2))=> [a2_adj_c2 | a2_nadj_c2]; last first.
+                             ---- pose h' (v : copaw) :=
+                                    match v with
+                                    | Ordinal 0 _ => c2
+                                    | Ordinal 1 _ => c1
+                                    | Ordinal 2 _ => d1
+                                    | Ordinal _ _ => a2
+                                    end.
+                                  left; exists h'.
+                                  ++++ apply: h'_inj ; rewrite /=.
+                                       **** by rewrite eq_sym (sg_edgeNeq c1_adj_c2).
+                                       **** by done.
+                                       **** by move: c1_adj_c2; apply/contraTneq => ->; rewrite sg_sym.
+                                       **** by rewrite (sg_edgeNeq c1_adj_d1).
+                                       **** by rewrite eq_sym.
+                                       **** by move: c1_adj_d1; apply/contraTneq => ->; rewrite sg_sym.
+                                  ++++ apply: h'_hom ; rewrite /=.
+                                       **** by rewrite sg_sym.
+                                       **** by done.
+                                       **** by done.
+                                       **** by rewrite sg_sym.
+                                       **** by rewrite sg_sym.
+                                       **** by rewrite sg_sym.
+                             ---- case: (boolP (a1 -- d1))=> [a1_adj_d1 | a1_nadj_d1]; last first.
+                                  ++++ pose h' (v : copaw) :=
+                                         match v with
+                                         | Ordinal 0 _ => a1
+                                         | Ordinal 1 _ => a2
+                                         | Ordinal 2 _ => c2
+                                         | Ordinal _ _ => d1
+                                         end.
+                                       left; exists h'.
+                                       **** apply: h'_inj ; rewrite /=.
+                                            ----- by rewrite (sg_edgeNeq a1_adj_a2).
+                                            ----- by done.
+                                            ----- by move: a1_adj_a2; apply/contraTneq => ->; rewrite sg_sym.
+                                            ----- by rewrite (sg_edgeNeq a2_adj_c2).
+                                            ----- by done.
+                                            ----- by done.
+                                       **** apply: h'_hom ; rewrite /=.
+                                            ----- by done.
+                                            ----- by done.
+                                            ----- by done.
+                                            ----- by done.
+                                            ----- by done.
+                                            ----- by done.
+                                  ++++ case: (boolP (c2 -- d2))=> [c2_adj_d2 | c2_nadj_d2]; last first.
+                                       **** pose h' (v : copaw) :=
+                                              match v with
+                                              | Ordinal 0 _ => a1
+                                              | Ordinal 1 _ => c1
+                                              | Ordinal 2 _ => c2
+                                              | Ordinal _ _ => d2
+                                              end.
+                                            left; exists h'.
+                                            ----- apply: h'_inj ; rewrite /=.
+                                                  +++++ by rewrite (sg_edgeNeq a1_adj_c1).
+                                                  +++++ by done.
+                                                  +++++ by done.
+                                                  +++++ by rewrite (sg_edgeNeq c1_adj_c2).
+                                                  +++++ by done.
+                                                  +++++ by move: c1_adj_c2; apply/contraTneq => ->.
+                                            ----- apply: h'_hom ; rewrite /=.
+                                                  +++++ by done.
+                                                  +++++ by done.
+                                                  +++++ by done.
+                                                  +++++ by done.
+                                                  +++++ by done.
+                                                  +++++ by done.
+                                       **** case: (boolP (a1 -- b2))=> [a1_adj_b2 | a1_nadj_b2]; last first.
+                                            ----- pose h' (v : copaw) :=
+                                                    match v with
+                                                    | Ordinal 0 _ => a1
+                                                    | Ordinal 1 _ => c1
+                                                    | Ordinal 2 _ => b2
+                                                    | Ordinal _ _ => d2
+                                                    end.
+                                                  left; exists h'.
+                                                  +++++ apply: h'_inj ; rewrite /=.
+                                                        ***** by rewrite (sg_edgeNeq a1_adj_c1).
+                                                        ***** by move: a1_adj_d1; apply/contraTneq => ->.
+                                                        ***** by done.
+                                                        ***** by rewrite eq_sym (sg_edgeNeq b2_adj_c1).
+                                                        ***** by done.
+                                                        ***** by rewrite -b1_eq_b2.
+                                                  +++++ apply: h'_hom ; rewrite /=.
+                                                        ***** by done.
+                                                        ***** by rewrite sg_sym.
+                                                        ***** by done.
+                                                        ***** by done.
+                                                        ***** by done.
+                                                        ***** by rewrite -b1_eq_b2.
+                                            ----- case: (boolP (b1 -- c2))=> [b1_adj_c2 | b1_nadj_c2]; last first.
+                                                  +++++ pose h' (v : copaw) :=
+                                                          match v with
+                                                          | Ordinal 0 _ => b1
+                                                          | Ordinal 1 _ => a2
+                                                          | Ordinal 2 _ => c2
+                                                          | Ordinal _ _ => d1
+                                                          end.
+                                                        left; exists h'.
+                                                        ***** apply: h'_inj ; rewrite /=.
+                                                              ------ by rewrite eq_sym (sg_edgeNeq a2_adj_b1).
+                                                              ------ by move: c2_adj_d2; apply/contraTneq => <-.
+                                                              ------ by rewrite b1_eq_b2.
+                                                              ------ by rewrite (sg_edgeNeq a2_adj_c2).
+                                                              ------ by done.
+                                                              ------ by done.
+                                                        ***** apply: h'_hom ; rewrite /=.
+                                                              ------ by rewrite sg_sym.
+                                                              ------ by done.
+                                                              ------ by done.
+                                                              ------ by rewrite b1_eq_b2.
+                                                              ------ by done.
+                                                              ------ by done.
+                                                  +++++ pose h' (v : G7_1) :=
+                                                          match v with
+                                                          | Ordinal 0 _ => a1
+                                                          | Ordinal 1 _ => c2
+                                                          | Ordinal 2 _ => d1
+                                                          | Ordinal 3 _ => a2
+                                                          | Ordinal 4 _ => c1
+                                                          | Ordinal 5 _ => d2
+                                                          | Ordinal _ _ => b1
+                                                          end.
+                                                        right. left. exists h'.
+                                                        ***** admit.
+                                                        ***** admit.
+           ++ admit.
 + admit.
 Admitted.
 
