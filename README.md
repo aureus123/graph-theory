@@ -1,3 +1,15 @@
+
+# Formalization of the maximum weighted irredundant set problem
+
+This is a formalization in Coq/Ssreflect of an optimization problem in graphs called **Maximum Weighted Irredundant Set** problem.
+The theory is in the file **wirred.v** and developed on the top of the graph-theory library, whose details are given below.
+It also contains a source code of an heuristic and an exact solver, on the folder **solver**.
+
+- Author(s):
+  - Daniel Severín ([**@aureus123**](https://github.com/aureus123))
+  - Ricardo Katz ([**@rdkatz**](https://github.com/rdkatz))
+  - Mauricio Salichs ([**@mauriciosalichs**](https://github.com/mauriciosalichs))
+
 # Graph Theory
 
 [![Travis][travis-shield]][travis-link]
