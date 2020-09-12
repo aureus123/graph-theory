@@ -16,7 +16,6 @@
 #ifndef VISUALC
 #include <unistd.h>
 #include <sys/times.h>
-#include "cliquer/cliquer.h"
 #else
 #include <windows.h>
 #endif
@@ -37,7 +36,7 @@ using namespace std;
 
 /* FLAGS OF THE OPTIMIZATION */
 
-#define TUNECPLEX
+//#define TUNEDPARAMS
 
 /* GLOBAL VARIABLES */
 
@@ -703,6 +702,8 @@ void show_sol() {
  */
 int main(int argc, char **argv)
 {
+	double start_t, elapsed_t;
+
 #ifndef VERBOSE
 	std::cout.setstate(std::ios::failbit);
 #endif
@@ -759,9 +760,9 @@ int main(int argc, char **argv)
 
 	/* run heuristic */
 	if (r_heur) {
-		double start_t = ECOclock();
+		start_t = ECOclock();
 		bool status = get_bounds();
-		double elapsed_t = ECOclock() - start_t;
+		elapsed_t = ECOclock() - start_t;
 
 		cout << "New bounds:  LB = " << LB << ", UB = " << UB << "." << endl;
 		show_sol();
@@ -773,11 +774,11 @@ int main(int argc, char **argv)
 	}
 
 	/* perform optimization */
-	double start_t = ECOclock();
+	start_t = ECOclock();
 	bool status;
 	if (r_cliquer) status = optimize2();
 	else status = optimize1();
-	double elapsed_t = ECOclock() - start_t;	
+	elapsed_t = ECOclock() - start_t;	
 
 	show_sol();
 	set_color(11);
