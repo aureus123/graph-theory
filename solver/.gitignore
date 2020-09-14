@@ -4,6 +4,7 @@
 *.ilk
 *.sln
 *.sdf
+*.opensdf
 *.pdb
 *.suo
 Debug

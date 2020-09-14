@@ -40,7 +40,7 @@ using namespace std;
 
 /* GLOBAL VARIABLES */
 
-bool r_heur, r_cliquer, r_domination, is_weighted; /* options selection */
+bool r_opt, r_heur, r_cliquer, r_domination, is_weighted; /* options selection */
 int vertices, edges; /* number of vertices and edges */
 int* weight; /* weight of each vertex */
 int *edge_u, *edge_v; /* array of endpoints of edges */
@@ -594,7 +594,7 @@ bool optimize()
 	cplex.setParam(IloCplex::Threads, 1);
 	cplex.setParam(IloCplex::RandomSeed, 1);
 
-#ifdef TUNECPLEX
+#ifdef TUNEDPARAMS
 	/* set Traditional B&C with pseudo costs branching strategy */
 	//cplex.setParam(IloCplex::MIPSearch, 1);
 	//cplex.setParam(IloCplex::VarSel, CPX_VARSEL_PSEUDO);
@@ -767,23 +767,27 @@ int main(int argc, char **argv)
 		cout << "The graph must have at least 3 vertices and must be connected." << endl;
 		cout << "If the weight file is not given, every weight is 1." << endl;
 		cout << "Options:" << endl;
-		cout << "  1 - integer programming for solving IR_w(G)" << endl;
-		cout << "  2 - heuristic + integer programming for solving IR_w(G)" << endl;
-		cout << "  3 - generate complement of G' (DIMACS format) for solving IR_w(G) with CLIQUER" << endl;
-		cout << "  4 - integer programming for solving Gamma_w(G)" << endl;
+		cout << "  1 - heuristic for obtaining bounds of IR_w(G)" << endl;
+		cout << "  2 - integer programming for solving IR_w(G)" << endl;
+		cout << "  3 - heuristic + integer programming for solving IR_w(G)" << endl;
+		cout << "  4 - generate complement of G' (DIMACS format) for solving IR_w(G) with CLIQUER" << endl;
+		cout << "  5 - integer programming for solving Gamma_w(G)" << endl;
+		//cout << "Options 1, 2 and 3 also generate a Coq certificate." << endl;
 		bye("Bye!");
 	}
 
 	/* read model */
+	r_opt = false;
 	r_heur = false;
 	r_domination = false;
 	r_cliquer = false;
 	int opt = atoi(argv[1]);
 	switch (opt) {
-	case 1: break;
-	case 2: r_heur = true; break;
-	case 3: r_cliquer = true; break;
-	case 4: r_domination = true; break;
+	case 1: r_heur = true; break;
+	case 2: r_opt = true; break;
+	case 3: r_heur = true; r_opt = true; break;
+	case 4: r_cliquer = true; break;
+	case 5: r_domination = true; r_opt = true; break;
 	default: bye("Options must be between 1 and 4.");
 	}
 
@@ -805,7 +809,7 @@ int main(int argc, char **argv)
 	cout << "  Initial bounds:  LB = " << LB << ", UB = " << UB << "." << endl;
 
 	/* check if G is connected */
-//	if (connected() == false) bye("G is not connected, please decompose it first!");
+	if (connected() == false) bye("G is not connected, please decompose it first!");
 	set_color(7);
 
 	/* run heuristic */
@@ -825,7 +829,8 @@ int main(int argc, char **argv)
 
 	/* perform optimization */
 	if (r_cliquer) dimacs_gen();
-	else {
+
+	if (r_opt) {
 		start_t = ECOclock();
 		bool status;
 		status = optimize();
