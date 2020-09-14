@@ -1,0 +1,10 @@
+*.o
+*.user
+*.exe
+*.ilk
+*.sln
+*.sdf
+*.pdb
+Debug
+Release
+.vs

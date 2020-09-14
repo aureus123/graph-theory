@@ -40,7 +40,7 @@ using namespace std;
 
 /* GLOBAL VARIABLES */
 
-bool r_heur, r_cliquer, r_domination; /* options selection */
+bool r_heur, r_cliquer, r_domination, is_weighted; /* options selection */
 int vertices, edges; /* number of vertices and edges */
 int* weight; /* weight of each vertex */
 int *edge_u, *edge_v; /* array of endpoints of edges */
@@ -139,6 +139,7 @@ void read_graph(char *filename)
 		for (int v = 0; v < vertices; v++) adjacency[u][v] = 0;
 		adjacency[u][u] = 1;
 	}
+	is_weighted = false;
 	edge_u = new int[edges];
 	edge_v = new int[edges];
 
@@ -229,6 +230,8 @@ void read_weight(char* filename)
 		weight[v] = w;
 	}
 	fclose(stream);
+	is_weighted = true;
+
 #ifdef SHOWINSTANCE
 	cout << endl << "Weights:";
 	for (int v = 0; v < vertices; v++) cout << " " << weight[v];
@@ -485,10 +488,10 @@ int XUV(int u, int v)
 }
 
 /*
- * optimize1 - Generate the model and solve it with CPLEX
+ * optimize - Generate the model and solve it with CPLEX
  *   returns true if an optimal solution is reached
  */
-bool optimize1()
+bool optimize()
 {
 	IloEnv cplexenv;
 	IloModel model(cplexenv);
@@ -682,12 +685,53 @@ bool optimize1()
 }
 
 /*
- * optimize2 - Generate the complement of G' and solve it with CLIQUER
+ * dimacs_gen - Generate the complement of G' and solve it with CLIQUER
  *   returns true if an optimal solution is reached
  */
-bool optimize2() {
-	bye("Not implemented yet!");
-	return false;
+void dimacs_gen() {
+	if (is_weighted) bye("Not implemented yet for weighted graphs!");
+
+	/* compute number of vertices and edges of G' */
+	int vertices2 = 0;
+	for (int u = 0; u < vertices; u++) vertices2 += degrees[u];
+
+	int edges2 = 0;
+	for (int u = 0; u < vertices; u++) {
+		for (int du = 0; du < degrees[u]; du++) {
+			int v = neigh_vertices[u][du];
+			for (int z = 0; z < vertices; z++) {
+				for (int dz = 0; dz < degrees[z]; dz++) {
+					int r = neigh_vertices[z][dz];
+					if ((u != z || v != r) && (adjacency[u][r] > 0 || adjacency[v][z] > 0)) edges2++;
+				}
+			}
+		}
+	}
+	edges2 /= 2;
+
+	FILE *stream = fopen("output.dimacs", "wt");
+	if (!stream) bye("Output file cannot be written");
+
+	fprintf(stream, "p edge %d %d\n", vertices2, edges2);
+
+	int uv = 0;
+	for (int u = 0; u < vertices; u++) {
+		for (int du = 0; du < degrees[u]; du++) {
+			int v = neigh_vertices[u][du];
+			uv++;
+			int zr = 0;
+			for (int z = 0; z < vertices; z++) {
+				for (int dz = 0; dz < degrees[z]; dz++) {
+					int r = neigh_vertices[z][dz];
+					zr++;
+					if (uv < zr && (adjacency[u][r] > 0 || adjacency[v][z] > 0)) {
+						fprintf(stream, "e %d %d\n", uv, zr);
+					}
+				}
+			}
+		}
+	}
+	fclose(stream);
 }
 
 void show_sol() {
@@ -709,7 +753,7 @@ int main(int argc, char **argv)
 #endif
 	set_color(15);
 	cout << "SOLVER - Computes the weighted upper irredundant/domination number." << endl;
-	cout << "Made in 2018-2020 by Daniel Severin (CLIQUER by Patrick Ostergard)." << endl;
+	cout << "Made in 2018-2020 by Daniel Severin." << endl;
 	set_color(7);
 
 	if (argc < 3) {
@@ -719,7 +763,7 @@ int main(int argc, char **argv)
 		cout << "Options:" << endl;
 		cout << "  1 - integer programming for solving IR_w(G)" << endl;
 		cout << "  2 - heuristic + integer programming for solving IR_w(G)" << endl;
-		cout << "  3 - generate complement of G' for solving IR_w(G) with CLIQUER" << endl;
+		cout << "  3 - generate complement of G' (DIMACS format) for solving IR_w(G) with CLIQUER" << endl;
 		cout << "  4 - integer programming for solving Gamma_w(G)" << endl;
 		bye("Bye!");
 	}
@@ -774,16 +818,18 @@ int main(int argc, char **argv)
 	}
 
 	/* perform optimization */
-	start_t = ECOclock();
-	bool status;
-	if (r_cliquer) status = optimize2();
-	else status = optimize1();
-	elapsed_t = ECOclock() - start_t;	
+	if (r_cliquer) dimacs_gen();
+	else {
+		start_t = ECOclock();
+		bool status;
+		status = optimize();
+		elapsed_t = ECOclock() - start_t;
 
-	show_sol();
-	set_color(11);
-	cout << "Time elapsed during optimization = " << elapsed_t << " sec." << endl;
-	if (status == false) bye("Optimality not reached :(");
+		show_sol();
+		set_color(11);
+		cout << "Time elapsed during optimization = " << elapsed_t << " sec." << endl;
+		if (status == false) bye("Optimality not reached :(");
+	}
 
 	/* free memory */
 free_mem:;
