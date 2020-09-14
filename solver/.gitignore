@@ -5,6 +5,8 @@
 *.sln
 *.sdf
 *.pdb
+*.suo
 Debug
 Release
+exp
 .vs

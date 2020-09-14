@@ -702,12 +702,18 @@ void dimacs_gen() {
 			for (int z = 0; z < vertices; z++) {
 				for (int dz = 0; dz < degrees[z]; dz++) {
 					int r = neigh_vertices[z][dz];
-					if ((u != z || v != r) && (adjacency[u][r] > 0 || adjacency[v][z] > 0)) edges2++;
+					if ((u != z || v != r) && !(adjacency[u][r] > 0 || adjacency[v][z] > 0)) edges2++;
 				}
 			}
 		}
 	}
 	edges2 /= 2;
+
+	set_color(5);
+	cout << endl << "Complement of the transformed graph:" << endl;
+	int clique_size = vertices2 * (vertices2 - 1) / 2;
+	float density = 100.0 * (float)edges2 / (float)clique_size;
+	cout << "  |V| = " << vertices2 << ", |E| = " << edges2 << " (density = " << density << "%)." << endl;
 
 	FILE *stream = fopen("output.dimacs", "wt");
 	if (!stream) bye("Output file cannot be written");
@@ -724,7 +730,7 @@ void dimacs_gen() {
 				for (int dz = 0; dz < degrees[z]; dz++) {
 					int r = neigh_vertices[z][dz];
 					zr++;
-					if (uv < zr && (adjacency[u][r] > 0 || adjacency[v][z] > 0)) {
+					if (uv < zr && !(adjacency[u][r] > 0 || adjacency[v][z] > 0)) {
 						fprintf(stream, "e %d %d\n", uv, zr);
 					}
 				}
@@ -799,7 +805,7 @@ int main(int argc, char **argv)
 	cout << "  Initial bounds:  LB = " << LB << ", UB = " << UB << "." << endl;
 
 	/* check if G is connected */
-	if (connected() == false) bye("G is not connected, please decompose it first!");
+//	if (connected() == false) bye("G is not connected, please decompose it first!");
 	set_color(7);
 
 	/* run heuristic */
