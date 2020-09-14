@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="mip.cpp" />
     <ClCompile Include="solver.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

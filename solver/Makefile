@@ -18,8 +18,14 @@ CCLNFLAGS = -lm -lconcert -lilocplex -lcplex -pthread
 
 all: solver
 
-solver: solver.cpp
-	$(CC) -o $@ $^ -DTUNEDPARAMS $(CCFLAGS) $(LIBS) $(CCLNFLAGS)
+solver: solver.o mip.o
+	$(CC) -o $@ $^ $(CCFLAGS) $(LIBS) $(CCLNFLAGS)
+
+solver.o: solver.cpp
+	$(CC) -c -o $@ $< $(CCFLAGS)
+
+mip.o: mip.cpp
+	$(CC) -c -o $@ $< $(CCFLAGS) -DTUNEDPARAMS
 
 .PHONY: clean
 

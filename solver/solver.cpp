@@ -1,16 +1,14 @@
 /*
  * SOLVER - Computes the weighted upper irredundant/domination number
  * Made in 2018-2020 by Daniel Severin
- *
- * Requires IBM ILOG CPLEX 12.7
- */
+ * */
+
+#define NOCPLEX
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <iostream>
-#include <ilcplex/ilocplex.h>
-#include <ilcplex/cplex.h>
 
 /* for linux users: do not define VISUALC */
 #ifndef VISUALC
@@ -18,39 +16,36 @@
 #include <sys/times.h>
 #else
 #include <windows.h>
+#include <time.h>
 #endif
 
-ILOSTLBEGIN
+/* EXTERNALS */
+#ifndef NOCPLEX
+bool optimize(int vert, int *weight, int *degrees, int **neigh_vertices, int **adjacency,
+	bool r_domination, bool r_heur, int *LB, int *UB, int *card, int *Dset, int *Dpriv);
+#endif
 
 using namespace std;
 
 /* CONSTANTS */
 
-#define EPSILON 0.00001
 #define INFDIST 9999999
-#define MAXTIME 7200.0
 #define VERBOSE
 //#define SHOWINSTANCE
-#define SHOWCPLEX
-//#define SAVELP "form.lp"
-
-/* FLAGS OF THE OPTIMIZATION */
-
-//#define TUNEDPARAMS
 
 /* GLOBAL VARIABLES */
 
-bool r_opt, r_heur, r_cliquer, r_domination, is_weighted; /* options selection */
-int vertices, edges; /* number of vertices and edges */
-int* weight; /* weight of each vertex */
-int *edge_u, *edge_v; /* array of endpoints of edges */
-int *degrees; /* degree of each vertex + 1, i.e. |N[v]| */
-int **neigh_vertices; /* neighbors of each vertex including itself, i.e. N[v] */
-int **adjacency; /* adjacency matrix: 0 means no adjacency; >0 gives the index to the edge + 1
+static bool r_opt, r_heur, r_cliquer, r_domination, is_weighted; /* options selection */
+static int vertices, edges; /* number of vertices and edges */
+static int* weight; /* weight of each vertex */
+static int *edge_u, *edge_v; /* array of endpoints of edges */
+static int *degrees; /* degree of each vertex + 1, i.e. |N[v]| */
+static int **neigh_vertices; /* neighbors of each vertex including itself, i.e. N[v] */
+static int **adjacency; /* adjacency matrix: 0 means no adjacency; >0 gives the index to the edge + 1
 				    also adjacency[u][u] = 1 */
-int **dist; /* distance matrix */
-int card, *Dset, *Dpriv; /* best solution found so far (Dset = vertices of the set; Dpriv[i] is the private of Dset[i] for all i) */
-int LB, UB; /* bounds of the parameter */
+static int **dist; /* distance matrix */
+static int card, *Dset, *Dpriv; /* best solution found so far (Dset = vertices of the set; Dpriv[i] is the private of Dset[i] for all i) */
+static int LB, UB; /* bounds of the parameter */
 
 /* FUNCTIONS */
 
@@ -480,211 +475,6 @@ bool get_bounds()
 }
 
 /*
- * return index of variable x(u,v)
- */
-int XUV(int u, int v)
-{
-	return v + vertices*u;
-}
-
-/*
- * optimize - Generate the model and solve it with CPLEX
- *   returns true if an optimal solution is reached
- */
-bool optimize()
-{
-	IloEnv cplexenv;
-	IloModel model(cplexenv);
-	IloCplex cplex(model);
-	IloNumVarArray vars(cplexenv);
-
-	/* generate variables x(u,v): if v notin N[u] then the variable is set to zero */
-	int count_variables = 0;
-	char str[128];
-	for (int u = 0; u < vertices; u++) {
-		for (int v = 0; v < vertices; v++) {
-			count_variables++;
-			IloNum ub = 1.0;
-			sprintf(str, "x(%d,%d)", u, v);
-			if (adjacency[u][v] == 0) ub = 0.0;
-			vars.add(IloNumVar(cplexenv, 0.0, ub, ILOBOOL, str));
-		}
-	}
-
-	/* generate objective function: maximize sum_{uv} w_u x_uv */
-	IloExpr fobj(cplexenv, 0);
-	for (int u = 0; u < vertices; u++) {
-		for (int d = 0; d < degrees[u]; d++) {
-			int v = neigh_vertices[u][d];
-			fobj += weight[u] * vars[XUV(u, v)];
-		}
-	}
-	model.add(IloMaximize(cplexenv, fobj));
-
-	int count_constraints = 0;
-
-	/* if the heuristic was executed, then restrict the maximum objective <= UB
-	 *    (we commented it since it doesn't seem to help) */
-	/* if (r_heur) {
-		cout << "Adding upper bound constraint..." << endl;
-		IloExpr restr(cplexenv);
-		for (int u = 0; u < vertices; u++) {
-			for (int d = 0; d < degrees[u]; d++) {
-				int v = neigh_vertices[u][d];
-				restr += weight[u] * vars[XUV(u, v)];
-			}
-		}
-		model.add(restr <= UB);
-		count_constraints++;
-	} */
-
-	for (int u = 0; u < vertices; u++) {
-		for (int z = 0; z < vertices; z++) {
-			if (u != z) {
-				IloExpr restr(cplexenv);
-				bool is_not_empty = false;
-				for (int v = 0; v < vertices; v++) {
-					if (adjacency[u][v] > 0 && adjacency[z][v] > 0) {
-						is_not_empty = true;
-						restr += vars[XUV(u, v)];
-					}
-				}
-				if (is_not_empty) {
-					for (int d = 0; d < degrees[z]; d++) {
-						int r = neigh_vertices[z][d];
-						restr += vars[XUV(z, r)];
-					}
-					model.add(restr <= 1);
-					count_constraints++;
-				}
-			}
-		}
-	}
-
-	if (r_domination) {
-		cout << "Adding domination constraints..." << endl;
-		for (int u = 0; u < vertices; u++) {
-			IloExpr restr(cplexenv);
-			for (int v = 0; v < vertices; v++) {
-				if (adjacency[u][v] > 0) {
-					for (int z = 0; z < vertices; z++) {
-						if (adjacency[v][z] > 0) restr += vars[XUV(v, z)];
-					}
-				}
-			}
-			model.add(restr >= 1);
-			count_constraints++;
-		}
-	}
-
-	cplex.setDefaults();
-	cplex.setParam(IloCplex::Param::MIP::Tolerances::LowerCutoff, LB+1); /* <-- the solution should be at least better than the heuristic one */
-#ifndef SHOWCPLEX
-	cplex.setOut(cplexenv.getNullStream());
-	cplex.setWarning(cplexenv.getNullStream());
-#endif
-	cplex.setParam(IloCplex::MIPDisplay, 3);
-	cplex.setParam(IloCplex::WorkMem, 2048);
-	cplex.setParam(IloCplex::TreLim, 2048);
-	cplex.setParam(IloCplex::NodeFileInd, 0);
-	cplex.setParam(IloCplex::TiLim, MAXTIME);
-	cplex.setParam(IloCplex::EpGap, 0.0);
-	cplex.setParam(IloCplex::EpAGap, 0.0);
-	cplex.setParam(IloCplex::EpInt, EPSILON);
-	cplex.setParam(IloCplex::Threads, 1);
-	cplex.setParam(IloCplex::RandomSeed, 1);
-
-#ifdef TUNEDPARAMS
-	/* set Traditional B&C with pseudo costs branching strategy */
-	//cplex.setParam(IloCplex::MIPSearch, 1);
-	//cplex.setParam(IloCplex::VarSel, CPX_VARSEL_PSEUDO);
-
-	/* turn off other features, including presolve */
-	//cplex.setParam(IloCplex::PreInd, CPX_OFF);
-	cplex.setParam(IloCplex::LBHeur, 0);
-	cplex.setParam(IloCplex::Probe, -1);
-	cplex.setParam(IloCplex::HeurFreq, -1);
-	//cplex.setParam(IloCplex::RINSHeur, -1);
-	//cplex.setParam(IloCplex::RepeatPresolve, 0);
-
-	/* turn off cuts */
-	//cplex.setParam(IloCplex::Cliques, -1);
-	cplex.setParam(IloCplex::Covers, -1);
-	cplex.setParam(IloCplex::DisjCuts, -1);
-	cplex.setParam(IloCplex::FlowCovers, -1);
-	cplex.setParam(IloCplex::FlowPaths, -1);
-	cplex.setParam(IloCplex::FracCuts, -1);
-	cplex.setParam(IloCplex::GUBCovers, -1);
-	cplex.setParam(IloCplex::ImplBd, -1);
-	cplex.setParam(IloCplex::MIRCuts, -1);
-	//cplex.setParam(IloCplex::ZeroHalfCuts, -1);
-	cplex.setParam(IloCplex::MCFCuts, -1);
-	cplex.setParam(IloCplex::LiftProjCuts, -1);
-	cplex.setParam(IloCplex::Param::MIP::Cuts::LocalImplied, -1); // <-- in CPLEX 12.6.1
-#endif
-
-	set_color(15);
-	cout << "Model has " << count_variables << " variables and " << count_constraints << " constraints." << endl;
-	set_color(7);
-
-	cplex.extract(model);
-#ifdef SAVELP
-	cplex.exportModel(SAVELP);
-	cout << "Integer formulation saved." << endl;
-#endif
-
-	/* solve it! */
-	bool ret = false;
-	cplex.solve();
-	IloInt nodes = cplex.getNnodes();
-	cout << "Number of nodes evaluated: " << nodes << endl;
-	IloCplex::CplexStatus status = cplex.getCplexStatus();
-	if (status == IloCplex::Optimal) {
-		set_color(10);
-		cout << "Optimal solution found! :)" << endl;
-		set_color(7);
-		ret = true;
-	}
-	else {
-		switch (status) {
-		case IloCplex::AbortTimeLim: cout << "Time limit reached!" << endl; break;
-		case IloCplex::InfOrUnbd:
-		case IloCplex::Infeasible:
-			if (r_heur) {
-				set_color(10);
-				cout << "Infeasible. Therefore, then solution given by the heuristic is optimal!" << endl;
-				set_color(7);
-				UB = LB;
-				cplexenv.end();
-				return true;
-			}
-			else bye("Infeasible! :(");
-		default: bye("Unexpected error :(");
-		}
-		UB = (int)(cplex.getBestObjValue() + EPSILON);
-		cout << "Best upper bound is " << UB << endl;
-		/* relgap = 100.0 * (upper - lower) / lower;       Rel Gap = |bestbound - bestinteger|/|bestinteger| */
-	}
-
-	/* retrieve the solution */
-	LB = 0;
-	card = 0;
-	for (int u = 0; u < vertices; u++) {
-		for (int v = 0; v < vertices; v++) {
-			if (adjacency[u][v] > 0 && cplex.getValue(vars[XUV(u, v)]) > 0.1) {
-				Dset[card] = u;
-				Dpriv[card++] = v;
-				LB += weight[u];
-				break;
-			}
-		}
-	}
-
-	cplexenv.end();
-	return ret;
-}
-
-/*
  * dimacs_gen - Generate the complement of G' and solve it with CLIQUER
  *   returns true if an optimal solution is reached
  */
@@ -714,6 +504,7 @@ void dimacs_gen() {
 	int clique_size = vertices2 * (vertices2 - 1) / 2;
 	float density = 100.0 * (float)edges2 / (float)clique_size;
 	cout << "  |V| = " << vertices2 << ", |E| = " << edges2 << " (density = " << density << "%)." << endl;
+	set_color(7);
 
 	FILE *stream = fopen("output.dimacs", "wt");
 	if (!stream) bye("Output file cannot be written");
@@ -831,15 +622,20 @@ int main(int argc, char **argv)
 	if (r_cliquer) dimacs_gen();
 
 	if (r_opt) {
+#ifndef NOCPLEX
 		start_t = ECOclock();
 		bool status;
-		status = optimize();
+		status = optimize(vertices, weight, degrees, neigh_vertices, adjacency,
+			              r_domination, r_heur, &LB, &UB, &card, Dset, Dpriv);
 		elapsed_t = ECOclock() - start_t;
 
 		show_sol();
 		set_color(11);
 		cout << "Time elapsed during optimization = " << elapsed_t << " sec." << endl;
 		if (status == false) bye("Optimality not reached :(");
+#else
+		bye("Cannot proceed. Enable CPLEX.");
+#endif
 	}
 
 	/* free memory */
