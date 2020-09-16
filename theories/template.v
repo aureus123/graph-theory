@@ -1,5 +1,5 @@
 
-(* Resolution of the Upper Weighted Irredundant Problem *)
+(* Template for a certificate *)
 
 From mathcomp Require Import all_ssreflect.
 Require Import preliminaries digraph sgraph dom.
@@ -63,24 +63,38 @@ Notation "''v' m" := (@Ordinal n m isT) (at level 0, m at level 8, format "''v' 
 (**********************************************************************************)
 Section Certificate.
   Let inst_set := [set 'v0; 'v1; 'v4].
-  Let lb := 3.
 
   Fact inst_set_is_irr : @irredundant inst inst_set.
   Admitted.
 
-  Fact inst_set_card : #|inst_set| = lb.
-  Proof. by rewrite /inst_set -!setUA !cardsU1 !inE negb_or cards1. Qed.
-
-  Fact IR_lb : IR inst >= lb.
+  Fact IR_lb : IR inst >= 3.
   Proof.
     rewrite eq_IR_IR1.
-    suff: weight_set (@ones inst) inst_set = lb.
+    suff: weight_set (@ones inst) inst_set = 3.
     move<- ; apply: IR_max ; exact: inst_set_is_irr.
-    rewrite -cardwset1 ; exact: inst_set_card.
+    by rewrite -cardwset1 /inst_set -!setUA !cardsU1 !inE negb_or cards1.
   Qed.
+
+Check cardsU1.
+
+
 End Certificate.
 
 (* WEIGHTED CASE *)
+
+Lemma weightsU1 (G : sgraph) (a : G) (A : {set G}) (weight : G -> nat):
+  weight_set weight (a |: A) = (weight a) * (a \notin A) + weight_set weight A.
+Proof.
+  rewrite /weight_set.
+  case: (boolP (a \notin A)) => [H | H].
+  - by rewrite (big_setU1 _ H) /= muln1.
+  - rewrite muln0 add0n.
+    suff iden : a |: A = A by under eq_bigl => x do rewrite iden.
+    apply/eqP ; rewrite eqEsubset ; apply/andP ; split.
+    + apply/subsetP => x ; rewrite in_setU1 ; case/orP=> //.
+      by move/eqP-> ; move: H ; apply: contraR.
+    + apply/subsetP => ? ; exact: setU1r.
+Qed.
 
 (**********************************************************************************)
 Section Instance.
@@ -96,14 +110,17 @@ End Instance.
 (**********************************************************************************)
 Section Certificate.
   Let inst_set := [set 'v2; 'v3].
-  Let lb := 4.
 
   Fact inst_set_is_irr' : @irredundant inst inst_set.
   Admitted.
 
-  Fact inst_set_weight : weight_set weight inst_set = lb.
-  Proof. rewrite /inst_set /weight_set. Admitted.
+  Fact IR_w_lb : IR_w inst weight >= 4.
+  Proof.
+    suff: weight_set weight inst_set = 4.
+    move<- ; apply: IR_max ; exact: inst_set_is_irr'.
+(* add -!setU1 after /inst_set and negb_or after !inE
+            if inst_set has 3 or more elements. *)
+    by rewrite /inst_set !weightsU1 !inE /weight_set big_set1.
+  Qed.
 
-  Fact IR_w_lb : IR_w inst weight >= lb.
-  Proof. rewrite -inst_set_weight ; apply: IR_max ; exact: inst_set_is_irr'. Qed.
 End Certificate.
