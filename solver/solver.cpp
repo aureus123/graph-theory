@@ -35,7 +35,7 @@ using namespace std;
 
 /* GLOBAL VARIABLES */
 
-static bool r_opt, r_heur, r_cliquer, r_domination, is_weighted; /* options selection */
+static bool r_opt, r_heur, r_cliquer, r_domination, r_coq, is_weighted; /* options selection */
 static int vertices, edges; /* number of vertices and edges */
 static int* weight; /* weight of each vertex */
 static int *edge_u, *edge_v; /* array of endpoints of edges */
@@ -531,11 +531,124 @@ void dimacs_gen() {
 	fclose(stream);
 }
 
+/*
+ * show_sol - just show the solution on screen
+ */
 void show_sol() {
 	set_color(4);
 	cout << "Solution (card = " << card << ", weight = " << LB << "):" << endl;
 	for (int i = 0; i < card; i++) cout << "  private of " << Dset[i] << " is " << Dpriv[i] << endl;
 	set_color(7);
+}
+
+/*
+ * save_certificate - save the current solution as a Coq certificate
+ */
+struct cmpstruct {
+	int v;
+	int priv;
+};
+
+int cmpfunc(const void *a, const void *b)
+{
+	int first = ((struct cmpstruct*)a)->v;
+	int second = ((struct cmpstruct*)b)->v;
+	if (second < first) return 1;
+	if (second > first) return -1;
+	return 0;
+}
+
+void save_certificate()
+{
+	char *filename;
+
+	if (is_weighted) filename = "weighted.v.template";
+	else filename = "unweighted.v.template";
+
+	FILE *stream_in = fopen(filename, "rt");
+	if (!stream_in) bye("Template file cannot be read");
+
+	FILE *stream_out = fopen("certificate.v", "wt");
+	if (!stream_out) bye("Certificate file cannot be written");
+
+	/* before starting, the irredundant set must be ordered in ascending order */
+	struct cmpstruct *set = new cmpstruct[card];
+	for (int i = 0; i < card; i++) {
+		set[i].v = Dset[i];
+		set[i].priv = Dpriv[i];
+	}
+	qsort((void*)set, card, sizeof(cmpstruct), cmpfunc);
+
+	int state = 0;
+
+	while (state != -1) {
+		if (feof(stream_in)) bye("Error reading template!");
+		char c = 0;
+		for (;;) {
+			c = fgetc(stream_in);
+			if (c != '#') fputc(c, stream_out);
+			else break;
+		}
+
+		switch (state) {
+		case 0: /* write number of vertices after Definition of n */
+			fprintf(stream_out, "%d", vertices);
+			state = 1;
+			break;
+		case 1: /* write the edges */
+			for (int e = 0; e < edges; e++) {
+				fprintf(stream_out, "    | %d, %d => true\n", edge_u[e], edge_v[e]);
+			}
+			if (is_weighted) state = 2;
+			else state = 3;
+			break;
+		case 2: /* write the weights */
+			for (int v = 0; v < vertices - 1; v++) {
+				fprintf(stream_out, "      | Ordinal %d _ => %d\n", v, weight[v]);
+			}
+			fprintf(stream_out, "      | Ordinal _ _ => %d\n", weight[vertices - 1]);
+			state = 3;
+			break;
+		case 3: /* write the irredundant set */
+			for (int i = 0; i < card; i++) {
+				fprintf(stream_out, "'v%d", set[i].v);
+				if (i < card - 1) fprintf(stream_out, "; ");
+			}
+			state = 4;
+			break;
+		case 4: /* write n again */
+			fprintf(stream_out, "%d", vertices);
+			state = 5;
+			break;
+		case 5: /* write proof of privacity of each vertex */
+			for (int i = 0; i < card; i++) {
+				fprintf(stream_out, "\
+    - rewrite(bool_irrelevance vltn isT) => _.\n\
+      apply/set0Pn; exists 'v%d ; apply/privateP ; split=> //.\n\
+      move => [u ultn]; do %d try destruct u.\n\
+      all : try by rewrite(bool_irrelevance ultn isT).\n\
+      all : try ( rewrite(bool_irrelevance ultn isT) => H _;\n\
+                by move: H; apply: contraPeq => _; rewrite /inst_set !inE ).\n\
+      suff : False by contradiction.\n\
+      by move: ultn; apply/negP.\n", set[i].priv, vertices);
+			}
+			state = 6;
+			break;
+		case 6: /* write the lower bound */
+			fprintf(stream_out, "%d", LB);
+			state = 7;
+			break;
+		case 7: /* write the lower bound again */
+			fprintf(stream_out, "%d", LB);
+			state = 8;
+			break;
+		default: state = -1;
+		}
+	}
+
+	fclose(stream_out);
+	fclose(stream_in);
+	cout << "Coq certificate written in certificate.v" << endl;
 }
 
 /*
@@ -563,7 +676,7 @@ int main(int argc, char **argv)
 		cout << "  3 - heuristic + integer programming for solving IR_w(G)" << endl;
 		cout << "  4 - generate complement of G' (DIMACS format) for solving IR_w(G) with CLIQUER" << endl;
 		cout << "  5 - integer programming for solving Gamma_w(G)" << endl;
-		//cout << "Options 1, 2 and 3 also generate a Coq certificate." << endl;
+		cout << "Options 1, 2 and 3 also generate a Coq certificate." << endl;
 		bye("Bye!");
 	}
 
@@ -572,11 +685,12 @@ int main(int argc, char **argv)
 	r_heur = false;
 	r_domination = false;
 	r_cliquer = false;
+	r_coq = false;
 	int opt = atoi(argv[1]);
 	switch (opt) {
-	case 1: r_heur = true; break;
-	case 2: r_opt = true; break;
-	case 3: r_heur = true; r_opt = true; break;
+	case 1: r_heur = true; r_coq = true; break;
+	case 2: r_opt = true; r_coq = true; break;
+	case 3: r_heur = true; r_opt = true; r_coq = true; break;
 	case 4: r_cliquer = true; break;
 	case 5: r_domination = true; r_opt = true; break;
 	default: bye("Options must be between 1 and 4.");
@@ -640,6 +754,8 @@ int main(int argc, char **argv)
 
 	/* free memory */
 free_mem:;
+	if (r_coq) save_certificate();
+
 	for (int v = 0; v < vertices; v++) delete[] dist[v];
 	delete[] dist;
 	delete[] Dpriv;

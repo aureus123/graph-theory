@@ -316,6 +316,48 @@ Lemma bigcup_set1 (T I : finType) (i0 : I) (F : I -> {set T}) :
   \bigcup_(i in [set i0]) F i = F i0.
 Proof. by rewrite (big_pred1 i0) // => i; rewrite inE. Qed.
 
+(* This is an adapted version of partition_disjoint_bigcup in finset.v
+ * where we force the index in the bigcup to satisfy P.
+ * Could be more general for all bigops, not just sum. *)
+Lemma partition_disjoint_bigcup_P (T I : finType) (F : I -> {set T}) (P : pred I)
+    E : (forall i j, P i -> P j -> i != j -> [disjoint F i & F j]) ->
+  \sum_(x in \bigcup_(i | P i) F i) E x =
+    \sum_(i | P i) \sum_(x in F i) E x.
+Proof.
+move=> disjF. pose P' := [set F i | i in I & P i && (F i != set0)].
+have trivP: trivIset P'.
+  apply/trivIsetP=> _ _ /imsetP[i iP' ->] /imsetP[j jP' ->] neqFij.
+  apply: disjF; have/setId2P [_ iP _] := iP'. exact: iP.
+  have/setId2P [_ jP _] := jP'. exact: jP. by apply: contraNneq neqFij => ->.
+have ->: \bigcup_(i | P i) F i = cover P'.
+  apply/esym. rewrite cover_imset. 
+  under eq_bigl=> x. rewrite inE andbA [in X in X && _]andbC -andbA. over.
+  rewrite big_mkcondr; apply: eq_bigr => i _. by rewrite inE; case: eqP.
+rewrite big_trivIset // big_imset => [|i j Pi' /setIdP[_ /andP [Pj notFj0]] eqFij].
+  under eq_bigl=> x. rewrite inE andbA [in X in X && _]andbC -andbA. over.
+  rewrite big_mkcondr; apply: eq_bigr => i _; rewrite inE.
+  by case: eqP => //= ->; rewrite big_set0. have/setId2P [_ Pi _] := Pi'.
+  by apply: contraNeq (disjF _ _ Pi Pj) _; by rewrite -setI_eq0 eqFij setIid.
+Qed.
+
+Lemma sub_diff_sum (T : finType) (A B : {set T}) (F : T -> nat) :
+ B \subset A -> \sum_(i in A :\: B) F i = \sum_(i in A) F i - \sum_(i in B) F i.
+Proof.
+  move/setIidPr=> BsubA.
+  rewrite [in X in _ = X - _](big_setID B) /=.
+  under [in X in _ = X + _ - _]eq_bigl do rewrite BsubA.
+  rewrite addnC -addnBA. by rewrite subnn addn0. auto.
+Qed.
+
+Lemma sub_leq_sum (T : finType) (A B : {set T}) (F : T -> nat) :
+ A \subset B -> \sum_(i in A) F i <= \sum_(i in B) F i.
+Proof.
+  move/setIidPr=> AsubB.
+  rewrite [in X in _ <= X](big_setID A) /=.
+  under [in X in _ <= X + _]eq_bigl do rewrite AsubB.
+  by rewrite leq_addr.
+Qed.
+
 (** usage: [elim/(size_ind f) : x] *)
 Lemma size_ind (X : Type) (f : X -> nat) (P : X -> Type) : 
   (forall x, (forall y, (f y < f x) -> P y) -> P x) -> forall x, P x.
@@ -843,6 +885,33 @@ Proof.
   do 2 (case/or3P => /eqP->); try by rewrite ?eqxx // 1?disjoint_sym. 
 Qed.
 
+
+(** Function for generating graphs (used by wirred.v and solver) *)
+
+(* give_sg generate the sedge relation from a function f such that:
+     f u v (with 0 <= u < v < n) is true iff (u,v) is an edge of G *)
+Definition give_sg (f : nat -> nat -> bool) (n : nat) (i j : 'I_n) :=
+  let u := nat_of_ord i in
+    let v := nat_of_ord j in
+      if (u == v) then false else
+        if (u < v) then f u v else f v u.
+
+Fact give_sg_sym (f : nat -> nat -> bool) (n : nat) : symmetric (give_sg f (n:=n)).
+Proof.
+  rewrite /symmetric /give_sg => u v.
+  case: (boolP (u == v))=> [ | uneqv] ; first by move/eqP->.
+  rewrite (ifN _ _ uneqv).
+  rewrite eq_sym in uneqv.
+  rewrite (ifN _ _ uneqv).
+  rewrite neq_ltn in uneqv.
+  by case: (orP uneqv) => ultv;
+    move: (ltnW ultv) ; rewrite leqNgt => nvltu; rewrite (ifN _ _ nvltu) ultv.
+Qed.
+
+Fact give_sg_irrefl (f : nat -> nat -> bool) (n : nat) : irreflexive (give_sg f (n:=n)).
+Proof. by rewrite /irreflexive /give_sg => ? ; rewrite eq_refl. Qed.
+
+
 (** Extra Morphism declatations *)
 
 Require Import Setoid Morphisms.
@@ -944,7 +1013,7 @@ Lemma sorted_leq_nth s (srt_s : sorted leq s) :
 Proof. 
 move => i j /ltnW i_j i_s j_s. apply: sorted_le_nth => //. exact: leq_trans.
 Qed.
-Arguments sorted_leq_nth : clear implicits. 
+Arguments sorted_leq_nth : clear implicits.
 
 End Preliminaries_dom.
 
