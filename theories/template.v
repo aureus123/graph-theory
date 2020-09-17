@@ -65,7 +65,40 @@ Section Certificate.
   Let inst_set := [set 'v0; 'v1; 'v4].
 
   Fact inst_set_is_irr : @irredundant inst inst_set.
-  Admitted.
+  Proof.
+    apply/irredundantP.
+    move=> [v vltn] ; do 5 try destruct v.
+    (* first, discard all the cases where v is not in inst_set *)
+    all : try ( rewrite (bool_irrelevance vltn isT);
+                by apply: contraLR => _ ; rewrite /inst_set !inE ).
+    (* for the remaining cases, provide a private vertex *)
+    - rewrite (bool_irrelevance vltn isT) => _.
+      apply/set0Pn ; exists 'v0 ; apply/privateP ; split=> //.
+      move=> [u ultn] ; do 5 try destruct u.
+      all : try by rewrite (bool_irrelevance ultn isT).
+      all : try ( rewrite (bool_irrelevance ultn isT) => H _;
+                  by move: H ; apply: contraPeq => _ ; rewrite /inst_set !inE ).
+      suff: ~ (u.+1.+4 < n) by contradiction.
+      by apply/negP ; rewrite /=.
+    - rewrite (bool_irrelevance vltn isT) => _.
+      apply/set0Pn ; exists 'v1 ; apply/privateP ; split=> //.
+      move=> [u ultn] ; do 5 try destruct u.
+      all : try by rewrite (bool_irrelevance ultn isT).
+      all : try ( rewrite (bool_irrelevance ultn isT) => H _;
+                  by move: H ; apply: contraPeq => _ ; rewrite /inst_set !inE ).
+      suff: ~ (u.+1.+4 < n) by contradiction.
+      by apply/negP ; rewrite /=.
+    - rewrite (bool_irrelevance vltn isT) => _.
+      apply/set0Pn ; exists 'v4 ; apply/privateP ; split=> //.
+      move=> [u ultn] ; do 5 try destruct u.
+      all : try by rewrite (bool_irrelevance ultn isT).
+      all : try ( rewrite (bool_irrelevance ultn isT) => H _;
+                  by move: H ; apply: contraPeq => _ ; rewrite /inst_set !inE ).
+      suff: ~ (u.+1.+4 < n) by contradiction.
+      by apply/negP ; rewrite /=.
+    - suff: ~ (v.+1.+4 < n) by contradiction.
+      by apply/negP ; rewrite /=.
+  Qed.
 
   Fact IR_lb : IR inst >= 3.
   Proof.
@@ -74,8 +107,6 @@ Section Certificate.
     move<- ; apply: IR_max ; exact: inst_set_is_irr.
     by rewrite -cardwset1 /inst_set -!setUA !cardsU1 !inE negb_or cards1.
   Qed.
-
-Check cardsU1.
 
 
 End Certificate.
@@ -112,7 +143,31 @@ Section Certificate.
   Let inst_set := [set 'v2; 'v3].
 
   Fact inst_set_is_irr' : @irredundant inst inst_set.
-  Admitted.
+    apply/irredundantP.
+    move=> [v vltn] ; do 5 try destruct v.
+    (* first, discard all the cases where v is not in inst_set *)
+    all : try ( rewrite (bool_irrelevance vltn isT);
+                by apply: contraLR => _ ; rewrite /inst_set !inE ).
+    (* for the remaining cases, provide a private vertex *)
+    - rewrite (bool_irrelevance vltn isT) => _.
+      apply/set0Pn ; exists 'v0 ; apply/privateP ; split=> //.
+      move=> [u ultn] ; do 5 try destruct u.
+      all : try by rewrite (bool_irrelevance ultn isT).
+      all : try ( rewrite (bool_irrelevance ultn isT) => H _;
+                  by move: H ; apply: contraPeq => _ ; rewrite /inst_set !inE ).
+      suff: ~ (u.+1.+4 < n) by contradiction.
+      by apply/negP ; rewrite /=.
+    - rewrite (bool_irrelevance vltn isT) => _.
+      apply/set0Pn ; exists 'v1 ; apply/privateP ; split=> //.
+      move=> [u ultn] ; do 5 try destruct u.
+      all : try by rewrite (bool_irrelevance ultn isT).
+      all : try ( rewrite (bool_irrelevance ultn isT) => H _;
+                  by move: H ; apply: contraPeq => _ ; rewrite /inst_set !inE ).
+      suff: ~ (u.+1.+4 < n) by contradiction.
+      by apply/negP ; rewrite /=.
+    - suff: ~ (v.+1.+4 < n) by contradiction.
+      by apply/negP ; rewrite /=.
+  Qed.
 
   Fact IR_w_lb : IR_w inst weight >= 4.
   Proof.
