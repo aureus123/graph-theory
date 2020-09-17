@@ -11,30 +11,6 @@ Unset Printing Implicit Defensive.
 Set Bullet Behavior "Strict Subproofs".
 
 
-(* give_sg generate the sedge relation from a function f such that:
-     f u v (with 0 <= u < v < n) is true iff (u,v) is an edge of G *)
-Definition give_sg (f : nat -> nat -> bool) (n : nat) (i j : 'I_n) :=
-  let u := nat_of_ord i in
-    let v := nat_of_ord j in
-      if (u == v) then false else
-        if (u < v) then f u v else f v u.
-
-Fact give_sg_sym (f : nat -> nat -> bool) (n : nat) : symmetric (give_sg f (n:=n)).
-Proof.
-  rewrite /symmetric /give_sg => u v.
-  case: (boolP (u == v))=> [ | uneqv] ; first by move/eqP->.
-  rewrite (ifN _ _ uneqv).
-  rewrite eq_sym in uneqv.
-  rewrite (ifN _ _ uneqv).
-  rewrite neq_ltn in uneqv.
-  by case: (orP uneqv) => ultv;
-    move: (ltnW ultv) ; rewrite leqNgt => nvltu; rewrite (ifN _ _ nvltu) ultv.
-Qed.
-
-Fact give_sg_irrefl (f : nat -> nat -> bool) (n : nat) : irreflexive (give_sg f (n:=n)).
-Proof. by rewrite /irreflexive /give_sg => ? ; rewrite eq_refl. Qed.
-
-
 Definition n := 5.
 
 (**********************************************************************************)
@@ -78,26 +54,26 @@ Section Certificate.
       all : try by rewrite (bool_irrelevance ultn isT).
       all : try ( rewrite (bool_irrelevance ultn isT) => H _;
                   by move: H ; apply: contraPeq => _ ; rewrite /inst_set !inE ).
-      suff: ~ (u.+1.+4 < n) by contradiction.
-      by apply/negP ; rewrite /=.
+      suff: False by contradiction.
+      by move: ultn ; apply/negP.
     - rewrite (bool_irrelevance vltn isT) => _.
       apply/set0Pn ; exists 'v1 ; apply/privateP ; split=> //.
       move=> [u ultn] ; do 5 try destruct u.
       all : try by rewrite (bool_irrelevance ultn isT).
       all : try ( rewrite (bool_irrelevance ultn isT) => H _;
                   by move: H ; apply: contraPeq => _ ; rewrite /inst_set !inE ).
-      suff: ~ (u.+1.+4 < n) by contradiction.
-      by apply/negP ; rewrite /=.
+      suff: False by contradiction.
+      by move: ultn ; apply/negP.
     - rewrite (bool_irrelevance vltn isT) => _.
       apply/set0Pn ; exists 'v4 ; apply/privateP ; split=> //.
       move=> [u ultn] ; do 5 try destruct u.
       all : try by rewrite (bool_irrelevance ultn isT).
       all : try ( rewrite (bool_irrelevance ultn isT) => H _;
                   by move: H ; apply: contraPeq => _ ; rewrite /inst_set !inE ).
-      suff: ~ (u.+1.+4 < n) by contradiction.
-      by apply/negP ; rewrite /=.
-    - suff: ~ (v.+1.+4 < n) by contradiction.
-      by apply/negP ; rewrite /=.
+      suff: False by contradiction.
+      by move: ultn ; apply/negP.
+    - suff: False by contradiction.
+      by move: vltn ; apply/negP.
   Qed.
 
   Fact IR_lb : IR inst >= 3.
@@ -112,20 +88,6 @@ Section Certificate.
 End Certificate.
 
 (* WEIGHTED CASE *)
-
-Lemma weightsU1 (G : sgraph) (a : G) (A : {set G}) (weight : G -> nat):
-  weight_set weight (a |: A) = (weight a) * (a \notin A) + weight_set weight A.
-Proof.
-  rewrite /weight_set.
-  case: (boolP (a \notin A)) => [H | H].
-  - by rewrite (big_setU1 _ H) /= muln1.
-  - rewrite muln0 add0n.
-    suff iden : a |: A = A by under eq_bigl => x do rewrite iden.
-    apply/eqP ; rewrite eqEsubset ; apply/andP ; split.
-    + apply/subsetP => x ; rewrite in_setU1 ; case/orP=> //.
-      by move/eqP-> ; move: H ; apply: contraR.
-    + apply/subsetP => ? ; exact: setU1r.
-Qed.
 
 (**********************************************************************************)
 Section Instance.
@@ -155,18 +117,18 @@ Section Certificate.
       all : try by rewrite (bool_irrelevance ultn isT).
       all : try ( rewrite (bool_irrelevance ultn isT) => H _;
                   by move: H ; apply: contraPeq => _ ; rewrite /inst_set !inE ).
-      suff: ~ (u.+1.+4 < n) by contradiction.
-      by apply/negP ; rewrite /=.
+      suff: False by contradiction.
+      by move: ultn ; apply/negP.
     - rewrite (bool_irrelevance vltn isT) => _.
       apply/set0Pn ; exists 'v1 ; apply/privateP ; split=> //.
       move=> [u ultn] ; do 5 try destruct u.
       all : try by rewrite (bool_irrelevance ultn isT).
       all : try ( rewrite (bool_irrelevance ultn isT) => H _;
                   by move: H ; apply: contraPeq => _ ; rewrite /inst_set !inE ).
-      suff: ~ (u.+1.+4 < n) by contradiction.
-      by apply/negP ; rewrite /=.
-    - suff: ~ (v.+1.+4 < n) by contradiction.
-      by apply/negP ; rewrite /=.
+      suff: False by contradiction.
+      by move: ultn ; apply/negP.
+    - suff: False by contradiction.
+      by move: vltn ; apply/negP.
   Qed.
 
   Fact IR_w_lb : IR_w inst weight >= 4.

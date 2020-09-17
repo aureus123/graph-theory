@@ -885,6 +885,33 @@ Proof.
   do 2 (case/or3P => /eqP->); try by rewrite ?eqxx // 1?disjoint_sym. 
 Qed.
 
+
+(** Function for generating graphs (used by wirred.v and solver) *)
+
+(* give_sg generate the sedge relation from a function f such that:
+     f u v (with 0 <= u < v < n) is true iff (u,v) is an edge of G *)
+Definition give_sg (f : nat -> nat -> bool) (n : nat) (i j : 'I_n) :=
+  let u := nat_of_ord i in
+    let v := nat_of_ord j in
+      if (u == v) then false else
+        if (u < v) then f u v else f v u.
+
+Fact give_sg_sym (f : nat -> nat -> bool) (n : nat) : symmetric (give_sg f (n:=n)).
+Proof.
+  rewrite /symmetric /give_sg => u v.
+  case: (boolP (u == v))=> [ | uneqv] ; first by move/eqP->.
+  rewrite (ifN _ _ uneqv).
+  rewrite eq_sym in uneqv.
+  rewrite (ifN _ _ uneqv).
+  rewrite neq_ltn in uneqv.
+  by case: (orP uneqv) => ultv;
+    move: (ltnW ultv) ; rewrite leqNgt => nvltu; rewrite (ifN _ _ nvltu) ultv.
+Qed.
+
+Fact give_sg_irrefl (f : nat -> nat -> bool) (n : nat) : irreflexive (give_sg f (n:=n)).
+Proof. by rewrite /irreflexive /give_sg => ? ; rewrite eq_refl. Qed.
+
+
 (** Extra Morphism declatations *)
 
 Require Import Setoid Morphisms.
@@ -986,7 +1013,7 @@ Lemma sorted_leq_nth s (srt_s : sorted leq s) :
 Proof. 
 move => i j /ltnW i_j i_s j_s. apply: sorted_le_nth => //. exact: leq_trans.
 Qed.
-Arguments sorted_leq_nth : clear implicits. 
+Arguments sorted_leq_nth : clear implicits.
 
 End Preliminaries_dom.
 

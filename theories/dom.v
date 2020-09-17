@@ -91,6 +91,21 @@ Proof.
   by apply/set0Pn; exists x; apply/setDP.
 Qed.
 
+(* equivalent to cardsU1, but for weighted sets *)
+Lemma weightsU1 (a : T) (A : {set T}) :
+  W (a |: A) = (weight a) * (a \notin A) + W A.
+Proof.
+  rewrite /W /weight_set.
+  case: (boolP (a \notin A)) => [H | H].
+  - by rewrite (big_setU1 _ H) /= muln1.
+  - rewrite muln0 add0n.
+    suff iden : a |: A = A by under eq_bigl => x do rewrite iden.
+    apply/eqP ; rewrite eqEsubset ; apply/andP ; split.
+    + apply/subsetP => x ; rewrite in_setU1 ; case/orP=> //.
+      by move/eqP-> ; move: H ; apply: contraR.
+    + apply/subsetP => ? ; exact: setU1r.
+Qed.
+
 (* Sets of minimum/maximum weight *)
 
 Lemma maxweight_maxset p A : p A -> (forall B, p B -> W B <= W A) -> maxset p A.

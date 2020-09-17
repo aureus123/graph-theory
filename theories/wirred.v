@@ -455,29 +455,6 @@ End Upper_Weighted_Irredundant_Problem.
 (**********************************************************************************)
 Section Graph_definitions.
 
-(* give_sg generate the sedge relation from a function f such that:
-     f u v (with 0 <= u < v < n) is true iff (u,v) is an edge of G *)
-Definition give_sg (f : nat -> nat -> bool) (n : nat) (i j : 'I_n) :=
-  let u := nat_of_ord i in
-    let v := nat_of_ord j in
-      if (u == v) then false else
-        if (u < v) then f u v else f v u.
-
-Fact give_sg_sym (f : nat -> nat -> bool) (n : nat) : symmetric (give_sg f (n:=n)).
-Proof.
-  rewrite /symmetric /give_sg => u v.
-  case: (boolP (u == v))=> [ | uneqv] ; first by move/eqP->.
-  rewrite (ifN _ _ uneqv).
-  rewrite eq_sym in uneqv.
-  rewrite (ifN _ _ uneqv).
-  rewrite neq_ltn in uneqv.
-  by case: (orP uneqv) => ultv;
-    move: (ltnW ultv) ; rewrite leqNgt => nvltu; rewrite (ifN _ _ nvltu) ultv.
-Qed.
-
-Fact give_sg_irrefl (f : nat -> nat -> bool) (n : nat) : irreflexive (give_sg f (n:=n)).
-Proof. by rewrite /irreflexive /give_sg => ? ; rewrite eq_refl. Qed.
-
 (* 'K_n,m : complete bipartite graph K_{n,m} *)
 Section complete_bipartite.
   Variables n m : nat.
@@ -845,8 +822,8 @@ Proof.
   - move=> [pv0 [pv1 [pv2 pv3]]] [v vlt4].
     do 4 try destruct v.
     all : try by rewrite (bool_irrelevance vlt4 isT).
-    suff: ~ (v.+4 < 4) by contradiction.
-    by apply/negP ; rewrite /=.
+    suff: False by contradiction.
+    by move: vlt4 ; apply/negP.
 Qed.
 (*RK
 Ltac t_x1x2 x1 x2 :=
