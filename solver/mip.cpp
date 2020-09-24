@@ -25,7 +25,7 @@ using namespace std;
 /* CONSTANTS */
 
 #define EPSILON 0.00001
-#define MAXTIME 7200.0
+#define MAXTIME 30.0
 #define SHOWCPLEX
 //#define SAVELP "form.lp"
 //#define TUNEDPARAMS
@@ -193,7 +193,7 @@ bool optimize(int vert, int *weight, int *degrees, int **neigh_vertices, int **a
 
 	/* solve it! */
 	bool ret = false;
-	cplex.solve();
+	bool is_sol_available = cplex.solve();
 	IloInt nodes = cplex.getNnodes();
 	cout << "Number of nodes evaluated: " << nodes << endl;
 	IloCplex::CplexStatus status = cplex.getCplexStatus();
@@ -226,20 +226,22 @@ bool optimize(int vert, int *weight, int *degrees, int **neigh_vertices, int **a
 	}
 
 	/* retrieve the solution */
-	int wei = 0;
-	int count = 0;
-	for (int u = 0; u < vertices; u++) {
-		for (int v = 0; v < vertices; v++) {
-			if (adjacency[u][v] > 0 && cplex.getValue(vars[XUV(u, v)]) > 0.1) {
-				Dset[count] = u;
-				Dpriv[count++] = v;
-				wei += weight[u];
-				break;
+	if (is_sol_available) {
+		int wei = 0;
+		int count = 0;
+		for (int u = 0; u < vertices; u++) {
+			for (int v = 0; v < vertices; v++) {
+				if (adjacency[u][v] > 0 && cplex.getValue(vars[XUV(u, v)]) > 0.1) {
+					Dset[count] = u;
+					Dpriv[count++] = v;
+					wei += weight[u];
+					break;
+				}
 			}
 		}
+		*card = count;
+		*LB = wei;
 	}
-	*card = count;
-	*LB = wei;
 
 	cplexenv.end();
 	return ret;
