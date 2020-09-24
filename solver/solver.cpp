@@ -3,7 +3,7 @@
  * Made in 2018-2020 by Daniel Severin
  * */
 
-#define NOCPLEX
+//#define NOCPLEX
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,11 +32,14 @@ using namespace std;
 #define INFDIST 9999999
 #define VERBOSE
 //#define SHOWINSTANCE
+#define CLASSIC_UB
 
 /* GLOBAL VARIABLES */
 
 static bool r_opt, r_heur, r_cliquer, r_domination, r_coq, is_weighted; /* options selection */
 static int vertices, edges; /* number of vertices and edges */
+static int vertices2, edges2; /* (only for DIMACS gen) vertices and edges of the complement of G' */
+static float density, density2; /* densities of G and compl. of G' */
 static int* weight; /* weight of each vertex */
 static int *edge_u, *edge_v; /* array of endpoints of edges */
 static int *degrees; /* degree of each vertex + 1, i.e. |N[v]| */
@@ -45,7 +48,7 @@ static int **adjacency; /* adjacency matrix: 0 means no adjacency; >0 gives the 
 				    also adjacency[u][u] = 1 */
 static int **dist; /* distance matrix */
 static int card, *Dset, *Dpriv; /* best solution found so far (Dset = vertices of the set; Dpriv[i] is the private of Dset[i] for all i) */
-static int LB, UB; /* bounds of the parameter */
+static int LB, UB, UB_classic; /* bounds of the parameter */
 
 /* FUNCTIONS */
 
@@ -308,6 +311,37 @@ bool get_bounds()
 	Dpriv[card++] = zmax;
 	LB = wmax;
 
+#ifdef CLASSIC_UB
+	/* compute the upper bound: w(V) - min { w(N[v] - {u}) : v in V, u in N[v] } */
+	int delta_min_classic = INFDIST;
+	for (int v = 0; v < vertices; v++) {
+		/* find the heaviest u in N[v] */
+		int max_weight = 0;
+		int max_u = -1;
+		for (int d = 0; d < degrees[v]; d++) {
+			int u = neigh_vertices[v][d];
+			int w = weight[u];
+			if (w > max_weight) {
+				max_weight = w;
+				max_u = u;
+			}
+		}
+		/* compute w(N[v] - {u}) */
+		int wNvminusu = 0;
+		for (int d = 0; d < degrees[v]; d++) {
+			int u = neigh_vertices[v][d];
+			if (u != max_u) wNvminusu += weight[u];
+		}
+		if (wNvminusu < delta_min_classic) delta_min_classic = wNvminusu;
+	}
+	set_color(15);
+	UB_classic = UB - delta_min_classic;
+	cout << "Classic UB = w(V) - min { w(N[v] - {u}) : v in V, u in N[v] } = " << UB_classic << endl;
+	set_color(7);
+#else
+	UB_classic = 0;
+#endif
+
 	for (int v1 = 0; v1 < vertices - 1; v1++) {
 		for (int v2 = v1 + 1; v2 < vertices; v2++) {
 			if (v1 != v2) {
@@ -482,10 +516,10 @@ void dimacs_gen() {
 	if (is_weighted) bye("Not implemented yet for weighted graphs!");
 
 	/* compute number of vertices and edges of G' */
-	int vertices2 = 0;
+	vertices2 = 0;
 	for (int u = 0; u < vertices; u++) vertices2 += degrees[u];
 
-	int edges2 = 0;
+	edges2 = 0;
 	for (int u = 0; u < vertices; u++) {
 		for (int du = 0; du < degrees[u]; du++) {
 			int v = neigh_vertices[u][du];
@@ -502,8 +536,8 @@ void dimacs_gen() {
 	set_color(5);
 	cout << endl << "Complement of the transformed graph:" << endl;
 	int clique_size = vertices2 * (vertices2 - 1) / 2;
-	float density = 100.0 * (float)edges2 / (float)clique_size;
-	cout << "  |V| = " << vertices2 << ", |E| = " << edges2 << " (density = " << density << "%)." << endl;
+	density2 = 100.0 * (float)edges2 / (float)clique_size;
+	cout << "  |V| = " << vertices2 << ", |E| = " << edges2 << " (density = " << density2 << "%)." << endl;
 	set_color(7);
 
 	FILE *stream = fopen("output.dimacs", "wt");
@@ -656,7 +690,7 @@ void save_certificate()
  */
 int main(int argc, char **argv)
 {
-	double start_t, elapsed_t;
+	double start_t, heur_t, opt_t;
 
 #ifndef VERBOSE
 	std::cout.setstate(std::ios::failbit);
@@ -676,7 +710,8 @@ int main(int argc, char **argv)
 		cout << "  3 - heuristic + integer programming for solving IR_w(G)" << endl;
 		cout << "  4 - generate complement of G' (DIMACS format) for solving IR_w(G) with CLIQUER" << endl;
 		cout << "  5 - integer programming for solving Gamma_w(G)" << endl;
-		cout << "Options 1, 2 and 3 also generate a Coq certificate." << endl;
+		cout << "  0 - for testing: heur + int. programming + CLIQUER (also saves output file)" << endl;
+		cout << "Options 0-3 also generate a Coq certificate." << endl;
 		bye("Bye!");
 	}
 
@@ -688,6 +723,7 @@ int main(int argc, char **argv)
 	r_coq = false;
 	int opt = atoi(argv[1]);
 	switch (opt) {
+	case 0: r_heur = true; r_coq = true; r_opt = true; r_cliquer = true; break;
 	case 1: r_heur = true; r_coq = true; break;
 	case 2: r_opt = true; r_coq = true; break;
 	case 3: r_heur = true; r_opt = true; r_coq = true; break;
@@ -703,8 +739,11 @@ int main(int argc, char **argv)
 	set_color(6);
 	cout << "Statistics:" << endl;
 	int clique_size = vertices * (vertices - 1) / 2;
-	float density = 100.0 * (float)edges / (float)clique_size;
+	density = 100.0 * (float)edges / (float)clique_size;
 	cout << "  |V| = " << vertices << ", |E| = " << edges << " (density = " << density << "%)." << endl;
+
+	heur_t = 0.0;
+	opt_t = 0.0;
 
 	Dset = new int[vertices];
 	Dpriv = new int[vertices];
@@ -718,18 +757,23 @@ int main(int argc, char **argv)
 	set_color(7);
 
 	/* run heuristic */
+	int UB_heur = 0, LB_heur = 0;
+	bool is_solved = false;
+
 	if (r_heur) {
 		start_t = ECOclock();
-		bool status = get_bounds();
-		elapsed_t = ECOclock() - start_t;
+		is_solved = get_bounds();
+		heur_t = ECOclock() - start_t;
 
 		cout << "New bounds:  LB = " << LB << ", UB = " << UB << "." << endl;
+		LB_heur = LB;
+		UB_heur = UB;
 		show_sol();
 		set_color(11);
-		cout << "Time elapsed during optimization = " << elapsed_t << " sec." << endl;
+		cout << "Time elapsed for heuristic = " << heur_t << " sec." << endl;
 		set_color(7);
 
-		if (status) goto free_mem;
+		if (is_solved) goto free_mem;
 	}
 
 	/* perform optimization */
@@ -738,15 +782,14 @@ int main(int argc, char **argv)
 	if (r_opt) {
 #ifndef NOCPLEX
 		start_t = ECOclock();
-		bool status;
-		status = optimize(vertices, weight, degrees, neigh_vertices, adjacency,
-			              r_domination, r_heur, &LB, &UB, &card, Dset, Dpriv);
-		elapsed_t = ECOclock() - start_t;
+		is_solved = optimize(vertices, weight, degrees, neigh_vertices, adjacency,
+			                 r_domination, r_heur, &LB, &UB, &card, Dset, Dpriv);
+		opt_t = ECOclock() - start_t;
 
 		show_sol();
 		set_color(11);
-		cout << "Time elapsed during optimization = " << elapsed_t << " sec." << endl;
-		if (status == false) bye("Optimality not reached :(");
+		cout << "Time elapsed during optimization = " << opt_t << " sec." << endl;
+		set_color(7);
 #else
 		bye("Cannot proceed. Enable CPLEX.");
 #endif
@@ -755,6 +798,15 @@ int main(int argc, char **argv)
 	/* free memory */
 free_mem:;
 	if (r_coq) save_certificate();
+	if (r_heur && r_opt && r_cliquer) {
+		/* save results on output file */
+		FILE *stream = fopen("output", "at");
+		if (!stream) bye("Output file cannot be opened");
+		fprintf(stream, "%s,%c,%d,%d,%.2f,%d,%d,%d,%.2f,%d,%d,%.2f,%c,%d,%d,%.2f", argv[2], is_weighted ? 'W' : 'U',
+			        vertices, edges, density, UB_classic, UB_heur, LB_heur, heur_t, UB, LB, opt_t,
+					is_solved ? 'Y' : 'N', vertices2, edges2, density2);
+		fclose(stream);
+	}
 
 	for (int v = 0; v < vertices; v++) delete[] dist[v];
 	delete[] dist;

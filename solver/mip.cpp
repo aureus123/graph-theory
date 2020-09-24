@@ -201,6 +201,7 @@ bool optimize(int vert, int *weight, int *degrees, int **neigh_vertices, int **a
 		set_color(10);
 		cout << "Optimal solution found! :)" << endl;
 		set_color(7);
+		*UB = (int)(cplex.getBestObjValue() + EPSILON);
 		ret = true;
 	}
 	else {
@@ -212,7 +213,7 @@ bool optimize(int vert, int *weight, int *degrees, int **neigh_vertices, int **a
 				set_color(10);
 				cout << "Infeasible. Therefore, the solution given by the heuristic is optimal!" << endl;
 				set_color(7);
-				UB = LB;
+				*UB = *LB;
 				cplexenv.end();
 				return true;
 			}
@@ -220,7 +221,7 @@ bool optimize(int vert, int *weight, int *degrees, int **neigh_vertices, int **a
 		default: bye("Unexpected error :(");
 		}
 		*UB = (int)(cplex.getBestObjValue() + EPSILON);
-		cout << "Best upper bound is " << *UB << endl;
+		cout << "Optimality not reached :(" << endl << "Best upper bound is " << *UB << endl;
 		/* relgap = 100.0 * (upper - lower) / lower;       Rel Gap = |bestbound - bestinteger|/|bestinteger| */
 	}
 
