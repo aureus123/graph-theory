@@ -2890,16 +2890,22 @@ RK*)
            ++ admit.
         -- case: (boolP (a1 -- d2)) => [a1_adj_d2 | a1_nadj_d2].
            ++ have a1_neq_d2: a1 != d2 by rewrite sg_edgeNeq. admit.
-           ++ have a1_adj_c2: a1 -- c2. admit.
-              have a2_adj_d1: a2 -- d1. admit.
+           ++ have a1_neq_c2: a1 != c2 by move: c1_adj_c2; apply/contraTneq => <-; rewrite a1_eq_a2 sg_sym.
+              have a2_neq_c1: a2 != c1 by move: a1b2a2b1; rewrite a1_eq_a2; apply/contraTneq => ->; rewrite b1_eq_b2 eq_sym sg_sym (negbTE b2_nadj_c1) (negbTE b2_neq_c1).
+              have a1_adj_c2: a1 -- c2.
+                rewrite (negbTE a1_neq_c2) (negbTE a2_neq_c1) (negbTE a2_nadj_c1) in a1c2a2c1.
+                by case: (orP a1c2a2c1) => // H; case: (orP H).
+              have a2_neq_d1: a2 != d1 by move: a1_adj_c2; rewrite a1_eq_a2; apply/contraTneq => ->; rewrite sg_sym.
+              have a1_neq_d2: a1 != d2 by move: a1b2a2b1; rewrite a1_eq_a2; apply/contraTneq => ->; rewrite -b1_eq_b2 eq_sym sg_sym (negbTE b1_nadj_d2) (negbTE b1_neq_d2).
+              have a2_adj_d1: a2 -- d1 by rewrite (negbTE a2_neq_d1) (negbTE a1_neq_d2) (negbTE a1_nadj_d2) in a1d2a2d1.
               left; exists (hom_G4_def a1 b1 c2 d1). 
               ** apply: h'_G4_inj ; rewrite /=; try by done.
                  all : try by rewrite eq_sym.
                  all : try by rewrite sg_edgeNeq.
                  all : try by rewrite eq_sym sg_edgeNeq.
-                 --- admit.
-                 --- admit.
-                 --- admit.
+                 --- by move: a1a2b1b2; rewrite a1_eq_a2 b1_eq_b2; apply/contraTneq => <-; rewrite eq_refl.
+                 --- by rewrite a1_eq_a2.
+                 --- by rewrite b1_eq_b2.
               ** apply: h'_claw_hom ; rewrite /=; try by done.
                  all: try by rewrite sg_sym.
                  --- case: (orP a1b2a2b1) => [/orP H | ]; last by rewrite a1_eq_a2.
