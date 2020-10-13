@@ -743,27 +743,6 @@ Proof.
     by move: (subgraph_trans copaw_sub_G7_2' G7_2'subG').
 Qed.
 
-Variables Gcopaw GG7_1 GG7_2 : sgraph.
-Hypothesis G_is_copaw : isomorphic Gcopaw copaw.
-Hypothesis G_is_G7_1 : isomorphic GG7_1 G7_1.
-Hypothesis G_is_G7_2 : isomorphic GG7_2 G7_2.
-
-Corollary G'copawfree' : Gcopaw \subgraph G \/ GG7_1 \subgraph G \/
-                         GG7_2 \subgraph G -> Gcopaw \subgraph G'.
-Proof.
-  case.
-  { move=> /(subgraph_trans (sub_G2_G1 G_is_copaw)) copawsubG.
-    apply: (subgraph_trans (sub_G1_G2 G_is_copaw)).
-    by apply: G'copawfree ; left. }
-  case.
-  - move=> /(subgraph_trans (sub_G2_G1 G_is_G7_1)) G7_1subG.
-    apply: (subgraph_trans (sub_G1_G2 G_is_copaw)).
-    by apply: G'copawfree ; right ; left.
-  - move=> /(subgraph_trans (sub_G2_G1 G_is_G7_2)) G7_2subG.
-    apply: (subgraph_trans (sub_G1_G2 G_is_copaw)).
-    by apply: G'copawfree ; right ; right.
-Qed.
-
 (* To prove G' claw-free => G {claw,bull,P6,CC6}-free we do the following:
      If G has claw as an induced subgraph, then G' does too.
      If G has a bull, P6 or a complement of C6 as an induced subgraph, then G' has a claw. *)
@@ -782,32 +761,6 @@ Proof.
     by move: (subgraph_trans claw_sub_P6' P6'subG'). 
   - move/trfgraph_subgraph=> CC6'subG' ;
     by move: (subgraph_trans claw_sub_CC6' CC6'subG'). 
-Qed.
-
-Variables Gclaw Gbull GP6 GCC6 : sgraph.
-Hypothesis G_is_claw : isomorphic Gclaw claw.
-Hypothesis G_is_bull : isomorphic Gbull bull.
-Hypothesis G_is_P6 : isomorphic GP6 'P_6.
-Hypothesis G_is_CC6 : isomorphic GCC6 'CC_6.
-
-Corollary G'clawfree' : Gclaw \subgraph G \/ Gbull \subgraph G \/
-                          GP6 \subgraph G \/ GCC6 \subgraph G -> Gclaw \subgraph G'.
-Proof.
-  case.
-  { move=> /(subgraph_trans (sub_G2_G1 G_is_claw)) clawsubG.
-    apply: (subgraph_trans (sub_G1_G2 G_is_claw)).
-    by apply: G'clawfree ; left. }
-  case.
-  { move=> /(subgraph_trans (sub_G2_G1 G_is_bull)) bullsubG.
-    apply: (subgraph_trans (sub_G1_G2 G_is_claw)).
-    by apply: G'clawfree ; right ; left. }
-  case.
-  - move=> /(subgraph_trans (sub_G2_G1 G_is_P6)) P6subG.
-    apply: (subgraph_trans (sub_G1_G2 G_is_claw)).
-    by apply: G'clawfree ; right ; right ; left.
-  - move=> /(subgraph_trans (sub_G2_G1 G_is_CC6)) CC6subG.
-    apply: (subgraph_trans (sub_G1_G2 G_is_claw)).
-    by apply: G'clawfree ; right ; right ; right.
 Qed.
 
 (* converse results *)
@@ -2750,17 +2703,6 @@ Proof.
                                                                              by case: (orP a1b2a2b1) => [H | //]; case: (orP H).
 Qed.
 
-Corollary G'copawfree'_rev : Gcopaw \subgraph G' -> Gcopaw \subgraph G \/
-                                                    GG7_1 \subgraph G \/ GG7_2 \subgraph G.
-Proof.
-  move=> /(subgraph_trans (sub_G2_G1 G_is_copaw)) copawsubG'.
-  move: (G'copawfree_rev copawsubG') ; case.
-  { by left ; apply: (subgraph_trans (sub_G1_G2 G_is_copaw)). }
-  case.
-  - by right ; left ; apply: (subgraph_trans (sub_G1_G2 G_is_G7_1)).
-  - by right ; right ; apply: (subgraph_trans (sub_G1_G2 G_is_G7_2)).
-Qed.
-
   (* Here is a proof of the homomorphism of a given function, by giving proofs
      of the edges and non-edges of the claw *)
 Lemma h'_claw_hom (h' : claw -> G)
@@ -3100,17 +3042,69 @@ RK*)
   - admit.
 Admitted.
 
-Corollary G'clawfree'_rev : Gclaw \subgraph G' -> Gclaw \subgraph G \/ Gbull \subgraph G \/
-                                                    GP6 \subgraph G \/ GCC6 \subgraph G.
+(* The characterization of co-paw-free graphs *)
+Variables Gcopaw GG7_1 GG7_2 : sgraph.
+Hypothesis G_is_copaw : isomorphic Gcopaw copaw.
+Hypothesis G_is_G7_1 : isomorphic GG7_1 G7_1.
+Hypothesis G_is_G7_2 : isomorphic GG7_2 G7_2.
+
+Corollary copawfree_char : Gcopaw \subgraph G \/ GG7_1 \subgraph G \/
+                         GG7_2 \subgraph G <-> Gcopaw \subgraph G'.
 Proof.
-  move=> /(subgraph_trans (sub_G2_G1 G_is_claw)) clawsubG'.
-  move: (G'clawfree_rev clawsubG') ; case.
-  { by left ; apply: (subgraph_trans (sub_G1_G2 G_is_claw)). }
-  case.
-  { by right ; left ; apply: (subgraph_trans (sub_G1_G2 G_is_bull)). }
-  case.
-  - by right ; right ; left ; apply: (subgraph_trans (sub_G1_G2 G_is_P6)).
-  - by right ; right ; right ; apply: (subgraph_trans (sub_G1_G2 G_is_CC6)).
+  rewrite /iff ; split.
+  - case.
+    { move=> /(subgraph_trans (sub_G2_G1 G_is_copaw)) copawsubG.
+      apply: (subgraph_trans (sub_G1_G2 G_is_copaw)).
+      by apply: G'copawfree ; left. }
+    case.
+    + move=> /(subgraph_trans (sub_G2_G1 G_is_G7_1)) G7_1subG.
+      apply: (subgraph_trans (sub_G1_G2 G_is_copaw)).
+      by apply: G'copawfree ; right ; left.
+    + move=> /(subgraph_trans (sub_G2_G1 G_is_G7_2)) G7_2subG.
+      apply: (subgraph_trans (sub_G1_G2 G_is_copaw)).
+      by apply: G'copawfree ; right ; right.
+  - move=> /(subgraph_trans (sub_G2_G1 G_is_copaw)) copawsubG'.
+    move: (G'copawfree_rev copawsubG') ; case.
+    { by left ; apply: (subgraph_trans (sub_G1_G2 G_is_copaw)). }
+    case.
+    + by right ; left ; apply: (subgraph_trans (sub_G1_G2 G_is_G7_1)).
+    + by right ; right ; apply: (subgraph_trans (sub_G1_G2 G_is_G7_2)).
+Qed.
+
+(* The characterization of claw-free graphs *)
+Variables Gclaw Gbull GP6 GCC6 : sgraph.
+Hypothesis G_is_claw : isomorphic Gclaw claw.
+Hypothesis G_is_bull : isomorphic Gbull bull.
+Hypothesis G_is_P6 : isomorphic GP6 'P_6.
+Hypothesis G_is_CC6 : isomorphic GCC6 'CC_6.
+
+Corollary clawfree_char : Gclaw \subgraph G \/ Gbull \subgraph G \/
+                          GP6 \subgraph G \/ GCC6 \subgraph G <-> Gclaw \subgraph G'.
+Proof.
+  rewrite /iff ; split.
+  - case.
+    { move=> /(subgraph_trans (sub_G2_G1 G_is_claw)) clawsubG.
+      apply: (subgraph_trans (sub_G1_G2 G_is_claw)).
+      by apply: G'clawfree ; left. }
+    case.
+    { move=> /(subgraph_trans (sub_G2_G1 G_is_bull)) bullsubG.
+      apply: (subgraph_trans (sub_G1_G2 G_is_claw)).
+      by apply: G'clawfree ; right ; left. }
+    case.
+    + move=> /(subgraph_trans (sub_G2_G1 G_is_P6)) P6subG.
+      apply: (subgraph_trans (sub_G1_G2 G_is_claw)).
+      by apply: G'clawfree ; right ; right ; left.
+    + move=> /(subgraph_trans (sub_G2_G1 G_is_CC6)) CC6subG.
+      apply: (subgraph_trans (sub_G1_G2 G_is_claw)).
+      by apply: G'clawfree ; right ; right ; right.
+  - move=> /(subgraph_trans (sub_G2_G1 G_is_claw)) clawsubG'.
+    move: (G'clawfree_rev clawsubG') ; case.
+    { by left ; apply: (subgraph_trans (sub_G1_G2 G_is_claw)). }
+    case.
+    { by right ; left ; apply: (subgraph_trans (sub_G1_G2 G_is_bull)). }
+    case.
+    + by right ; right ; left ; apply: (subgraph_trans (sub_G1_G2 G_is_P6)).
+    + by right ; right ; right ; apply: (subgraph_trans (sub_G1_G2 G_is_CC6)).
 Qed.
 
 (*End Upper_Weighted_Irredundant_Properties.*)
