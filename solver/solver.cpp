@@ -592,12 +592,13 @@ int cmpfunc(const void *a, const void *b)
 	return 0;
 }
 
-void save_certificate()
+/* Old version (tactic-based, very slow) */
+void save_certificate_old()
 {
 	char *filename;
 
-	if (is_weighted) filename = "weighted.v.template";
-	else filename = "unweighted.v.template";
+	if (is_weighted) filename = "weighted1.v.template";
+	else filename = "unweighted1.v.template";
 
 	FILE *stream_in = fopen(filename, "rt");
 	if (!stream_in) bye("Template file cannot be read");
@@ -668,6 +669,91 @@ void save_certificate()
 			}
 			state = 6;
 			break;
+		case 6: /* write the lower bound */
+			fprintf(stream_out, "%d", LB);
+			state = 7;
+			break;
+		case 7: /* write the lower bound again */
+			fprintf(stream_out, "%d", LB);
+			state = 8;
+			break;
+		default: state = -1;
+		}
+	}
+
+	fclose(stream_out);
+	fclose(stream_in);
+	cout << "Coq certificate written in certificate.v" << endl;
+}
+
+/* New version (computation-based) */
+void save_certificate()
+{
+	char* filename;
+
+	if (is_weighted) filename = "weighted2.v.template";
+	else filename = "unweighted2.v.template";
+
+	FILE* stream_in = fopen(filename, "rt");
+	if (!stream_in) bye("Template file cannot be read");
+
+	FILE* stream_out = fopen("certificate.v", "wt");
+	if (!stream_out) bye("Certificate file cannot be written");
+
+	/* before starting, the irredundant set must be ordered in ascending order */
+	struct cmpstruct* set = new cmpstruct[card];
+	for (int i = 0; i < card; i++) {
+		set[i].v = Dset[i];
+		set[i].priv = Dpriv[i];
+	}
+	qsort((void*)set, card, sizeof(cmpstruct), cmpfunc);
+
+	int state = 0;
+
+	while (state != -1) {
+		if (feof(stream_in)) bye("Error reading template!");
+		char c = 0;
+		for (;;) {
+			c = fgetc(stream_in);
+			if (c != '#') fputc(c, stream_out);
+			else break;
+		}
+
+		switch (state) {
+		case 0: /* write number of vertices after Definition of n */
+			fprintf(stream_out, "%d", vertices);
+			state = 1;
+			break;
+		case 1: /* write the edges */
+			for (int e = 0; e < edges; e++) {
+				fprintf(stream_out, "    | %d, %d => true\n", edge_u[e], edge_v[e]);
+			}
+			if (is_weighted) state = 2;
+			else state = 3;
+			break;
+		case 2: /* write the weights */
+			for (int v = 0; v < vertices - 1; v++) {
+				fprintf(stream_out, "      | Ordinal %d _ => %d\n", v, weight[v]);
+			}
+			fprintf(stream_out, "      | Ordinal _ _ => %d\n", weight[vertices - 1]);
+			state = 3;
+			break;
+		case 3: /* write the irredundant set */
+			for (int i = 0; i < card; i++) {
+				fprintf(stream_out, "'v%d", set[i].v);
+				if (i < card - 1) fprintf(stream_out, "; ");
+			}
+			state = 4;
+			break;
+		case 4: /* write the set again */
+			for (int i = 0; i < card; i++) {
+				fprintf(stream_out, "'v%d", set[i].v);
+				if (i < card - 1) fprintf(stream_out, "; ");
+			}
+			if (is_weighted) state = 6;
+			else state = 5;
+			break;
+		case 5: fputc('#', stream_out); state = 6; break;
 		case 6: /* write the lower bound */
 			fprintf(stream_out, "%d", LB);
 			state = 7;

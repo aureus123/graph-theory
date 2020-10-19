@@ -1,8 +1,6 @@
 
-(* Template for a certificate *)
-
 From mathcomp Require Import all_ssreflect.
-Require Import preliminaries digraph sgraph dom.
+Require Import preliminaries digraph sgraph dom check_ir.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -33,26 +31,31 @@ Notation "''v' m" := (@Ordinal n m isT) (at level 0, m at level 8, format "''v' 
 Section Certificate.
   Let inst_set := [set #].
 
+  Section List_of_Set.
+    Definition inst_list := [:: #].
+
+    Fact inst_list_eq_inst_set : inst_list =i inst_set.
+    Proof. by move=> v ; rewrite !inE /= ; try rewrite !orbA. Qed.
+
+    Fact inst_list_uniq : uniq inst_list.
+    Proof. done. Qed.
+  End List_of_Set.
+
+  Fact inst_set_card : #|inst_set| = #.
+  Proof. by rewrite -(eq_card inst_list_eq_inst_set) (card_uniqP inst_list_uniq). Qed.
+
   Fact inst_set_is_irr : @irredundant inst inst_set.
   Proof.
-    apply/irredundantP.
-    move=> [v vltn] ; do # try destruct v.
-    all : try ( rewrite (bool_irrelevance vltn isT);
-                by apply: contraLR => _ ; rewrite /inst_set !inE ).
-#    - suff: False by contradiction.
-      by move: vltn ; apply/negP.
+    apply (irredundant_checkP inst inst_list (ord_enum_eqT n)).
+    - exact: inst_list_uniq.
+    - exact: inst_list_eq_inst_set.
+    - done.
   Qed.
 
   Fact IR_lb : IR inst >= #.
   Proof.
-    rewrite eq_IR_IR1.
-    suff: weight_set (@ones inst) inst_set = #.
+    rewrite eq_IR_IR1 ; move: inst_set_card ; rewrite (@cardwset1 inst inst_set).
     move<- ; apply: IR_max ; exact: inst_set_is_irr.
-    rewrite -cardwset1 /inst_set.
-    try rewrite -!setUA.
-    rewrite !cardsU1 !inE.
-    try rewrite negb_or.
-    by rewrite cards1.
   Qed.
 
 End Certificate.
