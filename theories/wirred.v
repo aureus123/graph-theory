@@ -5509,7 +5509,7 @@ case: (boolP (a1 -- d2)) => [a1_adj_d2 | a1_nadj_d2].
                            all: try by rewrite eq_sym.
                            ---- by move: d1_adj_d2; apply/contraTneq => <-; rewrite sg_sym.
                            ---- by move: b1_adj_b2; apply/contraTneq => <-.
-                           ---- by move: a1_adj_b2; apply/contraTneq => <-; rewrite sg_sym. 
+                           ---- by move: a1_adj_b2; apply/contraTneq => <-; rewrite sg_sym.
                        *** apply: h'_bull_hom; rewrite /=; try by done.
                            all: by rewrite sg_sym.
                    +++ have a1_neq_d1: a1 != d1 by rewrite sg_edgeNeq.
@@ -5522,21 +5522,366 @@ case: (boolP (a1 -- d2)) => [a1_adj_d2 | a1_nadj_d2].
                --- have a1_neq_c2: a1 != c2 by move: c1_adj_c2; apply/contraTneq => <-; rewrite sg_sym.
                    have a2_neq_c1: a2 != c1 by move: a1_adj_a2; apply/contraTneq => ->.
                    have a2_adj_c1: a2 -- c1 by rewrite (negbTE a1_neq_c2) (negbTE a2_neq_c1) (negbTE a1_nadj_c2) in a1c2a2c1.
-                   case: (boolP (a2 -- d1)) => [a2_adj_d1 | a2_nadj_d1].
-                   +++ have a2_neq_d1: a2 != d1 by rewrite sg_edgeNeq.
-                       case: (boolP (a2 -- c2)) => [a2_adj_c2 | a2_nadj_c2].
+                   case: (boolP (a1 -- d1)) => [a1_adj_d1 | a1_nadj_d1]; last first.
+                   +++ case: (boolP (a2 -- c2)) => [a2_adj_c2 | a2_nadj_c2].
                        *** have a2_neq_c2: a2 != c2 by rewrite sg_edgeNeq.
-                           case: (boolP (a1 -- d1)) => [a1_adj_d1 | a1_nadj_d1]; last first.
-                           ---- left; exists (hom_G4_def a2 a1 c2 d1).
+                           case: (boolP (a2 -- d1)) => [a2_adj_d1 | a2_nadj_d1].
+                           ---- have a2_neq_d1: a2 != d1 by rewrite sg_edgeNeq.
+                                left; exists (hom_G4_def a2 a1 c2 d1).
                                 ++++ apply: h'_G4_inj; rewrite /=; try by done.
                                      all: try by rewrite eq_sym.
                                      by move: a1_adj_b2; apply/contraTneq => ->; rewrite sg_sym.
                                 ++++ apply: h'_claw_hom; rewrite /=; try by done.
                                      all: by rewrite sg_sym.
-                           ---- have a1_neq_d1: a1 != d1 by rewrite sg_edgeNeq.
-                                admit.
-                       *** admit.
-                   +++ admit.
+                           ---- case: (boolP (c1 -- d1)) => [c1_adj_d1 | c1_nadj_d1].
+                                ++++ have c1_neq_d1: c1 != d1 by rewrite sg_edgeNeq.
+                                     right; left; exists (hom_G5_def a1 d1 a2 c1 c2).
+                                     **** apply: h'_G5_inj; rewrite /=; try by done.
+                                          all: try by rewrite eq_sym.
+                                          ----- by move: a1_adj_b2; apply/contraTneq => ->; rewrite sg_sym.
+                                          ----- by move: c1_adj_c2; apply/contraTneq => <-.
+                                          ----- by move: a1_adj_a2; apply/contraTneq => <-.
+                                     **** apply: h'_bull_hom; rewrite /=; try by done.
+                                          all: by rewrite sg_sym.
+                                ++++ case: (boolP (a2 -- d2)) => [a2_adj_d2 | a2_nadj_d2].
+                                     **** have a2_neq_d2: a2 != d2 by rewrite sg_edgeNeq.
+                                          right; left; exists (hom_G5_def c1 d1 a2 d2 a1).
+                                          ----- apply: h'_G5_inj; rewrite /=; try by done.
+                                                all: try by rewrite eq_sym.
+                                                +++++ by move: c1_adj_c2; apply/contraTneq => ->; rewrite sg_sym.
+                                                +++++ by move: c1_adj_c2; apply/contraTneq => ->.
+                                                +++++ by move: a1_adj_a2; apply/contraTneq => <-.
+                                                +++++ by move: a1_adj_b2; apply/contraTneq => <-; rewrite sg_sym.
+                                          ----- apply: h'_bull_hom; rewrite /=; try by done.
+                                                all: by rewrite sg_sym.
+                                     **** case: (boolP (a2 -- b1)) => [a2_adj_b1 | a2_nadj_b1]; last first.
+                                          ----- left; exists (hom_G4_def a1 a2 b1 d2).
+                                                +++++ apply: h'_G4_inj; rewrite /=; try by done.
+                                                      all: try by rewrite eq_sym.
+                                                      ***** by move: a2_adj_c2; apply/contraTneq => ->.
+                                                      ***** by move: a2_adj_c2; apply/contraTneq => ->; rewrite sg_sym.
+                                                +++++ apply: h'_claw_hom; rewrite /=; try by done.
+                                                      all: by rewrite sg_sym.
+                                          ----- have a2_neq_b1: a2 != b1 by rewrite sg_edgeNeq.
+                                                right; left; exists (hom_G5_def c2 d2 a2 a1 b1).
+                                                +++++ apply: h'_G5_inj; rewrite /=; try by done.
+                                                      all: try by rewrite eq_sym.
+                                                      ***** by move: c1_adj_c2; apply/contraTneq => ->.
+                                                      ***** by move: a2_adj_b1; apply/contraTneq => <-; rewrite sg_sym.
+                                                +++++ apply: h'_bull_hom; rewrite /=; try by done.
+                                                      all: by rewrite sg_sym.
+                       *** case: (boolP (a2 -- d1)) => [a2_adj_d1 | a2_nadj_d1].
+                           ---- have a2_neq_d1: a2 != d1 by rewrite sg_edgeNeq.
+                                case: (boolP (c1 -- d1)) => [c1_adj_d1 | c1_nadj_d1]; last first.
+                                ++++ left; exists (hom_G4_def a2 a1 c1 d1).
+                                     **** apply: h'_G4_inj; rewrite /=; try by done.
+                                          all: try by rewrite eq_sym.
+                                          ----- by move: c1_adj_c2; apply/contraTneq => <-.
+                                          ----- by move: a1_adj_b2; apply/contraTneq => ->; rewrite sg_sym.
+                                          ----- by move: c1_adj_c2; apply/contraTneq => ->; rewrite sg_sym.
+                                     **** apply: h'_claw_hom; rewrite /=; try by done.
+                                          all: by rewrite sg_sym.
+                                ++++ have c1_neq_d1: c1 != d1 by rewrite sg_edgeNeq.
+                                     right; left; exists (hom_G5_def a1 c2 a2 c1 d1).
+                                     **** apply: h'_G5_inj; rewrite /=; try by done.
+                                          all: try by rewrite eq_sym.
+                                          ----- by move: c1_adj_c2; apply/contraTneq => <-.
+                                          ----- by move: a1_adj_b2; apply/contraTneq => ->; rewrite sg_sym.
+                                          ----- by move: a2_adj_d1; apply/contraTneq => <-.
+                                     **** apply: h'_bull_hom; rewrite /=; try by done.
+                                          all: by rewrite sg_sym.
+                           ---- case: (boolP (c1 -- d1)) => [c1_adj_d1 | c1_nadj_d1].
+                                ++++ have c1_neq_d1: c1 != d1 by rewrite sg_edgeNeq.
+                                     left; exists (hom_G4_def c1 a2 c2 d1).
+                                     **** apply: h'_G4_inj; rewrite /=; try by done.
+                                          all: try by rewrite eq_sym.
+                                          ----- by move: a1_adj_a2; apply/contraTneq => ->.
+                                          ----- by move: a1_adj_a2; apply/contraTneq => ->.
+                                     **** apply: h'_claw_hom; rewrite /=; try by done.
+                                          all: by rewrite sg_sym.
+                                ++++ case: (boolP (a2 -- d2)) => [a2_adj_d2 | a2_nadj_d2]; last first.
+                                     **** right; right; left; exists (hom_G6_def c2 c1 a2 a1 d2 d1).
+                                          ----- apply: h'_G6_inj; rewrite /=; try by done.
+                                                all: try by rewrite eq_sym.
+                                                +++++ by move: a1_adj_a2; apply/contraTneq => <-.
+                                                +++++ by move: b2_adj_d2; apply/contraTneq => <-.
+                                                +++++ by move: c1_adj_c2; apply/contraTneq => ->.
+                                                +++++ by move: a2_adj_c1; apply/contraTneq => ->.
+                                                +++++ by move: d1_adj_d2; apply/contraTneq => <-; rewrite sg_sym.
+                                                +++++ by move: d1_adj_d2; apply/contraTneq => <-.
+                                                +++++ by move: a1_adj_b2; apply/contraTneq => ->; rewrite sg_sym.
+                                          ----- apply: h'_P_6_hom; rewrite /=; try by done.
+                                                all: by rewrite sg_sym.
+                                     **** have a2_neq_d2: a2 != d2 by rewrite sg_edgeNeq.
+                                          right; left; exists (hom_G5_def c1 d1 a2 d2 a1).
+                                          ----- apply: h'_G5_inj; rewrite /=; try by done.
+                                                all: try by rewrite eq_sym.
+                                                +++++ by move: c1_adj_c2; apply/contraTneq => ->; rewrite sg_sym.
+                                                +++++ by move: c1_adj_c2; apply/contraTneq => ->.
+                                                +++++ by move: a2_adj_c1; apply/contraTneq => <-; rewrite sg_sym.
+                                                +++++ by move: a1_adj_a2; apply/contraTneq => <-; rewrite sg_sym.
+                                          ----- apply: h'_bull_hom; rewrite /=; try by done.
+                                                all: by rewrite sg_sym.
+                   +++ have a1_neq_d1: a1 != d1 by rewrite sg_edgeNeq.
+                       case: (boolP (c1 -- d1)) => [c1_adj_d1 | c1_nadj_d1]; last first.
+                       *** case: (boolP (b1 -- c1)) => [b1_adj_c1 | b1_nadj_c1].
+                           ---- have b1_neq_c1: b1 != c1 by rewrite sg_edgeNeq.
+                                case: (boolP (b1 -- d1)) => [b1_adj_d1 | b1_nadj_d1].
+                                ++++ have b1_neq_d1: b1 != d1 by rewrite sg_edgeNeq.
+                                     left; exists (hom_G4_def b1 b2 c1 d1).
+                                     **** apply: h'_G4_inj; rewrite /=; try by done.
+                                          all: try by rewrite eq_sym.
+                                          by move: c1_adj_c2; apply/contraTneq => ->; rewrite sg_sym.
+                                     **** apply: h'_claw_hom; rewrite /=; try by done.
+                                          all: try by rewrite sg_sym.
+                                ++++ case: (boolP (a2 -- d1)) => [a2_adj_d1 | a2_nadj_d1]; last first.
+                                     **** case: (boolP (a2 -- b2)) => [a2_adj_b2 | a2_nadj_b2].
+                                          ----- have a2_neq_b2: a2 != b2 by rewrite sg_edgeNeq.
+                                                right; left; exists (hom_G5_def c1 d1 a2 a1 b2).
+                                                +++++ apply: h'_G5_inj; rewrite /=; try by done.
+                                                      all: try by rewrite eq_sym.
+                                                      ***** by move: c1_adj_c2; apply/contraTneq => ->; rewrite sg_sym.
+                                                      ***** by move: c1_adj_c2; apply/contraTneq => ->.
+                                                      ***** by move: a2_adj_c1; apply/contraTneq => <-; rewrite sg_sym.
+                                                +++++ apply: h'_bull_hom; rewrite /=; try by done.
+                                                      all: by rewrite sg_sym.
+                                          ----- left; exists (hom_G4_def a1 a2 b2 d1).
+                                                +++++ apply: h'_G4_inj; rewrite /=; try by done.
+                                                      all: try by rewrite eq_sym.
+                                                      ***** by move: a2_adj_c1; apply/contraTneq => ->.
+                                                      ***** by move: a2_adj_c1; apply/contraTneq => ->; rewrite sg_sym.
+                                                +++++ apply: h'_claw_hom; rewrite /=; try by done.
+                                                      all: by rewrite sg_sym.
+                                     **** have a2_neq_d1: a2 != d1 by rewrite sg_edgeNeq.
+                                          case: (boolP (a2 -- b2)) => [a2_adj_b2 | a2_nadj_b2].
+                                          ----- have a2_neq_b2: a2 != b2 by rewrite sg_edgeNeq.
+                                                left; exists (hom_G4_def a2 b2 c1 d1).
+                                                +++++ apply: h'_G4_inj; rewrite /=; try by done.
+                                                      all: try by rewrite eq_sym.
+                                                      by move: c1_adj_c2; apply/contraTneq => ->; rewrite sg_sym.
+                                                +++++ apply: h'_claw_hom; rewrite /=; try by done.
+                                                      all: by rewrite sg_sym.
+                                          ----- right; left; exists (hom_G5_def b2 c1 a1 a2 d1).
+                                                +++++ apply: h'_G5_inj; rewrite /=; try by done.
+                                                      all: try by rewrite eq_sym.
+                                                      ***** by move: a2_adj_c1; apply/contraTneq => <-.
+                                                      ***** by move: c1_adj_c2; apply/contraTneq => ->.
+                                                      ***** by move: c1_adj_c2; apply/contraTneq => ->; rewrite sg_sym.
+                                                +++++ apply: h'_bull_hom; rewrite /=; try by done.
+                                                      all: by rewrite sg_sym.
+                           ---- case: (boolP (a2 -- b2)) => [a2_adj_b2 | a2_nadj_b2]; last first. 
+                                ++++ case: (boolP (a2 -- d1)) => [a2_adj_d1 | a2_nadj_d1].
+                                     **** have a2_neq_d1: a2 != d1 by rewrite sg_edgeNeq.
+                                          right; left; exists (hom_G5_def b2 c1 a1 a2 d1).
+                                          ----- apply: h'_G5_inj; rewrite /=; try by done.
+                                                all: try by rewrite eq_sym.
+                                                +++++ by move: a2_adj_c1; apply/contraTneq => <-.
+                                                +++++ by move: c1_adj_c2; apply/contraTneq => ->.
+                                                +++++ by move: c1_adj_c2; apply/contraTneq => ->; rewrite sg_sym.
+                                          ----- apply: h'_bull_hom; rewrite /=; try by done.
+                                                all: by rewrite sg_sym.
+                                     **** left; exists (hom_G4_def a1 a2 b2 d1).
+                                          ----- apply: h'_G4_inj; rewrite /=; try by done.
+                                                all: try by rewrite eq_sym.
+                                                +++++ by move: a2_adj_c1; apply/contraTneq => ->.
+                                                +++++ by move: a2_adj_c1; apply/contraTneq => ->; rewrite sg_sym.
+                                          ----- apply: h'_claw_hom; rewrite /=; try by done.
+                                                all: by rewrite sg_sym.
+                                ++++ have a2_neq_b2: a2 != b2 by rewrite sg_edgeNeq.
+                                     case: (boolP (a2 -- d1)) => [a2_adj_d1 | a2_nadj_d1]; last first.
+                                     **** right; left; exists (hom_G5_def c1 d1 a2 a1 b2).
+                                          ----- apply: h'_G5_inj; rewrite /=; try by done.
+                                                all: try by rewrite eq_sym.
+                                                +++++ by move: c1_adj_c2; apply/contraTneq => ->; rewrite sg_sym.
+                                                +++++ by move: c1_adj_c2; apply/contraTneq => ->.
+                                                +++++ by move: a2_adj_c1; apply/contraTneq => <-; rewrite sg_sym.
+                                          ----- apply: h'_bull_hom; rewrite /=; try by done.
+                                                all: by rewrite sg_sym.
+                                     **** have a2_neq_d1: a2 != d1 by rewrite sg_edgeNeq.
+                                          left; exists (hom_G4_def a2 b2 c1 d1).
+                                          ----- apply: h'_G4_inj; rewrite /=; try by done.
+                                                all: try by rewrite eq_sym.
+                                                by move: c1_adj_c2; apply/contraTneq => ->; rewrite sg_sym.
+                                          ----- apply: h'_claw_hom; rewrite /=; try by done.
+                                                all: by rewrite sg_sym.
+                       *** have c1_neq_d1: c1 != d1 by rewrite sg_edgeNeq.
+                           case: (boolP (b1 -- d1)) => [b1_adj_d1 | b1_nadj_d1]; last first.
+                           ---- case: (boolP (b1 -- c1)) => [b1_adj_c1 | b1_nadj_c1]; last first.
+                                ++++ right; left; exists (hom_G5_def b1 c1 a1 d1 d2).
+                                     **** apply: h'_G5_inj; rewrite /=; try by done.
+                                          all: try by rewrite eq_sym.
+                                          ----- by move: b1_adj_b2; apply/contraTneq => ->; rewrite sg_sym.
+                                          ----- by move: d1_adj_d2; apply/contraTneq => <-.
+                                          ----- by move: c1_adj_c2; apply/contraTneq => ->.
+                                     **** apply: h'_bull_hom; rewrite /=; try by done.
+                                          all: by rewrite sg_sym.
+                                ++++ have b1_neq_c1: b1 != c1 by rewrite sg_edgeNeq.
+                                     case: (boolP (a2 -- b2)) => [a2_adj_b2 | a2_nadj_b2]; last first.
+                                     **** case: (boolP (a2 -- c2)) => [a2_adj_c2 | a2_nadj_c2]; last first.
+                                          ----- case: (boolP (a2 -- b1)) => [a2_adj_b1 | a2_nadj_b1]; last first.
+                                                +++++ left; exists (hom_G4_def c1 a2 b1 c2).
+                                                      ***** apply: h'_G4_inj; rewrite /=; try by done.
+                                                            all: try by rewrite eq_sym.
+                                                            ------ by move: b1_adj_b2; apply/contraTneq => <-.
+                                                            ------ by move: a1_adj_a2; apply/contraTneq => ->.
+                                                      ***** apply: h'_claw_hom; rewrite /=; try by done.
+                                                            all: by rewrite sg_sym.
+                                                +++++ have a2_neq_b1: a2 != b1 by rewrite sg_edgeNeq.
+                                                      right; left; exists (hom_G5_def b2 c2 b1 c1 a2).
+                                                      ***** apply: h'_G5_inj; rewrite /=; try by done.
+                                                            all: try by rewrite eq_sym.
+                                                            ------ by move: c1_adj_c2; apply/contraTneq => <-; rewrite sg_sym.
+                                                            ------ by move: a2_adj_c1; apply/contraTneq => <-.
+                                                            ------ by move: a2_adj_b1; apply/contraTneq => <-; rewrite sg_sym.
+                                                      ***** apply: h'_bull_hom; rewrite /=; try by done.
+                                                            all: by rewrite sg_sym.
+                                          ----- have a2_neq_c2: a2 != c2 by rewrite sg_edgeNeq.
+                                                case: (boolP (a2 -- b1)) => [a2_adj_b1 | a2_nadj_b1]; last first.
+                                                +++++ case: (boolP (a2 -- d2)) => [a2_adj_d2 | a2_nadj_d2].
+                                                      ***** have a2_neq_d2: a2 != d2 by rewrite sg_edgeNeq.
+                                                            right; left; exists (hom_G5_def b1 d2 c1 a2 c2).
+                                                            ------ apply: h'_G5_inj; rewrite /=; try by done.
+                                                                   all: try by rewrite eq_sym.
+                                                                   ++++++ by move: b1_adj_b2; apply/contraTneq => ->.
+                                                                   ++++++ by move: d1_adj_d2; apply/contraTneq => ->; rewrite sg_sym.
+                                                            ------ apply: h'_bull_hom; rewrite /=; try by done.
+                                                                   all: by rewrite sg_sym.
+                                                      ***** left; exists (hom_G4_def a1 a2 b1 d2).
+                                                            ------ apply: h'_G4_inj; rewrite /=; try by done.
+                                                                   all: try by rewrite eq_sym.
+                                                                   ++++++ by move: b1_adj_b2; apply/contraTneq => <-.
+                                                                   ++++++ by move: a2_adj_c1; apply/contraTneq => ->; rewrite sg_sym.
+                                                            ------ apply: h'_claw_hom; rewrite /=; try by done.
+                                                                   all: by rewrite sg_sym.
+                                                +++++ have a2_neq_b1: a2 != b1 by rewrite sg_edgeNeq.
+                                                      case: (boolP (a2 -- d1)) => [a2_adj_d1 | a2_nadj_d1]; last first.
+                                                      ***** right; left; exists (hom_G5_def c2 d1 a2 a1 b1).
+                                                            ------ apply: h'_G5_inj; rewrite /=; try by done.
+                                                                   all: try by rewrite eq_sym.
+                                                                   ++++++ by move: a2_adj_c2; apply/contraTneq => <-; rewrite sg_sym.
+                                                                   ++++++ by move: d1_adj_d2; apply/contraTneq => ->.
+                                                            ------ apply: h'_bull_hom; rewrite /=; try by done.
+                                                                   all: by rewrite sg_sym.
+                                                     ***** have a2_neq_d1: a2 != d1 by rewrite sg_edgeNeq.
+                                                           left; exists (hom_G4_def a2 b1 c2 d1).
+                                                           ------ apply: h'_G4_inj; rewrite /=; try by done.
+                                                                  all: try by rewrite eq_sym.
+                                                                  by move: d1_adj_d2; apply/contraTneq => <-.
+                                                           ------ apply: h'_claw_hom; rewrite /=; try by done.
+                                                                  all: by rewrite sg_sym.
+                                     **** have a2_neq_b2: a2 != b2 by rewrite sg_edgeNeq.
+                                          case: (boolP (a2 -- d1)) => [a2_adj_d1 | a2_nadj_d1]; last first.
+                                          ----- case: (boolP (a2 -- c2)) => [a2_adj_c2 | a2_nadj_c2].
+                                                +++++ have a2_neq_c2: a2 != c2 by rewrite sg_edgeNeq.
+                                                      right; left; exists (hom_G5_def c2 d1 a2 a1 b2).
+                                                      ***** apply: h'_G5_inj; rewrite /=; try by done.
+                                                            all: try by rewrite eq_sym.
+                                                            ------ by move: b1_adj_b2; apply/contraTneq => <-.
+                                                            ------ by move: a2_adj_c2; apply/contraTneq => <-; rewrite sg_sym.
+                                                      ***** apply: h'_bull_hom; rewrite /=; try by done.
+                                                            all: by rewrite sg_sym.
+                                                +++++ left; exists (hom_G4_def c1 a2 c2 d1).
+                                                      ***** apply: h'_G4_inj; rewrite /=; try by done.
+                                                            all: try by rewrite eq_sym.
+                                                            ------ by move: a2_adj_b2; apply/contraTneq => ->; rewrite sg_sym.
+                                                            ------ by move: a2_adj_b2; apply/contraTneq => ->; rewrite sg_sym.
+                                                      ***** apply: h'_claw_hom; rewrite /=; try by done.
+                                                            all: by rewrite sg_sym.
+                                          ----- have a2_neq_d1: a2 != d1 by rewrite sg_edgeNeq.
+                                                case: (boolP (a2 -- c2)) => [a2_adj_c2 | a2_nadj_c2]; last first.
+                                                +++++ right; left; exists (hom_G5_def b2 c2 a2 c1 d1).
+                                                      ***** apply: h'_G5_inj; rewrite /=; try by done.
+                                                            all: try by rewrite eq_sym.
+                                                            ------ by move: c1_adj_c2; apply/contraTneq => <-; rewrite sg_sym.
+                                                            ------ by move: a2_adj_d1; apply/contraTneq => <-.
+                                                      ***** apply: h'_bull_hom; rewrite /=; try by done.
+                                                            all: by rewrite sg_sym.
+                                                +++++ have a2_neq_c2: a2 != c2 by rewrite sg_edgeNeq.
+                                                      left; exists (hom_G4_def a2 b2 c2 d1).
+                                                      ***** apply: h'_G4_inj; rewrite /=; try by done.
+                                                            all: try by rewrite eq_sym.
+                                                            by move: b1_adj_b2; apply/contraTneq => ->.
+                                                      ***** apply: h'_claw_hom; rewrite /=; try by done.
+                                                            all: by rewrite sg_sym.
+                           ---- have b1_neq_d1: b1 != d1 by rewrite sg_edgeNeq.
+                                case: (boolP (a2 -- c2)) => [a2_adj_c2 | a2_nadj_c2].
+                                ++++ have a2_neq_c2: a2 != c2 by rewrite sg_edgeNeq.
+                                     case: (boolP (a2 -- b2)) => [a2_adj_b2 | a2_nadj_b2]; last first.
+                                     **** case: (boolP (a2 -- d1)) => [a2_adj_d1 | a2_nadj_d1]; last first.
+                                          ----- left; exists (hom_G4_def a1 a2 b2 d1).
+                                                +++++ apply: h'_G4_inj; rewrite /=; try by done.
+                                                      all: try by rewrite eq_sym.
+                                                      ***** by move: a2_adj_c1; apply/contraTneq => ->.
+                                                      ***** by move: a2_adj_c2; apply/contraTneq => ->; rewrite sg_sym.
+                                                +++++ apply: h'_claw_hom; rewrite /=; try by done.
+                                                      all: by rewrite sg_sym.
+                                          ----- have a2_neq_d1: a2 != d1 by rewrite sg_edgeNeq.
+                                                right; left; exists (hom_G5_def b2 c2 a1 a2 d1).
+                                                +++++ apply: h'_G5_inj; rewrite /=; try by done.
+                                                      all: try by rewrite eq_sym.
+                                                      ***** by move: c1_adj_c2; apply/contraTneq => <-; rewrite sg_sym.
+                                                      ***** by move: a2_adj_d1; apply/contraTneq => <-.
+                                                +++++ apply: h'_bull_hom; rewrite /=; try by done.
+                                                      all: by rewrite sg_sym.
+                                     **** have a2_neq_b2: a2 != b2 by rewrite sg_edgeNeq.
+                                          case: (boolP (a2 -- d1)) => [a2_adj_d1 | a2_nadj_d1].
+                                          ----- have a2_neq_d1: a2 != d1 by rewrite sg_edgeNeq.
+                                                left; exists (hom_G4_def a2 b2 c2 d1).
+                                                +++++ apply: h'_G4_inj; rewrite /=; try by done.
+                                                      all: try by rewrite eq_sym.
+                                                      by move: b1_adj_b2; apply/contraTneq => ->.
+                                                +++++ apply: h'_claw_hom; rewrite /=; try by done.
+                                                      all: by rewrite sg_sym.
+                                          ----- right; left; exists (hom_G5_def b2 d1 a2 c1 c2).
+                                                +++++ apply: h'_G5_inj; rewrite /=; try by done.
+                                                      all: try by rewrite eq_sym.
+                                                      ***** by move: b1_adj_b2; apply/contraTneq => ->.
+                                                      ***** by move: a2_adj_c2; apply/contraTneq => <-; rewrite sg_sym.
+                                                +++++ apply: h'_bull_hom; rewrite /=; try by done.
+                                                      all: by rewrite sg_sym.
+                                ++++ case: (boolP (a2 -- d1)) => [a2_adj_d1 | a2_nadj_d1]; last first.
+                                     **** case: (boolP (a2 -- b2)) => [a2_adj_b2 | a2_nadj_b2].
+                                          ----- have a2_neq_b2: a2 != b2 by rewrite sg_edgeNeq.
+                                                left; exists (hom_G4_def c1 a2 c2 d1).
+                                                +++++ apply: h'_G4_inj; rewrite /=; try by done.
+                                                      all: try by rewrite eq_sym.
+                                                      ***** by move: a1_adj_a2; apply/contraTneq => ->.
+                                                      ***** by move: a2_adj_b2; apply/contraTneq => ->; rewrite sg_sym.
+                                                +++++ apply: h'_claw_hom; rewrite /=; try by done.
+                                                      all: by rewrite sg_sym.
+                                          ----- case: (boolP (a2 -- d2)) => [a2_adj_d2 | a2_nadj_d2]; last first.
+                                                +++++ left; exists (hom_G4_def a1 a2 b2 d1).
+                                                      ***** apply: h'_G4_inj; rewrite /=; try by done.
+                                                            all: try by rewrite eq_sym.
+                                                            ------ by move: b2_adj_d2; apply/contraTneq => <-.
+                                                            ------ by move: d1_adj_d2; apply/contraTneq => <-.
+                                                      ***** apply: h'_claw_hom; rewrite /=; try by done.
+                                                            all: by rewrite sg_sym.
+                                                +++++ have a2_neq_d2: a2 != d2 by rewrite sg_edgeNeq.
+                                                      case: (boolP (a2 -- b1)) => [a2_adj_b1 | a2_nadj_b1]; last first.
+                                                      ***** left; exists (hom_G4_def d2 a2 b2 d1).
+                                                            ------ apply: h'_G4_inj; rewrite /=; try by done.
+                                                                   all: try by rewrite eq_sym.
+                                                                   ++++++ by move: a2_adj_c1; apply/contraTneq => ->.
+                                                                   ++++++ by move: b1_adj_d1; apply/contraTneq => <-; rewrite sg_sym.
+                                                            ------ apply: h'_claw_hom; rewrite /=; try by done.
+                                                                   all: by rewrite sg_sym.
+                                                      ***** case: (boolP (b1 -- c1)) => [b1_adj_c1 | b1_nadj_c1].
+                                                            ------ have b1_neq_c1: b1 != c1 by rewrite sg_edgeNeq.
+                                                                   right; left; exists (hom_G5_def c2 d2 c1 d1 b1).
+                                                                   ++++++ apply: h'_G5_inj; rewrite /=; try by done.
+                                                                          all: try by rewrite eq_sym.
+                                                                          by move: c1_adj_c2; apply/contraTneq => ->.
+                                                                   ++++++ apply: h'_bull_hom; rewrite /=; try by done.
+                                                                          all: by rewrite sg_sym.
+                                                            ------ left; exists (hom_G4_def a2 b1 c1 d2).
+                                                                   ++++++ apply: h'_G4_inj; rewrite /=; try by done.
+                                                                          all: try by rewrite eq_sym.
+                                                                          ****** by move: a2_adj_d2; apply/contraTneq => ->.
+                                                                          ****** by move: b1_adj_b2; apply/contraTneq => ->; rewrite sg_sym.
+                                                                   ++++++ apply: h'_claw_hom; rewrite /=; try by done.
+                                                                          all: by rewrite sg_sym.
+                                     **** have a2_neq_d1: a2 != d1 by rewrite sg_edgeNeq. admit.
       -- admit.
 - admit.
 Admitted.
