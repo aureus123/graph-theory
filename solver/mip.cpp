@@ -25,10 +25,10 @@ using namespace std;
 /* CONSTANTS */
 
 #define EPSILON 0.00001
-#define MAXTIME 30.0
+#define MAXTIME 3600.0
 #define SHOWCPLEX
 //#define SAVELP "form.lp"
-//#define TUNEDPARAMS
+#define TUNEDPARAMS
 
 /* GLOBAL VARIABLES */
 
@@ -153,19 +153,12 @@ bool optimize(int vert, int *weight, int *degrees, int **neigh_vertices, int **a
 	cplex.setParam(IloCplex::RandomSeed, 1);
 
 #ifdef TUNEDPARAMS
-	/* set Traditional B&C with pseudo costs branching strategy */
-	//cplex.setParam(IloCplex::MIPSearch, 1);
-	//cplex.setParam(IloCplex::VarSel, CPX_VARSEL_PSEUDO);
-
-	/* turn off other features, including presolve */
-	//cplex.setParam(IloCplex::PreInd, CPX_OFF);
+	/* turn off some features */
 	cplex.setParam(IloCplex::LBHeur, 0);
 	cplex.setParam(IloCplex::Probe, -1);
 	cplex.setParam(IloCplex::HeurFreq, -1);
-	//cplex.setParam(IloCplex::RINSHeur, -1);
-	//cplex.setParam(IloCplex::RepeatPresolve, 0);
 
-	/* turn off cuts */
+	/* turn off cuts except Cliques and ZeroHalf */
 	//cplex.setParam(IloCplex::Cliques, -1);
 	cplex.setParam(IloCplex::Covers, -1);
 	cplex.setParam(IloCplex::DisjCuts, -1);
