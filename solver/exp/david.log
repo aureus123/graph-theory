@@ -1,0 +1,161 @@
+[97mSOLVER - Computes the weighted upper irredundant/domination number.
+Made in 2018-2020 by Daniel Severin.
+[37m[33mStatistics:
+  |V| = 87, |E| = 406 (density = 10.8527%).
+  Initial bounds:  LB = 0, UB = 87.
+[37mDiameter of G: 3
+[97mClassic UB = w(V) - min { w(N[v] - {u}) : v in V, u in N[v] } = 86
+[37mNew bounds:  LB = 36, UB = 86.
+[31mSolution (card = 36, weight = 36):
+  private of 0 is 0
+  private of 4 is 4
+  private of 25 is 25
+  private of 81 is 81
+  private of 74 is 74
+  private of 40 is 40
+  private of 37 is 37
+  private of 61 is 61
+  private of 24 is 24
+  private of 9 is 9
+  private of 64 is 64
+  private of 56 is 56
+  private of 43 is 43
+  private of 63 is 63
+  private of 35 is 35
+  private of 14 is 14
+  private of 7 is 7
+  private of 58 is 17
+  private of 47 is 47
+  private of 5 is 5
+  private of 38 is 29
+  private of 85 is 85
+  private of 53 is 53
+  private of 55 is 55
+  private of 27 is 27
+  private of 79 is 23
+  private of 10 is 10
+  private of 69 is 54
+  private of 15 is 15
+  private of 20 is 20
+  private of 28 is 28
+  private of 6 is 6
+  private of 52 is 52
+  private of 84 is 12
+  private of 2 is 2
+  private of 36 is 36
+[37m[96mTime elapsed for heuristic = 0.38 sec.
+[37m[35m
+Complement of the transformed graph:
+  |V| = 899, |E| = 154797 (density = 38.3492%).
+[37m[97mModel has 7569 variables and 7078 constraints.
+[37mTried aggregator 1 time.
+MIP Presolve eliminated 6270 rows and 774 columns.
+MIP Presolve modified 151 coefficients.
+Reduced MIP has 808 rows, 125 columns, and 4084 nonzeros.
+Reduced MIP has 125 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.55 sec. (1027.48 ticks)
+Tried aggregator 1 time.
+MIP Presolve eliminated 691 rows and 86 columns.
+MIP Presolve modified 111 coefficients.
+Reduced MIP has 117 rows, 39 columns, and 555 nonzeros.
+Reduced MIP has 39 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.00 sec. (3.36 ticks)
+Tried aggregator 1 time.
+MIP Presolve eliminated 81 rows and 21 columns.
+MIP Presolve modified 6 coefficients.
+Reduced MIP has 36 rows, 18 columns, and 86 nonzeros.
+Reduced MIP has 18 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.00 sec. (0.34 ticks)
+Tried aggregator 2 times.
+MIP Presolve eliminated 35 rows and 13 columns.
+MIP Presolve modified 4 coefficients.
+Aggregator did 1 substitutions.
+All rows and columns eliminated.
+Presolve time = 0.00 sec. (0.06 ticks)
+
+Root node processing (before b&c):
+  Real time             =    0.56 sec. (1031.69 ticks)
+Sequential b&c:
+  Real time             =    0.00 sec. (0.00 ticks)
+                          ------------
+Total (root+branch&cut) =    0.56 sec. (1031.69 ticks)
+Number of nodes evaluated: 0
+[92mInfeasible. Therefore, the solution given by the heuristic is optimal!
+[37m[31mSolution (card = 36, weight = 36):
+  private of 0 is 0
+  private of 4 is 4
+  private of 25 is 25
+  private of 81 is 81
+  private of 74 is 74
+  private of 40 is 40
+  private of 37 is 37
+  private of 61 is 61
+  private of 24 is 24
+  private of 9 is 9
+  private of 64 is 64
+  private of 56 is 56
+  private of 43 is 43
+  private of 63 is 63
+  private of 35 is 35
+  private of 14 is 14
+  private of 7 is 7
+  private of 58 is 17
+  private of 47 is 47
+  private of 5 is 5
+  private of 38 is 29
+  private of 85 is 85
+  private of 53 is 53
+  private of 55 is 55
+  private of 27 is 27
+  private of 79 is 23
+  private of 10 is 10
+  private of 69 is 54
+  private of 15 is 15
+  private of 20 is 20
+  private of 28 is 28
+  private of 6 is 6
+  private of 52 is 52
+  private of 84 is 12
+  private of 2 is 2
+  private of 36 is 36
+[37m[96mTime elapsed during optimization = 0.56 sec.
+[37mCoq certificate written in certificate.v
+Reading graph from output.dimacs...OK
+Searching for a single maximum size clique...
+  2/899 (max  1)  0.00 s  (0.00 s/round)
+101/899 (max  2)  0.00 s  (0.00 s/round)
+265/899 (max  3)  0.00 s  (0.00 s/round)
+266/899 (max  4)  0.00 s  (0.00 s/round)
+267/899 (max  5)  0.00 s  (0.00 s/round)
+268/899 (max  6)  0.00 s  (0.00 s/round)
+269/899 (max  7)  0.00 s  (0.00 s/round)
+270/899 (max  8)  0.00 s  (0.00 s/round)
+271/899 (max  9)  0.00 s  (0.00 s/round)
+272/899 (max 10)  0.00 s  (0.00 s/round)
+273/899 (max 11)  0.00 s  (0.00 s/round)
+274/899 (max 12)  0.00 s  (0.00 s/round)
+278/899 (max 13)  0.00 s  (0.00 s/round)
+286/899 (max 14)  0.00 s  (0.00 s/round)
+294/899 (max 15)  0.00 s  (0.00 s/round)
+315/899 (max 16)  0.00 s  (0.00 s/round)
+341/899 (max 17)  0.00 s  (0.00 s/round)
+359/899 (max 18)  0.00 s  (0.00 s/round)
+387/899 (max 19)  0.00 s  (0.00 s/round)
+416/899 (max 20)  0.00 s  (0.00 s/round)
+432/899 (max 21)  0.00 s  (0.00 s/round)
+459/899 (max 22)  0.00 s  (0.00 s/round)
+488/899 (max 23)  0.00 s  (0.00 s/round)
+525/899 (max 24)  0.00 s  (0.00 s/round)
+571/899 (max 25)  0.00 s  (0.00 s/round)
+638/899 (max 26)  0.00 s  (0.00 s/round)
+639/899 (max 27)  0.00 s  (0.00 s/round)
+661/899 (max 28)  0.00 s  (0.00 s/round)
+688/899 (max 29)  0.00 s  (0.00 s/round)
+711/899 (max 30)  0.00 s  (0.00 s/round)
+766/899 (max 31)  0.06 s  (0.00 s/round)
+794/899 (max 32)  1.25 s  (0.04 s/round)
+814/899 (max 33)  2.34 s  (0.05 s/round)
+832/899 (max 34)  2.76 s  (0.02 s/round)
+860/899 (max 35)  3.18 s  (0.02 s/round)
+864/899 (max 36)  3.61 s  (0.11 s/round)
+899/899 (max 36)  3.61 s  (0.00 s/round)

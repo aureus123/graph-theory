@@ -1,0 +1,75 @@
+[97mSOLVER - Computes the weighted upper irredundant/domination number.
+Made in 2018-2020 by Daniel Severin.
+[37m[33mStatistics:
+  |V| = 48, |E| = 115 (density = 10.195%).
+  Initial bounds:  LB = 0, UB = 3018.
+[37mDiameter of G: 8
+[97mClassic UB = w(V) - min { w(N[v] - {u}) : v in V, u in N[v] } = 2962
+[37mNew bounds:  LB = 1634, UB = 2913.
+[31mSolution (card = 15, weight = 1634):
+  private of 3 is 0
+  private of 6 is 13
+  private of 9 is 14
+  private of 16 is 17
+  private of 22 is 33
+  private of 24 is 34
+  private of 31 is 20
+  private of 45 is 47
+  private of 4 is 1
+  private of 43 is 35
+  private of 11 is 12
+  private of 39 is 38
+  private of 40 is 29
+  private of 44 is 26
+  private of 18 is 27
+[37m[96mTime elapsed for heuristic = 0.02 sec.
+[37m[97mModel has 2304 variables and 628 constraints.
+[37mTried aggregator 1 time.
+MIP Presolve eliminated 271 rows and 48 columns.
+MIP Presolve modified 357 coefficients.
+Reduced MIP has 357 rows, 230 columns, and 5061 nonzeros.
+Reduced MIP has 230 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.01 sec. (8.58 ticks)
+Tried aggregator 1 time.
+MIP Presolve eliminated 31 rows and 0 columns.
+MIP Presolve modified 17 coefficients.
+Reduced MIP has 326 rows, 230 columns, and 4763 nonzeros.
+Reduced MIP has 230 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.00 sec. (5.16 ticks)
+Clique table members: 326.
+MIP emphasis: balance optimality and feasibility.
+MIP search method: dynamic search.
+Parallel mode: none, using 1 thread.
+Root relaxation solution time = 0.00 sec. (2.29 ticks)
+
+        Nodes                                         Cuts/
+   Node  Left     Objective  IInf  Best Integer    Best Bound    ItCnt     Gap
+
+      0     0        cutoff                                        118         
+
+Root node processing (before b&c):
+  Real time             =    0.01 sec. (16.92 ticks)
+Sequential b&c:
+  Real time             =    0.00 sec. (0.00 ticks)
+                          ------------
+Total (root+branch&cut) =    0.01 sec. (16.92 ticks)
+Number of nodes evaluated: 0
+[92mInfeasible. Therefore, the solution given by the heuristic is optimal!
+[37m[31mSolution (card = 15, weight = 1634):
+  private of 3 is 0
+  private of 6 is 13
+  private of 9 is 14
+  private of 16 is 17
+  private of 22 is 33
+  private of 24 is 34
+  private of 31 is 20
+  private of 45 is 47
+  private of 4 is 1
+  private of 43 is 35
+  private of 11 is 12
+  private of 39 is 38
+  private of 40 is 29
+  private of 44 is 26
+  private of 18 is 27
+[37m[96mTime elapsed during optimization = 0.01 sec.
+[37mCoq certificate written in certificate.v

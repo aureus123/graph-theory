@@ -1,0 +1,168 @@
+[97mSOLVER - Computes the weighted upper irredundant/domination number.
+Made in 2018-2020 by Daniel Severin.
+[37m[33mStatistics:
+  |V| = 56, |E| = 110 (density = 7.14286%).
+  Initial bounds:  LB = 0, UB = 56.
+Diameter of G: 5
+[37m[97mClassic UB = w(V) - min { w(N[v] - {u}) : v in V, u in N[v] } = 53
+[37mNew bounds:  LB = 27, UB = 52.
+[31mSolution (card = 27, weight = 27):
+  private of 4 is 7
+  private of 45 is 45
+  private of 54 is 54
+  private of 50 is 50
+  private of 47 is 47
+  private of 52 is 52
+  private of 49 is 49
+  private of 44 is 44
+  private of 46 is 46
+  private of 48 is 48
+  private of 30 is 30
+  private of 51 is 51
+  private of 26 is 26
+  private of 53 is 53
+  private of 22 is 22
+  private of 3 is 0
+  private of 25 is 25
+  private of 23 is 23
+  private of 27 is 27
+  private of 29 is 29
+  private of 32 is 32
+  private of 9 is 6
+  private of 10 is 8
+  private of 2 is 1
+  private of 28 is 28
+  private of 31 is 31
+  private of 24 is 24
+[37m[96mTime elapsed for heuristic = 0.04 sec.
+[37m[35m
+Complement of the transformed graph:
+  |V| = 276, |E| = 32604 (density = 85.913%).
+[37m[97mModel has 3136 variables and 704 constraints.
+[37mTried aggregator 1 time.
+MIP Presolve eliminated 170 rows and 0 columns.
+MIP Presolve modified 534 coefficients.
+Reduced MIP has 534 rows, 276 columns, and 5448 nonzeros.
+Reduced MIP has 276 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.00 sec. (5.59 ticks)
+Tried aggregator 1 time.
+Reduced MIP has 534 rows, 276 columns, and 5448 nonzeros.
+Reduced MIP has 276 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.00 sec. (3.69 ticks)
+Clique table members: 534.
+MIP emphasis: balance optimality and feasibility.
+MIP search method: dynamic search.
+Parallel mode: none, using 1 thread.
+Root relaxation solution time = 0.02 sec. (38.45 ticks)
+
+        Nodes                                         Cuts/
+   Node  Left     Objective  IInf  Best Integer    Best Bound    ItCnt     Gap
+
+      0     0       28.2375   209                     28.2375      814         
+      0     0       28.0481   115                  Cliques: 7     1029         
+      0     0       28.0128   192                ZeroHalf: 13     1121         
+
+Repeating presolve.
+Tried aggregator 1 time.
+MIP Presolve eliminated 147 rows and 74 columns.
+MIP Presolve modified 41 coefficients.
+Reduced MIP has 387 rows, 202 columns, and 2999 nonzeros.
+Reduced MIP has 202 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.00 sec. (2.96 ticks)
+Tried aggregator 1 time.
+Reduced MIP has 387 rows, 202 columns, and 2999 nonzeros.
+Reduced MIP has 202 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.00 sec. (2.07 ticks)
+Represolve time = 0.00 sec. (5.48 ticks)
+Clique table members: 387.
+MIP emphasis: balance optimality and feasibility.
+MIP search method: dynamic search.
+Parallel mode: none, using 1 thread.
+Root relaxation solution time = 0.01 sec. (19.79 ticks)
+
+        Nodes                                         Cuts/
+   Node  Left     Objective  IInf  Best Integer    Best Bound    ItCnt     Gap
+
+      0     0        cutoff                                       1640         
+
+Clique cuts applied:  5
+Zero-half cuts applied:  1
+
+Root node processing (before b&c):
+  Real time             =    0.09 sec. (122.00 ticks)
+Sequential b&c:
+  Real time             =    0.00 sec. (0.00 ticks)
+                          ------------
+Total (root+branch&cut) =    0.09 sec. (122.00 ticks)
+Number of nodes evaluated: 0
+[92mInfeasible. Therefore, the solution given by the heuristic is optimal!
+[37m[31mSolution (card = 27, weight = 27):
+  private of 4 is 7
+  private of 45 is 45
+  private of 54 is 54
+  private of 50 is 50
+  private of 47 is 47
+  private of 52 is 52
+  private of 49 is 49
+  private of 44 is 44
+  private of 46 is 46
+  private of 48 is 48
+  private of 30 is 30
+  private of 51 is 51
+  private of 26 is 26
+  private of 53 is 53
+  private of 22 is 22
+  private of 3 is 0
+  private of 25 is 25
+  private of 23 is 23
+  private of 27 is 27
+  private of 29 is 29
+  private of 32 is 32
+  private of 9 is 6
+  private of 10 is 8
+  private of 2 is 1
+  private of 28 is 28
+  private of 31 is 31
+  private of 24 is 24
+[37m[96mTime elapsed during optimization = 0.1 sec.
+[37mCoq certificate written in certificate.v
+Reading graph from output.dimacs...OK
+Searching for a single maximum size clique...
+  2/276 (max  1)  0.00 s  (0.00 s/round)
+ 11/276 (max  2)  0.00 s  (0.00 s/round)
+ 21/276 (max  3)  0.00 s  (0.00 s/round)
+ 29/276 (max  4)  0.00 s  (0.00 s/round)
+ 41/276 (max  5)  0.00 s  (0.00 s/round)
+ 47/276 (max  6)  0.00 s  (0.00 s/round)
+ 55/276 (max  7)  0.00 s  (0.00 s/round)
+ 61/276 (max  8)  0.00 s  (0.00 s/round)
+ 69/276 (max  9)  0.00 s  (0.00 s/round)
+ 83/276 (max 10)  0.00 s  (0.00 s/round)
+ 89/276 (max 11)  0.00 s  (0.00 s/round)
+ 99/276 (max 12)  0.00 s  (0.00 s/round)
+103/276 (max 13)  0.00 s  (0.00 s/round)
+110/276 (max 14)  0.00 s  (0.00 s/round)
+122/276 (max 15)  0.00 s  (0.00 s/round)
+132/276 (max 16)  0.00 s  (0.00 s/round)
+140/276 (max 17)  0.00 s  (0.00 s/round)
+146/276 (max 18)  0.00 s  (0.00 s/round)
+177/276 (max 18)  0.13 s  (0.00 s/round)
+179/276 (max 19)  0.18 s  (0.03 s/round)
+191/276 (max 20)  0.22 s  (0.00 s/round)
+201/276 (max 21)  0.25 s  (0.00 s/round)
+207/276 (max 22)  0.25 s  (0.00 s/round)
+208/276 (max 23)  0.25 s  (0.00 s/round)
+218/276 (max 24)  0.25 s  (0.00 s/round)
+224/276 (max 25)  0.25 s  (0.00 s/round)
+239/276 (max 25)  0.37 s  (0.01 s/round)
+241/276 (max 25)  0.49 s  (0.06 s/round)
+242/276 (max 25)  0.60 s  (0.11 s/round)
+243/276 (max 25)  0.71 s  (0.11 s/round)
+244/276 (max 25)  1.79 s  (1.08 s/round)
+245/276 (max 25)  2.08 s  (0.29 s/round)
+246/276 (max 25)  2.37 s  (0.28 s/round)
+247/276 (max 25)  3.01 s  (0.65 s/round)
+248/276 (max 25)  3.66 s  (0.64 s/round)
+249/276 (max 26)  3.66 s  (0.00 s/round)
+254/276 (max 27)  3.67 s  (0.00 s/round)
+276/276 (max 27)  3.67 s  (0.00 s/round)

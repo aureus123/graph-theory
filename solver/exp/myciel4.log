@@ -1,0 +1,82 @@
+[97mSOLVER - Computes the weighted upper irredundant/domination number.
+Made in 2018-2020 by Daniel Severin.
+[37m[33mStatistics:
+  |V| = 23, |E| = 71 (density = 28.0632%).
+  Initial bounds:  LB = 0, UB = 23.
+Diameter of G: 2
+[37m[97mClassic UB = w(V) - min { w(N[v] - {u}) : v in V, u in N[v] } = 19
+[37mNew bounds:  LB = 11, UB = 18.
+[31mSolution (card = 11, weight = 11):
+  private of 11 is 11
+  private of 12 is 12
+  private of 15 is 15
+  private of 17 is 17
+  private of 16 is 16
+  private of 20 is 20
+  private of 19 is 19
+  private of 18 is 18
+  private of 14 is 14
+  private of 21 is 21
+  private of 13 is 13
+[37m[96mTime elapsed for heuristic = 0 sec.
+[37m[35m
+Complement of the transformed graph:
+  |V| = 165, |E| = 6204 (density = 45.8537%).
+[37m[97mModel has 529 variables and 506 constraints.
+[37mTried aggregator 1 time.
+MIP Presolve eliminated 151 rows and 0 columns.
+MIP Presolve modified 355 coefficients.
+Reduced MIP has 355 rows, 165 columns, and 6249 nonzeros.
+Reduced MIP has 165 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.01 sec. (12.58 ticks)
+Tried aggregator 1 time.
+Reduced MIP has 355 rows, 165 columns, and 6249 nonzeros.
+Reduced MIP has 165 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.00 sec. (4.92 ticks)
+Clique table members: 355.
+MIP emphasis: balance optimality and feasibility.
+MIP search method: dynamic search.
+Parallel mode: none, using 1 thread.
+Root relaxation solution time = 0.00 sec. (4.05 ticks)
+
+        Nodes                                         Cuts/
+   Node  Left     Objective  IInf  Best Integer    Best Bound    ItCnt     Gap
+
+      0     0        cutoff                                        142         
+
+Root node processing (before b&c):
+  Real time             =    0.02 sec. (22.58 ticks)
+Sequential b&c:
+  Real time             =    0.00 sec. (0.00 ticks)
+                          ------------
+Total (root+branch&cut) =    0.02 sec. (22.58 ticks)
+Number of nodes evaluated: 0
+[92mInfeasible. Therefore, the solution given by the heuristic is optimal!
+[37m[31mSolution (card = 11, weight = 11):
+  private of 11 is 11
+  private of 12 is 12
+  private of 15 is 15
+  private of 17 is 17
+  private of 16 is 16
+  private of 20 is 20
+  private of 19 is 19
+  private of 18 is 18
+  private of 14 is 14
+  private of 21 is 21
+  private of 13 is 13
+[37m[96mTime elapsed during optimization = 0.02 sec.
+[37mCoq certificate written in certificate.v
+Reading graph from output.dimacs...OK
+Searching for a single maximum size clique...
+  2/165 (max  1)  0.00 s  (0.00 s/round)
+ 15/165 (max  2)  0.00 s  (0.00 s/round)
+ 24/165 (max  3)  0.00 s  (0.00 s/round)
+ 36/165 (max  4)  0.00 s  (0.00 s/round)
+ 47/165 (max  5)  0.00 s  (0.00 s/round)
+ 67/165 (max  6)  0.00 s  (0.00 s/round)
+ 80/165 (max  7)  0.00 s  (0.00 s/round)
+ 91/165 (max  8)  0.00 s  (0.00 s/round)
+123/165 (max  9)  0.00 s  (0.00 s/round)
+135/165 (max 10)  0.00 s  (0.00 s/round)
+161/165 (max 11)  0.00 s  (0.00 s/round)
+165/165 (max 11)  0.00 s  (0.00 s/round)

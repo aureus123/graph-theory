@@ -1,0 +1,184 @@
+[97mSOLVER - Computes the weighted upper irredundant/domination number.
+Made in 2018-2020 by Daniel Severin.
+[37m[33mStatistics:
+  |V| = 88, |E| = 146 (density = 3.814%).
+  Initial bounds:  LB = 0, UB = 88.
+[37mDiameter of G: 13
+[97mClassic UB = w(V) - min { w(N[v] - {u}) : v in V, u in N[v] } = 85
+[37mNew bounds:  LB = 33, UB = 85.
+[31mSolution (card = 33, weight = 33):
+  private of 36 is 26
+  private of 40 is 41
+  private of 54 is 52
+  private of 82 is 83
+  private of 34 is 35
+  private of 62 is 37
+  private of 63 is 71
+  private of 17 is 5
+  private of 16 is 0
+  private of 61 is 15
+  private of 25 is 27
+  private of 13 is 38
+  private of 79 is 80
+  private of 3 is 2
+  private of 47 is 44
+  private of 46 is 43
+  private of 9 is 7
+  private of 14 is 49
+  private of 4 is 6
+  private of 1 is 24
+  private of 75 is 74
+  private of 85 is 86
+  private of 21 is 73
+  private of 56 is 55
+  private of 65 is 64
+  private of 31 is 32
+  private of 23 is 22
+  private of 29 is 28
+  private of 76 is 77
+  private of 60 is 10
+  private of 58 is 11
+  private of 69 is 51
+  private of 67 is 50
+[37m[96mTime elapsed for heuristic = 0.26 sec.
+[37m[35m
+Complement of the transformed graph:
+  |V| = 380, |E| = 67216 (density = 93.3426%).
+[37m[97mModel has 7744 variables and 722 constraints.
+[37mTried aggregator 1 time.
+MIP Presolve eliminated 473 rows and 112 columns.
+MIP Presolve modified 249 coefficients.
+Reduced MIP has 249 rows, 268 columns, and 2088 nonzeros.
+Reduced MIP has 268 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.00 sec. (2.93 ticks)
+Tried aggregator 1 time.
+Reduced MIP has 249 rows, 268 columns, and 2088 nonzeros.
+Reduced MIP has 268 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.00 sec. (1.32 ticks)
+Clique table members: 249.
+MIP emphasis: balance optimality and feasibility.
+MIP search method: dynamic search.
+Parallel mode: none, using 1 thread.
+Root relaxation solution time = 0.01 sec. (8.05 ticks)
+
+        Nodes                                         Cuts/
+   Node  Left     Objective  IInf  Best Integer    Best Bound    ItCnt     Gap
+
+      0     0       35.2756   146                     35.2756      496         
+      0     0       34.8125   115                    Cuts: 49      703         
+      0     0       34.6667   152                    Cuts: 35      883         
+      0     0       34.5690   140                    Cuts: 27     1005         
+      0     0       34.5000   147                    Cuts: 37     1113         
+      0     0       34.4924   165                    Cuts: 38     1266         
+      0     0       34.4045   164                    Cuts: 20     1375         
+      0     0       34.3250   163                    Cuts: 16     1474         
+      0     0       34.2887   171                    Cuts: 31     1518         
+      0     0       34.2365   180                    Cuts: 23     1586         
+      0     0       34.2300   186                    Cuts: 14     1608         
+      0     0       34.2033   154                    Cuts: 17     1655         
+      0     0       34.1726   185                    Cuts: 13     1736         
+      0     0       34.1361   183                ZeroHalf: 11     1826         
+      0     0       34.1281   185                    Cuts: 13     1879         
+      0     0       34.1088   190                    Cuts: 10     1932         
+      0     0       34.1016   187                    Cuts: 13     1972         
+      0     0       34.0717   192                    Cuts: 15     2024         
+      0     0        cutoff                                       2064         
+Elapsed time = 0.15 sec. (147.63 ticks, tree = 0.01 MB, solutions = 0)
+
+Clique cuts applied:  45
+Zero-half cuts applied:  30
+
+Root node processing (before b&c):
+  Real time             =    0.15 sec. (147.63 ticks)
+Sequential b&c:
+  Real time             =    0.00 sec. (0.00 ticks)
+                          ------------
+Total (root+branch&cut) =    0.15 sec. (147.63 ticks)
+Number of nodes evaluated: 0
+[92mInfeasible. Therefore, the solution given by the heuristic is optimal!
+[37m[31mSolution (card = 33, weight = 33):
+  private of 36 is 26
+  private of 40 is 41
+  private of 54 is 52
+  private of 82 is 83
+  private of 34 is 35
+  private of 62 is 37
+  private of 63 is 71
+  private of 17 is 5
+  private of 16 is 0
+  private of 61 is 15
+  private of 25 is 27
+  private of 13 is 38
+  private of 79 is 80
+  private of 3 is 2
+  private of 47 is 44
+  private of 46 is 43
+  private of 9 is 7
+  private of 14 is 49
+  private of 4 is 6
+  private of 1 is 24
+  private of 75 is 74
+  private of 85 is 86
+  private of 21 is 73
+  private of 56 is 55
+  private of 65 is 64
+  private of 31 is 32
+  private of 23 is 22
+  private of 29 is 28
+  private of 76 is 77
+  private of 60 is 10
+  private of 58 is 11
+  private of 69 is 51
+  private of 67 is 50
+[37m[96mTime elapsed during optimization = 0.14 sec.
+[37mCoq certificate written in certificate.v
+Reading graph from output.dimacs...OK
+Searching for a single maximum size clique...
+  2/380 (max  1)  0.00 s  (0.00 s/round)
+ 13/380 (max  2)  0.00 s  (0.00 s/round)
+ 27/380 (max  3)  0.00 s  (0.00 s/round)
+ 35/380 (max  4)  0.00 s  (0.00 s/round)
+ 47/380 (max  5)  0.00 s  (0.00 s/round)
+ 54/380 (max  6)  0.00 s  (0.00 s/round)
+ 66/380 (max  7)  0.00 s  (0.00 s/round)
+ 78/380 (max  8)  0.00 s  (0.00 s/round)
+ 88/380 (max  9)  0.00 s  (0.00 s/round)
+101/380 (max 10)  0.00 s  (0.00 s/round)
+114/380 (max 11)  0.00 s  (0.00 s/round)
+126/380 (max 12)  0.00 s  (0.00 s/round)
+135/380 (max 13)  0.00 s  (0.00 s/round)
+147/380 (max 14)  0.00 s  (0.00 s/round)
+160/380 (max 15)  0.07 s  (0.00 s/round)
+175/380 (max 16)  0.17 s  (0.01 s/round)
+188/380 (max 17)  0.17 s  (0.00 s/round)
+199/380 (max 18)  0.53 s  (0.03 s/round)
+204/380 (max 18)  1.05 s  (0.10 s/round)
+205/380 (max 19)  1.09 s  (0.04 s/round)
+213/380 (max 19)  8.19 s  (0.89 s/round)
+214/380 (max 19)  14.31 s  (6.12 s/round)
+215/380 (max 19)  21.86 s  (7.55 s/round)
+216/380 (max 19)  29.00 s  (7.14 s/round)
+217/380 (max 19)  35.45 s  (6.45 s/round)
+218/380 (max 19)  43.17 s  (7.72 s/round)
+219/380 (max 19)  50.96 s  (7.79 s/round)
+220/380 (max 19)  58.54 s  (7.58 s/round)
+221/380 (max 20)  61.62 s  (3.08 s/round)
+228/380 (max 21)  61.63 s  (0.00 s/round)
+240/380 (max 22)  61.64 s  (0.00 s/round)
+252/380 (max 22)  106.26 s  (3.72 s/round)
+253/380 (max 23)  106.30 s  (0.04 s/round)
+265/380 (max 24)  106.34 s  (0.00 s/round)
+271/380 (max 24)  106.63 s  (0.05 s/round)
+272/380 (max 24)  106.92 s  (0.29 s/round)
+273/380 (max 24)  119.55 s  (12.63 s/round)
+274/380 (max 25)  119.55 s  (0.00 s/round)
+277/380 (max 26)  119.55 s  (0.00 s/round)
+288/380 (max 27)  119.55 s  (0.00 s/round)
+308/380 (max 28)  119.55 s  (0.00 s/round)
+314/380 (max 29)  119.59 s  (0.01 s/round)
+327/380 (max 30)  119.63 s  (0.00 s/round)
+340/380 (max 30)  2082.74 s  (151.01 s/round)
+341/380 (max 31)  2152.07 s  (69.34 s/round)
+352/380 (max 31)  2429.48 s  (25.22 s/round)
+353/380 (max 31)  2706.78 s  (277.30 s/round)
+354/380 (max 31)  2993.69 s  (286.91 s/round)

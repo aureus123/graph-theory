@@ -1,0 +1,210 @@
+[97mSOLVER - Computes the weighted upper irredundant/domination number.
+Made in 2018-2020 by Daniel Severin.
+[37m[33mStatistics:
+  |V| = 95, |E| = 755 (density = 16.9093%).
+  Initial bounds:  LB = 0, UB = 95.
+[37mDiameter of G: 2
+[97mClassic UB = w(V) - min { w(N[v] - {u}) : v in V, u in N[v] } = 89
+[37mNew bounds:  LB = 47, UB = 88.
+[31mSolution (card = 47, weight = 47):
+  private of 47 is 47
+  private of 48 is 48
+  private of 80 is 80
+  private of 74 is 74
+  private of 57 is 57
+  private of 51 is 51
+  private of 70 is 70
+  private of 81 is 81
+  private of 72 is 72
+  private of 59 is 59
+  private of 85 is 85
+  private of 71 is 71
+  private of 84 is 84
+  private of 73 is 73
+  private of 63 is 63
+  private of 86 is 86
+  private of 67 is 67
+  private of 90 is 90
+  private of 64 is 64
+  private of 87 is 87
+  private of 88 is 88
+  private of 62 is 62
+  private of 91 is 91
+  private of 65 is 65
+  private of 83 is 83
+  private of 68 is 68
+  private of 77 is 77
+  private of 79 is 79
+  private of 78 is 78
+  private of 82 is 82
+  private of 89 is 89
+  private of 58 is 58
+  private of 92 is 92
+  private of 66 is 66
+  private of 60 is 60
+  private of 61 is 61
+  private of 56 is 56
+  private of 76 is 76
+  private of 53 is 53
+  private of 52 is 52
+  private of 75 is 75
+  private of 49 is 49
+  private of 69 is 69
+  private of 55 is 55
+  private of 54 is 54
+  private of 93 is 93
+  private of 50 is 50
+[37m[96mTime elapsed for heuristic = 0.57 sec.
+[37m[35m
+Complement of the transformed graph:
+  |V| = 1605, |E| = 748604 (density = 58.1571%).
+[37m[97mModel has 9025 variables and 8930 constraints.
+[37mTried aggregator 1 time.
+MIP Presolve eliminated 3381 rows and 0 columns.
+MIP Presolve modified 1910 coefficients.
+Reduced MIP has 5549 rows, 1605 columns, and 215689 nonzeros.
+Reduced MIP has 1605 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 1.42 sec. (2428.51 ticks)
+Tried aggregator 1 time.
+Reduced MIP has 5549 rows, 1605 columns, and 215689 nonzeros.
+Reduced MIP has 1605 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.20 sec. (260.14 ticks)
+Clique table members: 5549.
+MIP emphasis: balance optimality and feasibility.
+MIP search method: dynamic search.
+Parallel mode: none, using 1 thread.
+Root relaxation solution time = 0.92 sec. (1502.05 ticks)
+
+        Nodes                                         Cuts/
+   Node  Left     Objective  IInf  Best Integer    Best Bound    ItCnt     Gap
+
+      0     0       50.1845   440                     50.1845     4085         
+      0     0        cutoff                                       6047         
+Elapsed time = 3.78 sec. (6039.27 ticks, tree = 0.01 MB, solutions = 0)
+
+Clique cuts applied:  207
+Zero-half cuts applied:  9
+
+Root node processing (before b&c):
+  Real time             =    3.78 sec. (6039.28 ticks)
+Sequential b&c:
+  Real time             =    0.00 sec. (0.00 ticks)
+                          ------------
+Total (root+branch&cut) =    3.78 sec. (6039.28 ticks)
+Number of nodes evaluated: 0
+[92mInfeasible. Therefore, the solution given by the heuristic is optimal!
+[37m[31mSolution (card = 47, weight = 47):
+  private of 47 is 47
+  private of 48 is 48
+  private of 80 is 80
+  private of 74 is 74
+  private of 57 is 57
+  private of 51 is 51
+  private of 70 is 70
+  private of 81 is 81
+  private of 72 is 72
+  private of 59 is 59
+  private of 85 is 85
+  private of 71 is 71
+  private of 84 is 84
+  private of 73 is 73
+  private of 63 is 63
+  private of 86 is 86
+  private of 67 is 67
+  private of 90 is 90
+  private of 64 is 64
+  private of 87 is 87
+  private of 88 is 88
+  private of 62 is 62
+  private of 91 is 91
+  private of 65 is 65
+  private of 83 is 83
+  private of 68 is 68
+  private of 77 is 77
+  private of 79 is 79
+  private of 78 is 78
+  private of 82 is 82
+  private of 89 is 89
+  private of 58 is 58
+  private of 92 is 92
+  private of 66 is 66
+  private of 60 is 60
+  private of 61 is 61
+  private of 56 is 56
+  private of 76 is 76
+  private of 53 is 53
+  private of 52 is 52
+  private of 75 is 75
+  private of 49 is 49
+  private of 69 is 69
+  private of 55 is 55
+  private of 54 is 54
+  private of 93 is 93
+  private of 50 is 50
+[37m[96mTime elapsed during optimization = 3.79 sec.
+[37mCoq certificate written in certificate.v
+Reading graph from output.dimacs...OK
+Searching for a single maximum size clique...
+  2/1605 (max  1)  0.01 s  (0.00 s/round)
+ 41/1605 (max  2)  0.01 s  (0.00 s/round)
+ 81/1605 (max  3)  0.01 s  (0.00 s/round)
+ 95/1605 (max  4)  0.01 s  (0.00 s/round)
+160/1605 (max  5)  0.01 s  (0.00 s/round)
+215/1605 (max  6)  0.01 s  (0.00 s/round)
+245/1605 (max  7)  0.01 s  (0.00 s/round)
+308/1605 (max  8)  0.01 s  (0.00 s/round)
+356/1605 (max  9)  0.01 s  (0.00 s/round)
+417/1605 (max 10)  0.01 s  (0.00 s/round)
+456/1605 (max 11)  0.01 s  (0.00 s/round)
+477/1605 (max 12)  0.01 s  (0.00 s/round)
+513/1605 (max 13)  0.01 s  (0.00 s/round)
+532/1605 (max 14)  0.01 s  (0.00 s/round)
+607/1605 (max 15)  0.01 s  (0.00 s/round)
+671/1605 (max 16)  0.01 s  (0.00 s/round)
+692/1605 (max 17)  0.01 s  (0.00 s/round)
+752/1605 (max 18)  0.02 s  (0.00 s/round)
+802/1605 (max 19)  0.02 s  (0.00 s/round)
+834/1605 (max 20)  0.02 s  (0.00 s/round)
+867/1605 (max 21)  0.02 s  (0.00 s/round)
+918/1605 (max 22)  0.02 s  (0.00 s/round)
+951/1605 (max 23)  0.03 s  (0.00 s/round)
+1003/1605 (max 24)  0.04 s  (0.00 s/round)
+1073/1605 (max 25)  0.06 s  (0.00 s/round)
+1087/1605 (max 26)  0.07 s  (0.00 s/round)
+1154/1605 (max 26)  0.17 s  (0.00 s/round)
+1155/1605 (max 27)  0.18 s  (0.00 s/round)
+1168/1605 (max 28)  0.19 s  (0.00 s/round)
+1217/1605 (max 28)  0.30 s  (0.00 s/round)
+1230/1605 (max 28)  0.41 s  (0.01 s/round)
+1235/1605 (max 28)  0.73 s  (0.06 s/round)
+1238/1605 (max 28)  0.84 s  (0.04 s/round)
+1242/1605 (max 28)  0.96 s  (0.03 s/round)
+1246/1605 (max 28)  1.08 s  (0.03 s/round)
+1250/1605 (max 28)  1.21 s  (0.03 s/round)
+1256/1605 (max 28)  1.37 s  (0.03 s/round)
+1269/1605 (max 28)  1.47 s  (0.01 s/round)
+1282/1605 (max 29)  1.61 s  (0.01 s/round)
+1301/1605 (max 30)  1.64 s  (0.00 s/round)
+1325/1605 (max 31)  1.66 s  (0.00 s/round)
+1345/1605 (max 32)  1.68 s  (0.00 s/round)
+1365/1605 (max 33)  1.71 s  (0.00 s/round)
+1405/1605 (max 34)  1.78 s  (0.00 s/round)
+1417/1605 (max 35)  1.83 s  (0.00 s/round)
+1432/1605 (max 36)  1.93 s  (0.01 s/round)
+1448/1605 (max 36)  2.07 s  (0.01 s/round)
+1457/1605 (max 37)  2.23 s  (0.02 s/round)
+1478/1605 (max 38)  2.26 s  (0.00 s/round)
+1491/1605 (max 39)  2.32 s  (0.01 s/round)
+1504/1605 (max 40)  2.52 s  (0.02 s/round)
+1508/1605 (max 41)  2.72 s  (0.05 s/round)
+1510/1605 (max 42)  2.72 s  (0.00 s/round)
+1530/1605 (max 43)  2.72 s  (0.00 s/round)
+1556/1605 (max 43)  2.82 s  (0.00 s/round)
+1564/1605 (max 44)  2.88 s  (0.01 s/round)
+1574/1605 (max 44)  3.34 s  (0.05 s/round)
+1576/1605 (max 45)  3.43 s  (0.05 s/round)
+1588/1605 (max 45)  3.53 s  (0.01 s/round)
+1590/1605 (max 46)  3.53 s  (0.00 s/round)
+1597/1605 (max 47)  3.53 s  (0.00 s/round)
+1602/1605 (max 47)  3.67 s  (0.03 s/round)
+1605/1605 (max 47)  5.32 s  (0.55 s/round)

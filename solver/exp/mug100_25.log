@@ -1,0 +1,190 @@
+[97mSOLVER - Computes the weighted upper irredundant/domination number.
+Made in 2018-2020 by Daniel Severin.
+[37m[33mStatistics:
+  |V| = 100, |E| = 166 (density = 3.35354%).
+  Initial bounds:  LB = 0, UB = 100.
+[37mDiameter of G: 15
+[97mClassic UB = w(V) - min { w(N[v] - {u}) : v in V, u in N[v] } = 97
+[37mNew bounds:  LB = 36, UB = 97.
+[31mSolution (card = 36, weight = 36):
+  private of 5 is 8
+  private of 70 is 71
+  private of 26 is 7
+  private of 27 is 63
+  private of 76 is 77
+  private of 91 is 92
+  private of 94 is 95
+  private of 6 is 2
+  private of 75 is 73
+  private of 17 is 10
+  private of 47 is 46
+  private of 4 is 3
+  private of 16 is 24
+  private of 18 is 20
+  private of 25 is 69
+  private of 55 is 40
+  private of 57 is 56
+  private of 9 is 67
+  private of 99 is 97
+  private of 37 is 42
+  private of 23 is 22
+  private of 38 is 34
+  private of 28 is 15
+  private of 32 is 1
+  private of 30 is 44
+  private of 81 is 49
+  private of 82 is 62
+  private of 86 is 85
+  private of 65 is 50
+  private of 79 is 51
+  private of 29 is 36
+  private of 83 is 61
+  private of 88 is 88
+  private of 59 is 13
+  private of 58 is 11
+  private of 52 is 52
+[37m[96mTime elapsed for heuristic = 0.45 sec.
+[37m[35m
+Complement of the transformed graph:
+  |V| = 432, |E| = 87648 (density = 94.148%).
+[37m[97mModel has 10000 variables and 820 constraints.
+[37mTried aggregator 1 time.
+MIP Presolve eliminated 534 rows and 119 columns.
+MIP Presolve modified 286 coefficients.
+Reduced MIP has 286 rows, 313 columns, and 2486 nonzeros.
+Reduced MIP has 313 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.00 sec. (3.36 ticks)
+Tried aggregator 1 time.
+Reduced MIP has 286 rows, 313 columns, and 2486 nonzeros.
+Reduced MIP has 313 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.00 sec. (1.60 ticks)
+Clique table members: 286.
+MIP emphasis: balance optimality and feasibility.
+MIP search method: dynamic search.
+Parallel mode: none, using 1 thread.
+Root relaxation solution time = 0.01 sec. (7.40 ticks)
+
+        Nodes                                         Cuts/
+   Node  Left     Objective  IInf  Best Integer    Best Bound    ItCnt     Gap
+
+      0     0       40.2500   107                     40.2500      446         
+      0     0       39.6250   129                    Cuts: 44      591         
+      0     0       39.3333   104                    Cuts: 62      722         
+      0     0       39.1825   163                    Cuts: 40      918         
+      0     0       39.0116   173                    Cuts: 24     1010         
+      0     0       38.8178   169                    Cuts: 22     1114         
+      0     0       38.7600   179                    Cuts: 11     1194         
+      0     0       38.7215   177                    Cuts: 20     1283         
+      0     0       38.6363   187                    Cuts: 21     1357         
+      0     0       38.5952   206                    Cuts: 13     1443         
+      0     0       38.5890   199                    Cuts: 10     1476         
+      0     0       38.5668   209                    Cuts: 12     1559         
+      0     0       38.5630   206                     Cuts: 5     1590         
+      0     0       38.5428   209                     Cuts: 8     1661         
+      0     0       38.5290   226                    Cuts: 25     1747         
+      0     0       38.5209   224                     Cuts: 9     1821         
+      0     0       38.5028   216                     Cuts: 7     1920         
+      0     0       38.4828   194                    Cuts: 11     2007         
+      0     0       38.4744   189                 ZeroHalf: 7     2057         
+      0     0       38.4631   211                     Cuts: 9     2131         
+      0     0       38.4596   197                    Cuts: 10     2183         
+      0     2       38.4596   192                     38.4596     2183         
+Elapsed time = 0.18 sec. (188.72 ticks, tree = 0.01 MB, solutions = 0)
+    183   131       37.4044   132                     38.0135     9185         
+*   414     1      integral     0       37.0000       37.6660    15296    1.80%
+Found incumbent of value 37.000000 after 0.49 sec. (643.83 ticks)
+
+Clique cuts applied:  42
+Zero-half cuts applied:  37
+
+Root node processing (before b&c):
+  Real time             =    0.18 sec. (188.68 ticks)
+Sequential b&c:
+  Real time             =    0.30 sec. (455.43 ticks)
+                          ------------
+Total (root+branch&cut) =    0.49 sec. (644.11 ticks)
+Number of nodes evaluated: 415
+[92mOptimal solution found! :)
+[37m[31mSolution (card = 37, weight = 37):
+  private of 3 is 3
+  private of 5 is 8
+  private of 6 is 2
+  private of 9 is 67
+  private of 11 is 58
+  private of 12 is 10
+  private of 13 is 59
+  private of 15 is 28
+  private of 18 is 17
+  private of 20 is 19
+  private of 22 is 24
+  private of 23 is 98
+  private of 25 is 69
+  private of 26 is 7
+  private of 27 is 63
+  private of 32 is 32
+  private of 34 is 34
+  private of 35 is 29
+  private of 37 is 37
+  private of 40 is 55
+  private of 44 is 30
+  private of 47 is 48
+  private of 49 is 97
+  private of 53 is 52
+  private of 56 is 57
+  private of 64 is 65
+  private of 66 is 50
+  private of 71 is 68
+  private of 74 is 73
+  private of 76 is 78
+  private of 79 is 51
+  private of 82 is 62
+  private of 83 is 61
+  private of 85 is 87
+  private of 88 is 89
+  private of 92 is 92
+  private of 95 is 94
+[37m[96mTime elapsed during optimization = 0.5 sec.
+[37mCoq certificate written in certificate.v
+Reading graph from output.dimacs...OK
+Searching for a single maximum size clique...
+  2/432 (max  1)  0.00 s  (0.00 s/round)
+ 14/432 (max  2)  0.00 s  (0.00 s/round)
+ 22/432 (max  3)  0.00 s  (0.00 s/round)
+ 33/432 (max  4)  0.00 s  (0.00 s/round)
+ 41/432 (max  5)  0.00 s  (0.00 s/round)
+ 49/432 (max  6)  0.00 s  (0.00 s/round)
+ 70/432 (max  7)  0.00 s  (0.00 s/round)
+ 81/432 (max  8)  0.00 s  (0.00 s/round)
+ 87/432 (max  9)  0.00 s  (0.00 s/round)
+105/432 (max 10)  0.00 s  (0.00 s/round)
+113/432 (max 11)  0.00 s  (0.00 s/round)
+127/432 (max 12)  0.00 s  (0.00 s/round)
+132/432 (max 13)  0.00 s  (0.00 s/round)
+140/432 (max 14)  0.00 s  (0.00 s/round)
+150/432 (max 15)  0.00 s  (0.00 s/round)
+161/432 (max 16)  0.00 s  (0.00 s/round)
+180/432 (max 16)  0.13 s  (0.01 s/round)
+181/432 (max 16)  0.27 s  (0.14 s/round)
+182/432 (max 17)  0.27 s  (0.00 s/round)
+191/432 (max 18)  0.27 s  (0.00 s/round)
+202/432 (max 19)  0.27 s  (0.00 s/round)
+215/432 (max 20)  0.27 s  (0.00 s/round)
+228/432 (max 21)  0.27 s  (0.00 s/round)
+243/432 (max 22)  0.27 s  (0.00 s/round)
+254/432 (max 23)  0.27 s  (0.00 s/round)
+272/432 (max 24)  0.29 s  (0.00 s/round)
+285/432 (max 24)  6.33 s  (0.46 s/round)
+286/432 (max 24)  12.44 s  (6.11 s/round)
+287/432 (max 24)  139.24 s  (126.81 s/round)
+288/432 (max 25)  141.54 s  (2.30 s/round)
+293/432 (max 26)  146.84 s  (1.06 s/round)
+304/432 (max 27)  149.13 s  (0.21 s/round)
+317/432 (max 27)  379.66 s  (17.73 s/round)
+318/432 (max 27)  608.73 s  (229.07 s/round)
+319/432 (max 27)  838.48 s  (229.75 s/round)
+320/432 (max 27)  1067.86 s  (229.38 s/round)
+321/432 (max 27)  1746.96 s  (679.10 s/round)
+322/432 (max 27)  2433.40 s  (686.43 s/round)
+323/432 (max 27)  3069.99 s  (636.60 s/round)
+324/432 (max 28)  3301.29 s  (231.30 s/round)
+334/432 (max 29)  3307.13 s  (0.58 s/round)

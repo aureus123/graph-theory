@@ -839,8 +839,8 @@ int main(int argc, char **argv)
 	cout << "  Initial bounds:  LB = " << LB << ", UB = " << UB << "." << endl;
 
 	/* check if G is connected */
-	if (connected() == false) bye("G is not connected, please decompose it first!");
 	set_color(7);
+	if (connected() == false) cout << "G is not connected, please decompose it first!" << endl;
 
 	/* run heuristic */
 	int UB_heur = 0, LB_heur = 0;

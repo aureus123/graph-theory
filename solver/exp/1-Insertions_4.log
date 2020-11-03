@@ -1,0 +1,250 @@
+[97mSOLVER - Computes the weighted upper irredundant/domination number.
+Made in 2018-2020 by Daniel Severin.
+[37m[33mStatistics:
+  |V| = 67, |E| = 232 (density = 10.493%).
+  Initial bounds:  LB = 0, UB = 67.
+Diameter of G: 3
+[37m[97mClassic UB = w(V) - min { w(N[v] - {u}) : v in V, u in N[v] } = 63
+[37mNew bounds:  LB = 32, UB = 62.
+[31mSolution (card = 32, weight = 32):
+  private of 0 is 0
+  private of 57 is 57
+  private of 44 is 44
+  private of 58 is 58
+  private of 60 is 60
+  private of 64 is 64
+  private of 46 is 46
+  private of 50 is 50
+  private of 2 is 2
+  private of 16 is 16
+  private of 53 is 53
+  private of 62 is 62
+  private of 20 is 20
+  private of 63 is 63
+  private of 14 is 14
+  private of 51 is 51
+  private of 18 is 18
+  private of 61 is 61
+  private of 59 is 59
+  private of 6 is 4
+  private of 55 is 55
+  private of 19 is 19
+  private of 48 is 48
+  private of 17 is 17
+  private of 15 is 15
+  private of 65 is 65
+  private of 56 is 56
+  private of 52 is 52
+  private of 47 is 47
+  private of 49 is 49
+  private of 45 is 45
+  private of 54 is 54
+[37m[96mTime elapsed for heuristic = 0.11 sec.
+[37m[35m
+Complement of the transformed graph:
+  |V| = 531, |E| = 109083 (density = 77.5205%).
+[37m[97mModel has 4489 variables and 2066 constraints.
+[37mTried aggregator 1 time.
+MIP Presolve eliminated 754 rows and 0 columns.
+MIP Presolve modified 1312 coefficients.
+Reduced MIP has 1312 rows, 531 columns, and 26322 nonzeros.
+Reduced MIP has 531 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.22 sec. (71.37 ticks)
+Tried aggregator 1 time.
+Reduced MIP has 1312 rows, 531 columns, and 26322 nonzeros.
+Reduced MIP has 531 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.05 sec. (22.61 ticks)
+Clique table members: 1312.
+MIP emphasis: balance optimality and feasibility.
+MIP search method: dynamic search.
+Parallel mode: none, using 1 thread.
+Root relaxation solution time = 0.17 sec. (148.01 ticks)
+
+        Nodes                                         Cuts/
+   Node  Left     Objective  IInf  Best Integer    Best Bound    ItCnt     Gap
+
+      0     0       33.5032   244                     33.5032     1573         
+      0     0       33.1272   239                    Cuts: 58     2161         
+      0     0       33.0715   236                     Cuts: 8     2410         
+
+Repeating presolve.
+Tried aggregator 1 time.
+MIP Presolve eliminated 317 rows and 224 columns.
+MIP Presolve modified 71 coefficients.
+Reduced MIP has 995 rows, 307 columns, and 11127 nonzeros.
+Reduced MIP has 307 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.01 sec. (16.97 ticks)
+Tried aggregator 1 time.
+Reduced MIP has 995 rows, 307 columns, and 11127 nonzeros.
+Reduced MIP has 307 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.01 sec. (8.73 ticks)
+Represolve time = 0.02 sec. (27.31 ticks)
+Clique table members: 995.
+MIP emphasis: balance optimality and feasibility.
+MIP search method: dynamic search.
+Parallel mode: none, using 1 thread.
+Root relaxation solution time = 0.06 sec. (94.58 ticks)
+
+        Nodes                                         Cuts/
+   Node  Left     Objective  IInf  Best Integer    Best Bound    ItCnt     Gap
+
+      0     0       33.0615   239                     33.0615     3595         
+      0     0        cutoff                                       3762         
+Elapsed time = 1.07 sec. (631.97 ticks, tree = 0.01 MB, solutions = 0)
+
+Clique cuts applied:  20
+Zero-half cuts applied:  13
+
+Root node processing (before b&c):
+  Real time             =    1.07 sec. (631.97 ticks)
+Sequential b&c:
+  Real time             =    0.00 sec. (0.00 ticks)
+                          ------------
+Total (root+branch&cut) =    1.07 sec. (631.97 ticks)
+Number of nodes evaluated: 0
+[92mInfeasible. Therefore, the solution given by the heuristic is optimal!
+[37m[31mSolution (card = 32, weight = 32):
+  private of 0 is 0
+  private of 57 is 57
+  private of 44 is 44
+  private of 58 is 58
+  private of 60 is 60
+  private of 64 is 64
+  private of 46 is 46
+  private of 50 is 50
+  private of 2 is 2
+  private of 16 is 16
+  private of 53 is 53
+  private of 62 is 62
+  private of 20 is 20
+  private of 63 is 63
+  private of 14 is 14
+  private of 51 is 51
+  private of 18 is 18
+  private of 61 is 61
+  private of 59 is 59
+  private of 6 is 4
+  private of 55 is 55
+  private of 19 is 19
+  private of 48 is 48
+  private of 17 is 17
+  private of 15 is 15
+  private of 65 is 65
+  private of 56 is 56
+  private of 52 is 52
+  private of 47 is 47
+  private of 49 is 49
+  private of 45 is 45
+  private of 54 is 54
+[37m[96mTime elapsed during optimization = 0.65 sec.
+[37mCoq certificate written in certificate.v
+Reading graph from output.dimacs...OK
+Searching for a single maximum size clique...
+  2/531 (max  1)  0.00 s  (0.00 s/round)
+ 14/531 (max  2)  0.00 s  (0.00 s/round)
+ 25/531 (max  3)  0.00 s  (0.00 s/round)
+ 36/531 (max  4)  0.00 s  (0.00 s/round)
+ 49/531 (max  5)  0.00 s  (0.00 s/round)
+ 66/531 (max  6)  0.00 s  (0.00 s/round)
+ 79/531 (max  7)  0.00 s  (0.00 s/round)
+ 90/531 (max  8)  0.00 s  (0.00 s/round)
+105/531 (max  9)  0.00 s  (0.00 s/round)
+125/531 (max 10)  0.00 s  (0.00 s/round)
+145/531 (max 11)  0.00 s  (0.00 s/round)
+162/531 (max 12)  0.00 s  (0.00 s/round)
+180/531 (max 13)  0.00 s  (0.00 s/round)
+204/531 (max 14)  0.00 s  (0.00 s/round)
+216/531 (max 15)  0.00 s  (0.00 s/round)
+233/531 (max 16)  0.00 s  (0.00 s/round)
+242/531 (max 17)  0.00 s  (0.00 s/round)
+273/531 (max 18)  0.02 s  (0.00 s/round)
+292/531 (max 19)  0.09 s  (0.00 s/round)
+313/531 (max 19)  0.20 s  (0.01 s/round)
+318/531 (max 19)  0.32 s  (0.02 s/round)
+321/531 (max 19)  0.44 s  (0.04 s/round)
+324/531 (max 19)  0.59 s  (0.05 s/round)
+325/531 (max 19)  0.74 s  (0.15 s/round)
+327/531 (max 19)  0.94 s  (0.10 s/round)
+328/531 (max 19)  1.31 s  (0.37 s/round)
+329/531 (max 19)  1.51 s  (0.20 s/round)
+330/531 (max 19)  2.00 s  (0.48 s/round)
+331/531 (max 19)  2.42 s  (0.42 s/round)
+333/531 (max 19)  2.65 s  (0.12 s/round)
+335/531 (max 19)  2.86 s  (0.10 s/round)
+336/531 (max 19)  3.04 s  (0.18 s/round)
+337/531 (max 19)  3.22 s  (0.18 s/round)
+338/531 (max 19)  4.00 s  (0.78 s/round)
+339/531 (max 19)  4.37 s  (0.37 s/round)
+341/531 (max 19)  4.83 s  (0.23 s/round)
+342/531 (max 19)  5.49 s  (0.66 s/round)
+343/531 (max 19)  6.28 s  (0.79 s/round)
+344/531 (max 19)  6.95 s  (0.67 s/round)
+345/531 (max 19)  8.64 s  (1.69 s/round)
+346/531 (max 20)  9.03 s  (0.39 s/round)
+357/531 (max 20)  10.08 s  (0.10 s/round)
+358/531 (max 20)  10.53 s  (0.45 s/round)
+359/531 (max 20)  11.05 s  (0.52 s/round)
+360/531 (max 20)  12.56 s  (1.50 s/round)
+361/531 (max 20)  13.61 s  (1.05 s/round)
+362/531 (max 20)  14.06 s  (0.45 s/round)
+363/531 (max 20)  15.19 s  (1.13 s/round)
+364/531 (max 20)  16.42 s  (1.24 s/round)
+365/531 (max 20)  17.38 s  (0.96 s/round)
+366/531 (max 20)  18.12 s  (0.74 s/round)
+367/531 (max 20)  18.94 s  (0.83 s/round)
+368/531 (max 20)  19.70 s  (0.75 s/round)
+369/531 (max 20)  20.31 s  (0.61 s/round)
+370/531 (max 20)  20.88 s  (0.58 s/round)
+371/531 (max 20)  21.91 s  (1.02 s/round)
+372/531 (max 20)  22.86 s  (0.96 s/round)
+373/531 (max 20)  26.03 s  (3.17 s/round)
+374/531 (max 20)  31.80 s  (5.77 s/round)
+375/531 (max 21)  33.58 s  (1.77 s/round)
+388/531 (max 21)  35.18 s  (0.12 s/round)
+389/531 (max 21)  36.76 s  (1.59 s/round)
+390/531 (max 21)  37.49 s  (0.72 s/round)
+391/531 (max 22)  38.04 s  (0.55 s/round)
+407/531 (max 22)  38.18 s  (0.01 s/round)
+408/531 (max 22)  38.31 s  (0.13 s/round)
+410/531 (max 22)  38.65 s  (0.17 s/round)
+411/531 (max 22)  38.76 s  (0.10 s/round)
+412/531 (max 22)  38.93 s  (0.17 s/round)
+414/531 (max 22)  39.35 s  (0.21 s/round)
+416/531 (max 23)  39.53 s  (0.09 s/round)
+429/531 (max 23)  39.66 s  (0.01 s/round)
+430/531 (max 24)  39.68 s  (0.01 s/round)
+446/531 (max 25)  39.73 s  (0.00 s/round)
+476/531 (max 25)  40.01 s  (0.01 s/round)
+481/531 (max 25)  40.13 s  (0.02 s/round)
+483/531 (max 25)  40.57 s  (0.22 s/round)
+484/531 (max 25)  41.23 s  (0.66 s/round)
+485/531 (max 25)  41.85 s  (0.62 s/round)
+486/531 (max 25)  42.52 s  (0.67 s/round)
+487/531 (max 25)  42.75 s  (0.23 s/round)
+488/531 (max 25)  45.70 s  (2.95 s/round)
+489/531 (max 25)  45.93 s  (0.23 s/round)
+490/531 (max 25)  47.09 s  (1.17 s/round)
+491/531 (max 25)  48.38 s  (1.29 s/round)
+492/531 (max 25)  49.51 s  (1.13 s/round)
+493/531 (max 25)  50.81 s  (1.30 s/round)
+494/531 (max 25)  54.44 s  (3.64 s/round)
+495/531 (max 25)  57.66 s  (3.22 s/round)
+496/531 (max 25)  63.08 s  (5.42 s/round)
+497/531 (max 25)  66.07 s  (2.99 s/round)
+498/531 (max 25)  71.18 s  (5.11 s/round)
+499/531 (max 25)  76.29 s  (5.11 s/round)
+500/531 (max 25)  82.89 s  (6.61 s/round)
+501/531 (max 25)  84.38 s  (1.49 s/round)
+502/531 (max 25)  87.41 s  (3.03 s/round)
+503/531 (max 25)  92.07 s  (4.66 s/round)
+504/531 (max 25)  97.71 s  (5.64 s/round)
+505/531 (max 25)  105.86 s  (8.15 s/round)
+506/531 (max 25)  107.92 s  (2.06 s/round)
+507/531 (max 25)  109.08 s  (1.15 s/round)
+508/531 (max 26)  109.83 s  (0.75 s/round)
+509/531 (max 27)  110.16 s  (0.34 s/round)
+524/531 (max 28)  110.42 s  (0.02 s/round)
+525/531 (max 29)  110.67 s  (0.26 s/round)
+526/531 (max 30)  110.93 s  (0.25 s/round)
+527/531 (max 31)  111.10 s  (0.17 s/round)
+531/531 (max 32)  111.22 s  (0.03 s/round)

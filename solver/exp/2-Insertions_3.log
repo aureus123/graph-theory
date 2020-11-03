@@ -1,0 +1,102 @@
+[97mSOLVER - Computes the weighted upper irredundant/domination number.
+Made in 2018-2020 by Daniel Severin.
+[37m[33mStatistics:
+  |V| = 37, |E| = 72 (density = 10.8108%).
+  Initial bounds:  LB = 0, UB = 37.
+Diameter of G: 4
+[37m[97mClassic UB = w(V) - min { w(N[v] - {u}) : v in V, u in N[v] } = 34
+[37mNew bounds:  LB = 18, UB = 33.
+[31mSolution (card = 18, weight = 18):
+  private of 9 is 9
+  private of 31 is 31
+  private of 13 is 13
+  private of 34 is 34
+  private of 29 is 29
+  private of 30 is 30
+  private of 33 is 33
+  private of 16 is 16
+  private of 27 is 27
+  private of 15 is 15
+  private of 11 is 11
+  private of 28 is 28
+  private of 32 is 32
+  private of 12 is 12
+  private of 35 is 35
+  private of 17 is 17
+  private of 10 is 10
+  private of 14 is 14
+[37m[96mTime elapsed for heuristic = 0 sec.
+[37m[35m
+Complement of the transformed graph:
+  |V| = 181, |E| = 12888 (density = 79.116%).
+[37m[97mModel has 1369 variables and 450 constraints.
+[37mTried aggregator 1 time.
+MIP Presolve eliminated 111 rows and 0 columns.
+MIP Presolve modified 339 coefficients.
+Reduced MIP has 339 rows, 181 columns, and 3424 nonzeros.
+Reduced MIP has 181 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.00 sec. (3.45 ticks)
+Tried aggregator 1 time.
+Reduced MIP has 339 rows, 181 columns, and 3424 nonzeros.
+Reduced MIP has 181 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.00 sec. (2.32 ticks)
+Clique table members: 339.
+MIP emphasis: balance optimality and feasibility.
+MIP search method: dynamic search.
+Parallel mode: none, using 1 thread.
+Root relaxation solution time = 0.00 sec. (5.73 ticks)
+
+        Nodes                                         Cuts/
+   Node  Left     Objective  IInf  Best Integer    Best Bound    ItCnt     Gap
+
+      0     0        cutoff                                        238         
+
+Root node processing (before b&c):
+  Real time             =    0.01 sec. (12.17 ticks)
+Sequential b&c:
+  Real time             =    0.00 sec. (0.00 ticks)
+                          ------------
+Total (root+branch&cut) =    0.01 sec. (12.17 ticks)
+Number of nodes evaluated: 0
+[92mInfeasible. Therefore, the solution given by the heuristic is optimal!
+[37m[31mSolution (card = 18, weight = 18):
+  private of 9 is 9
+  private of 31 is 31
+  private of 13 is 13
+  private of 34 is 34
+  private of 29 is 29
+  private of 30 is 30
+  private of 33 is 33
+  private of 16 is 16
+  private of 27 is 27
+  private of 15 is 15
+  private of 11 is 11
+  private of 28 is 28
+  private of 32 is 32
+  private of 12 is 12
+  private of 35 is 35
+  private of 17 is 17
+  private of 10 is 10
+  private of 14 is 14
+[37m[96mTime elapsed during optimization = 0.01 sec.
+[37mCoq certificate written in certificate.v
+Reading graph from output.dimacs...OK
+Searching for a single maximum size clique...
+  2/181 (max  1)  0.00 s  (0.00 s/round)
+  9/181 (max  2)  0.00 s  (0.00 s/round)
+ 21/181 (max  3)  0.00 s  (0.00 s/round)
+ 26/181 (max  4)  0.00 s  (0.00 s/round)
+ 34/181 (max  5)  0.00 s  (0.00 s/round)
+ 45/181 (max  6)  0.00 s  (0.00 s/round)
+ 55/181 (max  7)  0.00 s  (0.00 s/round)
+ 61/181 (max  8)  0.00 s  (0.00 s/round)
+ 73/181 (max  9)  0.00 s  (0.00 s/round)
+ 85/181 (max 10)  0.00 s  (0.00 s/round)
+ 92/181 (max 11)  0.00 s  (0.00 s/round)
+ 97/181 (max 12)  0.00 s  (0.00 s/round)
+105/181 (max 13)  0.00 s  (0.00 s/round)
+113/181 (max 14)  0.00 s  (0.00 s/round)
+138/181 (max 15)  0.00 s  (0.00 s/round)
+141/181 (max 16)  0.00 s  (0.00 s/round)
+162/181 (max 17)  0.03 s  (0.00 s/round)
+181/181 (max 18)  0.03 s  (0.00 s/round)

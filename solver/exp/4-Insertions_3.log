@@ -1,0 +1,221 @@
+[97mSOLVER - Computes the weighted upper irredundant/domination number.
+Made in 2018-2020 by Daniel Severin.
+[37m[33mStatistics:
+  |V| = 79, |E| = 156 (density = 5.06329%).
+  Initial bounds:  LB = 0, UB = 79.
+[37mDiameter of G: 6
+[97mClassic UB = w(V) - min { w(N[v] - {u}) : v in V, u in N[v] } = 76
+[37mNew bounds:  LB = 38, UB = 75.
+[31mSolution (card = 38, weight = 38):
+  private of 2 is 2
+  private of 65 is 65
+  private of 71 is 71
+  private of 67 is 67
+  private of 75 is 75
+  private of 0 is 0
+  private of 6 is 22
+  private of 41 is 41
+  private of 39 is 39
+  private of 13 is 13
+  private of 69 is 69
+  private of 15 is 15
+  private of 73 is 73
+  private of 9 is 19
+  private of 74 is 74
+  private of 77 is 77
+  private of 68 is 68
+  private of 4 is 4
+  private of 70 is 70
+  private of 49 is 49
+  private of 45 is 45
+  private of 43 is 43
+  private of 23 is 12
+  private of 47 is 47
+  private of 17 is 17
+  private of 44 is 44
+  private of 76 is 76
+  private of 66 is 66
+  private of 48 is 48
+  private of 50 is 50
+  private of 72 is 72
+  private of 21 is 21
+  private of 8 is 8
+  private of 46 is 46
+  private of 25 is 25
+  private of 51 is 51
+  private of 42 is 42
+  private of 40 is 40
+[37m[96mTime elapsed for heuristic = 0.2 sec.
+[37m[35m
+Complement of the transformed graph:
+  |V| = 391, |E| = 68523 (density = 89.8721%).
+[37m[97mModel has 6241 variables and 1014 constraints.
+[37mTried aggregator 1 time.
+MIP Presolve eliminated 241 rows and 0 columns.
+MIP Presolve modified 773 coefficients.
+Reduced MIP has 773 rows, 391 columns, and 7936 nonzeros.
+Reduced MIP has 391 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.01 sec. (8.30 ticks)
+Tried aggregator 1 time.
+Reduced MIP has 773 rows, 391 columns, and 7936 nonzeros.
+Reduced MIP has 391 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.00 sec. (5.38 ticks)
+Clique table members: 773.
+MIP emphasis: balance optimality and feasibility.
+MIP search method: dynamic search.
+Parallel mode: none, using 1 thread.
+Root relaxation solution time = 0.05 sec. (87.84 ticks)
+
+        Nodes                                         Cuts/
+   Node  Left     Objective  IInf  Best Integer    Best Bound    ItCnt     Gap
+
+      0     0       39.7549   299                     39.7549     1325         
+      0     0       39.6171   277                     Cuts: 4     1610         
+      0     0       39.4653   273                    Cuts: 17     1924         
+      0     0       39.2741   279                    Cuts: 22     2271         
+      0     0       39.2685   279                  Cliques: 1     2348         
+      0     0       39.2053   279                     Cuts: 4     2547         
+      0     0       39.1920   267                     Cuts: 3     2666         
+      0     0       39.1873   272                  Cliques: 2     2733         
+      0     0       39.1873   273                  Cliques: 1     2748         
+      0     2       39.1873   271                     39.1869     2748         
+Elapsed time = 0.35 sec. (388.49 ticks, tree = 0.01 MB, solutions = 0)
+*     2     1      integral     0       39.0000       39.1869     3565    0.48%
+Found incumbent of value 39.000000 after 0.37 sec. (427.08 ticks)
+
+Clique cuts applied:  14
+Zero-half cuts applied:  10
+
+Root node processing (before b&c):
+  Real time             =    0.34 sec. (385.64 ticks)
+Sequential b&c:
+  Real time             =    0.03 sec. (41.46 ticks)
+                          ------------
+Total (root+branch&cut) =    0.37 sec. (427.11 ticks)
+Number of nodes evaluated: 3
+[92mOptimal solution found! :)
+[37m[31mSolution (card = 39, weight = 39):
+  private of 13 is 13
+  private of 14 is 14
+  private of 15 is 15
+  private of 16 is 16
+  private of 17 is 17
+  private of 18 is 18
+  private of 19 is 19
+  private of 20 is 20
+  private of 21 is 21
+  private of 22 is 22
+  private of 23 is 23
+  private of 24 is 24
+  private of 25 is 25
+  private of 39 is 39
+  private of 40 is 40
+  private of 41 is 41
+  private of 42 is 42
+  private of 43 is 43
+  private of 44 is 44
+  private of 45 is 45
+  private of 46 is 46
+  private of 47 is 47
+  private of 48 is 48
+  private of 49 is 49
+  private of 50 is 50
+  private of 51 is 51
+  private of 65 is 65
+  private of 66 is 66
+  private of 67 is 67
+  private of 68 is 68
+  private of 69 is 69
+  private of 70 is 70
+  private of 71 is 71
+  private of 72 is 72
+  private of 73 is 73
+  private of 74 is 74
+  private of 75 is 75
+  private of 76 is 76
+  private of 77 is 77
+[37m[96mTime elapsed during optimization = 0.37 sec.
+[37mCoq certificate written in certificate.v
+Reading graph from output.dimacs...OK
+Searching for a single maximum size clique...
+  2/391 (max  1)  0.00 s  (0.00 s/round)
+ 11/391 (max  2)  0.00 s  (0.00 s/round)
+ 20/391 (max  3)  0.00 s  (0.00 s/round)
+ 29/391 (max  4)  0.00 s  (0.00 s/round)
+ 41/391 (max  5)  0.00 s  (0.00 s/round)
+ 47/391 (max  6)  0.00 s  (0.00 s/round)
+ 55/391 (max  7)  0.00 s  (0.00 s/round)
+ 61/391 (max  8)  0.00 s  (0.00 s/round)
+ 77/391 (max  9)  0.00 s  (0.00 s/round)
+ 87/391 (max 10)  0.00 s  (0.00 s/round)
+ 93/391 (max 11)  0.00 s  (0.00 s/round)
+ 98/391 (max 12)  0.00 s  (0.00 s/round)
+104/391 (max 13)  0.00 s  (0.00 s/round)
+121/391 (max 14)  0.00 s  (0.00 s/round)
+128/391 (max 15)  0.00 s  (0.00 s/round)
+139/391 (max 16)  0.00 s  (0.00 s/round)
+140/391 (max 17)  0.00 s  (0.00 s/round)
+157/391 (max 18)  0.00 s  (0.00 s/round)
+165/391 (max 19)  0.00 s  (0.00 s/round)
+174/391 (max 20)  0.00 s  (0.00 s/round)
+180/391 (max 21)  0.00 s  (0.00 s/round)
+200/391 (max 22)  0.01 s  (0.00 s/round)
+212/391 (max 23)  0.07 s  (0.01 s/round)
+220/391 (max 23)  0.30 s  (0.03 s/round)
+221/391 (max 23)  0.52 s  (0.23 s/round)
+224/391 (max 23)  0.69 s  (0.06 s/round)
+227/391 (max 23)  0.82 s  (0.04 s/round)
+229/391 (max 23)  1.97 s  (0.57 s/round)
+230/391 (max 23)  3.11 s  (1.14 s/round)
+231/391 (max 23)  3.25 s  (0.14 s/round)
+232/391 (max 23)  3.39 s  (0.14 s/round)
+233/391 (max 23)  3.70 s  (0.31 s/round)
+234/391 (max 23)  4.01 s  (0.30 s/round)
+235/391 (max 23)  5.26 s  (1.26 s/round)
+236/391 (max 23)  6.55 s  (1.29 s/round)
+237/391 (max 24)  6.56 s  (0.00 s/round)
+238/391 (max 24)  6.88 s  (0.32 s/round)
+239/391 (max 24)  7.20 s  (0.32 s/round)
+240/391 (max 24)  7.34 s  (0.14 s/round)
+241/391 (max 24)  7.49 s  (0.15 s/round)
+242/391 (max 24)  8.20 s  (0.71 s/round)
+243/391 (max 24)  8.91 s  (0.71 s/round)
+244/391 (max 24)  9.65 s  (0.74 s/round)
+245/391 (max 24)  10.39 s  (0.74 s/round)
+246/391 (max 25)  10.40 s  (0.00 s/round)
+256/391 (max 26)  10.40 s  (0.00 s/round)
+264/391 (max 27)  10.40 s  (0.00 s/round)
+274/391 (max 28)  10.40 s  (0.00 s/round)
+284/391 (max 29)  10.40 s  (0.00 s/round)
+290/391 (max 30)  10.40 s  (0.00 s/round)
+300/391 (max 30)  13.57 s  (0.32 s/round)
+301/391 (max 30)  16.94 s  (3.36 s/round)
+302/391 (max 30)  19.54 s  (2.60 s/round)
+303/391 (max 30)  22.18 s  (2.64 s/round)
+304/391 (max 31)  24.23 s  (2.06 s/round)
+310/391 (max 31)  27.08 s  (0.47 s/round)
+311/391 (max 31)  29.92 s  (2.84 s/round)
+312/391 (max 31)  32.95 s  (3.03 s/round)
+313/391 (max 32)  32.97 s  (0.02 s/round)
+320/391 (max 32)  33.60 s  (0.09 s/round)
+321/391 (max 32)  34.01 s  (0.40 s/round)
+322/391 (max 32)  34.65 s  (0.64 s/round)
+323/391 (max 32)  35.04 s  (0.39 s/round)
+324/391 (max 32)  36.22 s  (1.18 s/round)
+325/391 (max 32)  37.19 s  (0.98 s/round)
+326/391 (max 32)  38.99 s  (1.79 s/round)
+327/391 (max 32)  40.00 s  (1.02 s/round)
+328/391 (max 32)  41.93 s  (1.92 s/round)
+330/391 (max 33)  42.43 s  (0.25 s/round)
+336/391 (max 34)  43.81 s  (0.23 s/round)
+341/391 (max 35)  44.11 s  (0.06 s/round)
+346/391 (max 35)  47.73 s  (0.73 s/round)
+347/391 (max 35)  51.33 s  (3.59 s/round)
+348/391 (max 35)  53.38 s  (2.06 s/round)
+349/391 (max 35)  55.42 s  (2.04 s/round)
+350/391 (max 35)  61.86 s  (6.44 s/round)
+351/391 (max 36)  87.18 s  (25.31 s/round)
+356/391 (max 36)  90.81 s  (0.73 s/round)
+357/391 (max 36)  95.19 s  (4.38 s/round)
+358/391 (max 36)  98.71 s  (3.52 s/round)
+359/391 (max 36)  103.14 s  (4.43 s/round)

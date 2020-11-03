@@ -1,0 +1,64 @@
+[97mSOLVER - Computes the weighted upper irredundant/domination number.
+Made in 2018-2020 by Daniel Severin.
+[37m[33mStatistics:
+  |V| = 11, |E| = 20 (density = 36.3636%).
+  Initial bounds:  LB = 0, UB = 11.
+Diameter of G: 2
+[37m[97mClassic UB = w(V) - min { w(N[v] - {u}) : v in V, u in N[v] } = 8
+[37mNew bounds:  LB = 5, UB = 7.
+[31mSolution (card = 5, weight = 5):
+  private of 5 is 5
+  private of 7 is 7
+  private of 8 is 8
+  private of 9 is 9
+  private of 6 is 6
+[37m[96mTime elapsed for heuristic = 0 sec.
+[37m[35m
+Complement of the transformed graph:
+  |V| = 51, |E| = 465 (density = 36.4706%).
+[37m[97mModel has 121 variables and 110 constraints.
+[37mTried aggregator 1 time.
+MIP Presolve eliminated 27 rows and 0 columns.
+MIP Presolve modified 83 coefficients.
+Reduced MIP has 83 rows, 51 columns, and 787 nonzeros.
+Reduced MIP has 51 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.00 sec. (0.72 ticks)
+Tried aggregator 1 time.
+Reduced MIP has 83 rows, 51 columns, and 787 nonzeros.
+Reduced MIP has 51 binaries, 0 generals, 0 SOSs, and 0 indicators.
+Presolve time = 0.00 sec. (0.54 ticks)
+Clique table members: 83.
+MIP emphasis: balance optimality and feasibility.
+MIP search method: dynamic search.
+Parallel mode: none, using 1 thread.
+Root relaxation solution time = 0.00 sec. (0.41 ticks)
+
+        Nodes                                         Cuts/
+   Node  Left     Objective  IInf  Best Integer    Best Bound    ItCnt     Gap
+
+      0     0        cutoff                                         46         
+
+Root node processing (before b&c):
+  Real time             =    0.00 sec. (1.85 ticks)
+Sequential b&c:
+  Real time             =    0.00 sec. (0.00 ticks)
+                          ------------
+Total (root+branch&cut) =    0.00 sec. (1.85 ticks)
+Number of nodes evaluated: 0
+[92mInfeasible. Therefore, the solution given by the heuristic is optimal!
+[37m[31mSolution (card = 5, weight = 5):
+  private of 5 is 5
+  private of 7 is 7
+  private of 8 is 8
+  private of 9 is 9
+  private of 6 is 6
+[37m[96mTime elapsed during optimization = 0 sec.
+[37mCoq certificate written in certificate.v
+Reading graph from output.dimacs...OK
+Searching for a single maximum size clique...
+  2/51 (max  1)  0.00 s  (0.00 s/round)
+ 10/51 (max  2)  0.00 s  (0.00 s/round)
+ 18/51 (max  3)  0.00 s  (0.00 s/round)
+ 25/51 (max  4)  0.00 s  (0.00 s/round)
+ 32/51 (max  5)  0.00 s  (0.00 s/round)
+ 51/51 (max  5)  0.00 s  (0.00 s/round)
