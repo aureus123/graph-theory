@@ -1,6 +1,6 @@
 /*
  * SOLVER - Computes the weighted upper irredundant/domination number
- * Made in 2018-2020 by Daniel Severin
+ * Made in 2019-2020 by Daniel Severin
  *
  * Requires IBM ILOG CPLEX 12.7
  */

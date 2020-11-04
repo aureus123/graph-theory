@@ -1,9 +1,10 @@
 /*
  * SOLVER - Computes the weighted upper irredundant/domination number
- * Made in 2018-2020 by Daniel Severin
- * */
+ * Made in 2019-2020 by Daniel Severin
+ */
 
 //#define NOCPLEX
+//#define CHECK_DIST
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,9 +47,11 @@ static int *degrees; /* degree of each vertex + 1, i.e. |N[v]| */
 static int **neigh_vertices; /* neighbors of each vertex including itself, i.e. N[v] */
 static int **adjacency; /* adjacency matrix: 0 means no adjacency; >0 gives the index to the edge + 1
 				    also adjacency[u][u] = 1 */
-static int **dist; /* distance matrix */
 static int card, *Dset, *Dpriv; /* best solution found so far (Dset = vertices of the set; Dpriv[i] is the private of Dset[i] for all i) */
 static int LB, UB, UB_classic; /* bounds of the parameter */
+#ifdef CHECK_DIST
+static int **dist; /* distance matrix */
+#endif
 
 /* FUNCTIONS */
 
@@ -237,6 +240,7 @@ void read_weight(char* filename)
 #endif
 }
 
+#ifdef CHECK_DIST
 /*
  * connected() - check if G is a connected graph
  * in addition, we compute a matrix of distances between vertices
@@ -281,6 +285,7 @@ bool connected()
 
 	return true;
 }
+#endif
 
 /*
  * get_bounds - compute initial lower and upper bounds
@@ -783,7 +788,6 @@ int main(int argc, char **argv)
 #endif
 	set_color(15);
 	cout << "SOLVER - Computes the weighted upper irredundant/domination number." << endl;
-	cout << "Made in 2018-2020 by Daniel Severin." << endl;
 	set_color(7);
 
 	if (argc < 3) {
@@ -840,7 +844,9 @@ int main(int argc, char **argv)
 
 	/* check if G is connected */
 	set_color(7);
+#ifdef CHECK_DIST
 	if (connected() == false) cout << "G is not connected, please decompose it first!" << endl;
+#endif
 
 	/* run heuristic */
 	int UB_heur = 0, LB_heur = 0;
@@ -894,8 +900,10 @@ free_mem:;
 		fclose(stream);
 	}
 
+#ifdef CHECK_DIST
 	for (int v = 0; v < vertices; v++) delete[] dist[v];
 	delete[] dist;
+#endif
 	delete[] Dpriv;
 	delete[] Dset;
 	for (int v = 0; v < vertices; v++) delete[] neigh_vertices[v];
