@@ -12,14 +12,14 @@ It also contains a source code of an heuristic and an exact solver, on the folde
 
 # Graph Theory
 
-[![Travis][travis-shield]][travis-link]
+[![CI][action-shield]][action-link]
 [![Contributing][contributing-shield]][contributing-link]
 [![Code of Conduct][conduct-shield]][conduct-link]
 [![Zulip][zulip-shield]][zulip-link]
 [![DOI][doi-shield]][doi-link]
 
-[travis-shield]: https://travis-ci.com/coq-community/graph-theory.svg?branch=master
-[travis-link]: https://travis-ci.com/coq-community/graph-theory/builds
+[action-shield]: https://github.com/coq-community/graph-theory/workflows/CI/badge.svg?branch=master
+[action-link]: https://github.com/coq-community/graph-theory/actions?query=workflow%3ACI
 
 [contributing-shield]: https://img.shields.io/badge/contributions-welcome-%23f7931e.svg
 [contributing-link]: https://github.com/coq-community/manifesto/blob/master/CONTRIBUTING.md
@@ -47,19 +47,22 @@ isomorphism).
 - Author(s):
   - Christian Doczkal (initial)
   - Damien Pous (initial)
+  - Daniel Severín (external contributor)
 - Coq-community maintainer(s):
   - Christian Doczkal ([**@chdoc**](https://github.com/chdoc))
   - Damien Pous ([**@damien-pous**](https://github.com/damien-pous))
 - License: [CeCILL-B](LICENSE)
-- Compatible Coq versions: 8.10 or later
+- Compatible Coq versions: 8.11 or later
 - Additional dependencies:
   - MathComp's SSReflect library, version 1.10 or later
   - MathComp's finmap library
+  - Hierarchy Builder
 - Coq namespace: `GraphTheory`
 - Related publication(s):
   - [Graph Theory in Coq - Minors, Treewidth, and Isomorphisms](https://hal.archives-ouvertes.fr/hal-02316859) doi:[10.1007/s10817-020-09543-2](https://doi.org/10.1007/s10817-020-09543-2)
   - [Completeness of an Axiomatization of Graph Isomorphism via Graph Rewriting in Coq](https://hal.archives-ouvertes.fr/hal-02333553) doi:[10.1145/3372885.3373831](https://doi.org/10.1145/3372885.3373831)
   - [A Formal Proof of the Minor-Exclusion Property for Treewidth-Two Graphs](https://hal.archives-ouvertes.fr/hal-01703922) doi:[10.1007/978-3-319-94821-8_11](https://doi.org/10.1007/978-3-319-94821-8_11)
+  - [Formalization of the Domination Chain with Weighted Parameters (Short Paper)](https://drops.dagstuhl.de/opus/volltexte/2019/11091/) doi:[10.4230/LIPIcs.ITP.2019.36](https://doi.org/10.4230/LIPIcs.ITP.2019.36)
 
 ## Building and installation instructions
 
