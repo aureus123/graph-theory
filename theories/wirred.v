@@ -1078,7 +1078,7 @@ Definition hom_G7_def (v1 v2 v3 v4 v5 v6 v7 : G) (v : 'I_7) :=
   end.
 
 
-Lemma subcase_a1_eq_a2 (h : copaw -> trfgraph G) (a1 a2 b1 b2 c1 c2 d1 d2 : G) :
+Lemma subcase1_a1_eq_a2 (h : copaw -> trfgraph G) (a1 a2 b1 b2 c1 c2 d1 d2 : G) :
   (b1 == c2) || b1 -- c2 || (b2 == c1) || b2 -- c1 ->
   a1 != c2 -> ~~ a1 -- c2 -> a2 != c1 -> ~~ a2 -- c1 ->
   a1 != d2 -> ~~ a1 -- d2 -> a2 != d1 -> ~~ a2 -- d1 ->
@@ -1104,13 +1104,13 @@ case: (boolP (b1 -- c2)) => [b1_adj_c2 | b1_nadj_c2].
       -- by move: a2_adj_b1; apply/contraTneq => ->; rewrite -a1_eq_a2.
       -- by move: c1_nadj_d2; apply/contraTneq => <-; rewrite c1_adj_c2.
     * apply: h'_copaw_hom; rewrite /=; try by done.
-  + case: (boolP (b2 -- c2) )=> [b2_adj_c2 | b2_nadj_c2].
-    * case: (boolP (b1 -- d1) )=> [b1_adj_d1 | b1_nadj_d1].
+  + case: (boolP (b2 -- c2)) => [b2_adj_c2 | b2_nadj_c2].
+    * case: (boolP (b1 -- d1)) => [b1_adj_d1 | b1_nadj_d1].
       -- exists (hom_G4_def a2 b1 d1 c2).
          ++ apply: h'_G4_inj; rewrite /=; try by done.
             all: try by rewrite eq_sym.
             all: try by rewrite sg_edgeNeq.
-            ** by move: c1_adj_c2; apply/contraTneq => <-; rewrite sg_sym.
+            ** by rewrite -a1_eq_a2.
             ** by move: b1_adj_d1; apply/contraTneq => ->.
          ++ apply: h'_copaw_hom; rewrite /=; try by done.
             ** by rewrite -a1_eq_a2.
@@ -1138,6 +1138,91 @@ case: (boolP (b1 -- c2)) => [b1_adj_c2 | b1_nadj_c2].
          ++ by move: c2_nadj_d1; apply/contraTneq => <-; rewrite sg_sym c1_adj_c2.
       -- apply: h'_copaw_hom; rewrite /=; try by done.
          by rewrite (negbTE b2_neq_c1) (negbTE b1_neq_c2) (negbTE b1_nadj_c2) in b1c2b2c1.
+Qed.
+
+Lemma subcase2_a1_eq_a2 (h : copaw -> trfgraph G) (a1 a2 b1 b2 c1 c2 d1 d2 : G) :
+  (b1 == c2) || b1 -- c2 || (b2 == c1) || b2 -- c1 ->
+  a1 != c2 -> ~~ a1 -- c2 -> a2 != c1 -> ~~ a2 -- c1 ->
+  a1 != d2 -> ~~ a1 -- d2 -> a2 != d1 -> ~~ a2 -- d1 ->
+  b1 != d2 -> ~~ b1 -- d2 -> b2 != d1 -> ~~ b2 -- d1 ->
+  c1 != d2 -> ~~ c1 -- d2 -> c2 != d1 -> ~~ c2 -- d1 ->
+  a1 = a2 -> b1 -- b2 -> c1 = c2 -> (a1 == b2) || a1 -- b2 ->
+    (exists2 h0 : copaw -> G, injective h0 & induced_hom h0).
+Proof.
+move => b1c2b2c1 a1_neq_c2 a1_nadj_c2 ? a2_nadj_c1 ? ? ? ? ? b1_nadj_d2 ? b2_nadj_d1 ? c1_nadj_d2 ? c2_nadj_d1 a1_eq_a2 b1_adj_b2 c1_eq_c2 a1_dom_b2.
+have b1_neq_b2: b1 != b2 by rewrite sg_edgeNeq.
+case: (orP a1_dom_b2) => [/eqP a1_eq_b2 | a1_adj_b2].
+- case: (orP b1c2b2c1) => [b1c2b2c1' | b2_adj_c1];
+    last by rewrite -a1_eq_b2 c1_eq_c2 in b2_adj_c1; rewrite b2_adj_c1 in a1_nadj_c2.
+  case: (orP b1c2b2c1') => [b1_dom_c2 |/eqP b2_eq_c1];
+    last by rewrite a1_eq_b2 b2_eq_c1 c1_eq_c2 eq_refl in a1_neq_c2.
+  case: (orP b1_dom_c2) => [/eqP b1_eq_c2 | b1_adj_c2];
+    first by rewrite a1_eq_b2 -b1_eq_c2 sg_sym b1_adj_b2 in a1_nadj_c2.
+  have b1_neq_c2: b1 != c2 by rewrite sg_edgeNeq.
+  exists (hom_G4_def b2 b1 c2 d2).
+  + apply: h'_G4_inj; rewrite /=; try by done.
+    all: try by rewrite -a1_eq_b2.
+    * by rewrite eq_sym.
+    * by rewrite -c1_eq_c2.
+  + apply: h'_copaw_hom; rewrite /=; try by done.
+    all: try by rewrite -a1_eq_b2.
+    * by rewrite sg_sym.
+    * by rewrite -c1_eq_c2.
+- have a1_neq_b2: a1 != b2 by rewrite sg_edgeNeq.
+  case: (orP b1c2b2c1)=> [b1c2b2c1' | b2_adj_c1].
+  + case: (orP b1c2b2c1')=> [b1_dom_c2 |/eqP b2_eq_c1];
+      last by rewrite -c1_eq_c2 -b2_eq_c1 a1_adj_b2 in a1_nadj_c2.
+    case: (orP b1_dom_c2)=> [/eqP b1_eq_c2 | b1_adj_c2].
+    * exists (hom_G4_def a1 b2 b1 d1).
+      -- apply: h'_G4_inj; rewrite /=; try by done.
+         all: try by rewrite b1_eq_c2.
+         ++ by rewrite a1_eq_a2.
+         ++ by rewrite eq_sym.
+      -- apply: h'_copaw_hom; rewrite /=; try by done.
+         all: try by rewrite b1_eq_c2.
+         ++ by rewrite sg_sym.
+         ++ by rewrite a1_eq_a2.
+    * case: (boolP (c1 -- b2))=> [c1_adj_b2 | c1_nadj_b2].
+      -- exists (hom_G4_def c1 b2 a1 d1).
+         ++ apply: h'_G4_inj; rewrite /=; try by done.
+            ** by rewrite sg_edgeNeq.
+            ** by rewrite a1_eq_a2 eq_sym.
+            ** by rewrite c1_eq_c2.
+            ** by rewrite eq_sym.
+            ** by rewrite a1_eq_a2.
+         ++ apply: h'_copaw_hom; rewrite /=; try by done.
+            ** by rewrite sg_sym.
+            ** by rewrite a1_eq_a2 sg_sym.
+            ** by rewrite c1_eq_c2.
+            ** by rewrite a1_eq_a2.
+      -- case: (boolP (b2 -- d2))=> [b2_adj_d2 | b2_nadj_d2].
+         ++ exists (hom_G4_def d2 b2 a2 c1).
+            ** apply: h'_G4_inj; rewrite /=; try by done. 
+               --- by rewrite eq_sym sg_edgeNeq.
+               --- by rewrite -a1_eq_a2 eq_sym.
+               --- by rewrite eq_sym.
+               --- by rewrite -a1_eq_a2 eq_sym.
+               --- by move: a1_adj_b2; apply/contraTneq => ->; rewrite c1_eq_c2.
+            ** apply: h'_copaw_hom; rewrite /=; try by done.
+               all: try by rewrite sg_sym.
+               all: by rewrite -a1_eq_a2 sg_sym.
+         ++ exists (hom_G4_def c2 b1 b2 d2).
+            ** apply: h'_G4_inj; rewrite /=; try by done.
+               --- by rewrite eq_sym sg_edgeNeq.
+               --- by move: a1_adj_b2; apply/contraTneq => <-.
+               --- by rewrite -c1_eq_c2.
+               --- by move: b1_adj_b2; apply/contraTneq => ->.
+            ** apply: h'_copaw_hom; rewrite /=; try by done.
+               all: try by rewrite -c1_eq_c2.
+               by rewrite sg_sym.
+  + exists (hom_G4_def a1 b2 c1 d1).
+    * apply: h'_G4_inj; rewrite /=; try by done.
+      all: try by rewrite a1_eq_a2.
+      -- by rewrite sg_edgeNeq.
+      -- by rewrite c1_eq_c2.
+    * apply: h'_copaw_hom; rewrite /=; try by done.
+      all: try by rewrite a1_eq_a2.
+      by rewrite c1_eq_c2.
 Qed.
 
 Lemma case_a1_eq_a2 (h : copaw -> trfgraph G) (a1 a2 b1 b2 c1 c2 d1 d2 : G) :
@@ -1175,11 +1260,13 @@ case/orP: b1b2 => [/eqP b1_eq_b2 | b1_adj_b2].
       -- by rewrite b1_eq_b2.
       -- by rewrite c1_eq_c2.
   + (* a a --- b b --- c1 c2 *)
-    (*        d1 d2          *) 
+    (*        d1 d2          *)
     case: (orP b1c2b2c1) => [b1c2b2c1' | b2_adj_c1].
     * case: (orP b1c2b2c1') => [b1_dom_c2 |/eqP b2_eq_c1].
-      -- case: (orP b1_dom_c2)=> [/eqP b1_eq_c2 | b1_adj_c2].
-         ++ exists (hom_G4_def a1 b1 c1 d2).
+      -- case: (orP b1_dom_c2) => [/eqP b1_eq_c2 | b1_adj_c2].
+         ++ (* a a --- b b --- c b *)
+            (*        d1 d2        *)
+            exists (hom_G4_def a1 b1 c1 d2).
             ** apply: h'_G4_inj; rewrite /=; try by done.
                --- by rewrite a1_eq_a2.
                --- by rewrite b1_eq_c2 eq_sym sg_edgeNeq.
@@ -1194,7 +1281,9 @@ case/orP: b1b2 => [/eqP b1_eq_b2 | b1_adj_b2].
             ** apply: h'_copaw_hom; rewrite /=; try by done.
                --- by rewrite a1_eq_a2.
                --- by rewrite b1_eq_b2.
-      -- exists (hom_G4_def a1 b1 c2 d1).
+      -- (* a a --- b b --- b c *)
+         (*        d1 d2        *)
+         exists (hom_G4_def a1 b1 c2 d1).
          ++ apply: h'_G4_inj; rewrite /=; try by done.
             ** by rewrite a1_eq_a2.
             ** by rewrite b1_eq_b2 b2_eq_c1 sg_edgeNeq.
@@ -1216,149 +1305,19 @@ case/orP: b1b2 => [/eqP b1_eq_b2 | b1_adj_b2].
     (*         d1 d2         *)
     case: (orP a1b2a2b1) => [a1b2a2b1' | a2_adj_b1].
     * case: (orP a1b2a2b1') => [a1_dom_b2 |/eqP a2_eq_b1].
-      -- case: (orP a1_dom_b2) => [/eqP a1_eq_b2 | a1_adj_b2].
-         ++ (* a a --- b a --- c c *)
-            (*        d1 d2        *)
-            case: (orP b1c2b2c1) => [b1c2b2c1' | b2_adj_c1]; 
-              last by rewrite -a1_eq_b2 c1_eq_c2 in b2_adj_c1; rewrite b2_adj_c1 in a1_nadj_c2.
-            case: (orP b1c2b2c1') => [b1_dom_c2 |/eqP b2_eq_c1];
-              last by rewrite a1_eq_b2 b2_eq_c1 c1_eq_c2 eq_refl in a1_neq_c2.
-            case: (orP b1_dom_c2) => [/eqP b1_eq_c2 | b1_adj_c2];
-              first by rewrite a1_eq_b2 -b1_eq_c2 sg_sym b1_adj_b2 in a1_nadj_c2.
-            have b1_neq_c2: b1 != c2 by rewrite sg_edgeNeq.
-            exists (hom_G4_def b2 b1 c2 d2).
-            ** apply: h'_G4_inj; rewrite /=; try by done.
-               all: try by rewrite -a1_eq_b2.
-               --- by rewrite eq_sym.
-               --- by rewrite -c1_eq_c2.
-            ** apply: h'_copaw_hom; rewrite /=; try by done.
-               all: try by rewrite -a1_eq_b2.
-               --- by rewrite sg_sym.
-               --- by rewrite -c1_eq_c2.
-         ++ (* a a --- b1 b2 --- c c                  *)
-            (*         d1 d2             with a -- b2 *)
-            have a1_neq_b2: a1 != b2 by rewrite sg_edgeNeq.
-            case: (orP b1c2b2c1)=> [b1c2b2c1' | b2_adj_c1].
-            ** case: (orP b1c2b2c1')=> [b1_dom_c2 |/eqP b2_eq_c1];
-                 last by rewrite -c1_eq_c2 -b2_eq_c1 a1_adj_b2 in a1_nadj_c2.
-               case: (orP b1_dom_c2)=> [/eqP b1_eq_c2 | b1_adj_c2].
-               --- exists (hom_G4_def a1 b2 b1 d1).
-                   +++ apply: h'_G4_inj; rewrite /=; try by done.
-                       all: try by rewrite b1_eq_c2.
-                       *** by rewrite a1_eq_a2.
-                       *** by rewrite eq_sym.
-                   +++ apply: h'_copaw_hom; rewrite /=; try by done.
-                        all: try by rewrite b1_eq_c2.
-                        *** by rewrite sg_sym.
-                        *** by rewrite a1_eq_a2.
-               --- case: (boolP (c1 -- b2))=> [c1_adj_b2 | c1_nadj_b2].
-                   +++ exists (hom_G4_def c1 b2 a1 d1).
-                       *** apply: h'_G4_inj; rewrite /=; try by done.
-                           ---- by rewrite sg_edgeNeq.
-                           ---- by rewrite a1_eq_a2 eq_sym.
-                           ---- by rewrite c1_eq_c2.
-                           ---- by rewrite eq_sym.
-                           ---- by rewrite a1_eq_a2.
-                       *** apply: h'_copaw_hom; rewrite /=; try by done.
-                           ---- by rewrite sg_sym.
-                           ---- by rewrite a1_eq_a2 sg_sym.
-                           ---- by rewrite c1_eq_c2.
-                           ---- by rewrite a1_eq_a2.
-                   +++ case: (boolP (b2 -- d2))=> [b2_adj_d2 | b2_nadj_d2].
-                       *** exists (hom_G4_def d2 b2 a2 c1).
-                           ---- apply: h'_G4_inj; rewrite /=; try by done. 
-                                ++++ by rewrite eq_sym sg_edgeNeq.
-                                ++++ by rewrite -a1_eq_a2 eq_sym.
-                                ++++ by rewrite eq_sym.
-                                ++++ by rewrite -a1_eq_a2 eq_sym.
-                                ++++ by move: a1_adj_b2; apply/contraTneq => ->; rewrite c1_eq_c2.
-                           ---- apply: h'_copaw_hom; rewrite /=; try by done.
-                                all: try by rewrite sg_sym.
-                                all: by rewrite -a1_eq_a2 sg_sym.
-                       *** exists (hom_G4_def c2 b1 b2 d2).
-                           ---- apply: h'_G4_inj; rewrite /=; try by done.
-                                ++++ by rewrite eq_sym sg_edgeNeq.
-                                ++++ by move: a1_adj_b2; apply/contraTneq => <-.
-                                ++++ by rewrite -c1_eq_c2.
-                                ++++ by move: b1_adj_b2; apply/contraTneq => ->.
-                           ---- apply: h'_copaw_hom; rewrite /=; try by done.
-                                all: try by rewrite -c1_eq_c2.
-                                by rewrite sg_sym.
-            ** exists (hom_G4_def a1 b2 c1 d1).
-               --- apply: h'_G4_inj; rewrite /=; try by done.
-                   all: try by rewrite a1_eq_a2.
-                   +++ by rewrite sg_edgeNeq.
-                   +++ by rewrite c1_eq_c2.
-               --- apply: h'_copaw_hom; rewrite /=; try by done.
-                   all: try by rewrite a1_eq_a2.
-                   by rewrite c1_eq_c2.
+      -- by apply/(@subcase2_a1_eq_a2 h a1 a2 b1 b2 c1 c2 d1 d2).
       -- (* a a --- a b --- c c *)
-         (*        d1 d2        *) 
-         case: (orP b1c2b2c1)=> [b1c2b2c1' | b2_adj_c1].
-         ++ case: (orP b1c2b2c1')=> [b1_dom_c2 |/eqP b2_eq_c1];
-              last by move: a2_nadj_c1; rewrite -b2_eq_c1 a2_eq_b1 b1_adj_b2.
-            by case: (orP b1_dom_c2)=> [/eqP b1_eq_c2 | b1_adj_c2];
-               [move: a1a2c1c2; rewrite a1_eq_a2 c1_eq_c2 a2_eq_b1 b1_eq_c2 eq_refl
-                  | move: a1_nadj_c2; rewrite a1_eq_a2 a2_eq_b1 b1_adj_c2].
-         ++ exists (hom_G4_def b1 b2 c1 d1).
-            ** apply: h'_G4_inj; rewrite /=; try by done.
-               all: try by rewrite -a2_eq_b1.
-               --- by rewrite sg_edgeNeq.
-               --- by rewrite c1_eq_c2.
-            ** apply: h'_copaw_hom; rewrite /=; try by done.
-               all: try by rewrite -a2_eq_b1.
-               by rewrite c1_eq_c2.
+         (*        d1 d2        *)
+         apply/(@subcase2_a1_eq_a2 h a2 a1 b2 b1 c2 c1 d2 d1); try by done.
+         ++ by rewrite orbC orbA orbC orbA orbA.
+         ++ by rewrite sg_sym.
+         ++ by apply/orP; left; apply/eqP.
     * (* a a --- b1 b2 --- c c                  *)
       (*         d1 d2             with a -- b1 *)
-      have a2_neq_b1: a2 != b1 by rewrite sg_edgeNeq.
-      case: (orP b1c2b2c1)=> [b1c2b2c1' | b2_adj_c1].
-      -- case: (orP b1c2b2c1')=> [b1_dom_c2 |/eqP b2_eq_c1].
-         ++ case: (orP b1_dom_c2)=> [/eqP b1_eq_c2 | b1_adj_c2];
-              first by move: a2_nadj_c1; rewrite c1_eq_c2 -b1_eq_c2 a2_adj_b1.
-            exists (hom_G4_def a2 b1 c2 d2).
-            ** apply: h'_G4_inj; rewrite /=; try by done.
-               all: try by rewrite -a1_eq_a2.
-               --- by rewrite sg_edgeNeq.
-               --- by rewrite -c1_eq_c2.
-            ** apply: h'_copaw_hom; rewrite /=; try by done.
-               all: try by rewrite -a1_eq_a2.
-               by rewrite -c1_eq_c2.
-         ++ exists (hom_G4_def a2 b1 c2 d2).
-            ** apply: h'_G4_inj; rewrite /=; try by done.
-               all: try by rewrite -a1_eq_a2.
-               --- by rewrite -c1_eq_c2 -b2_eq_c1.
-               --- by rewrite -c1_eq_c2.
-            ** apply: h'_copaw_hom; rewrite /=; try by done.
-               all: try by rewrite -a1_eq_a2.
-               --- by rewrite -c1_eq_c2 -b2_eq_c1.
-               --- by rewrite -c1_eq_c2.
-      -- case: (boolP (a1 -- b2)) => [a1_adj_b2 | a1_nadj_b2].
-         ++ exists (hom_G4_def a1 b2 c1 d1).
-            ** apply: h'_G4_inj; rewrite /=; try by done.
-               all: try by rewrite a1_eq_a2.
-               all: try by rewrite sg_edgeNeq.
-               by rewrite c1_eq_c2.
-            ** apply: h'_copaw_hom; rewrite /=; try by done.
-               all: try by rewrite a1_eq_a2.
-               by rewrite c1_eq_c2.
-         ++ case: (boolP (b2 -- d2)) => [b2_adj_d2 | b2_nadj_d2].
-            ** exists (hom_G4_def d2 b2 c1 a1).
-               --- apply: h'_G4_inj; rewrite /=; try by done.
-                   all: try by rewrite eq_sym.
-                   +++ by rewrite eq_sym sg_edgeNeq.
-                   +++ by rewrite sg_edgeNeq.
-                   +++ by move: b2_adj_c1; apply/contraTneq => ->; rewrite a1_eq_a2.
-                   +++ by rewrite c1_eq_c2 eq_sym.
-               --- apply: h'_copaw_hom; rewrite /=; try by done.
-                   all: try by rewrite sg_sym.
-                   by rewrite a1_eq_a2 sg_sym.
-            ** exists (hom_G4_def a1 b1 b2 d2).
-               --- apply: h'_G4_inj; rewrite /=; try by done.
-                   +++ by rewrite a1_eq_a2.
-                   +++ by move: b2_adj_c1; apply/contraTneq => <-; rewrite a1_eq_a2.
-                   +++ by move: b1_adj_b2; apply/contraTneq => ->.
-               --- apply: h'_copaw_hom; rewrite /=; try by done.
-                   by rewrite a1_eq_a2.
+      apply/(@subcase2_a1_eq_a2 h a2 a1 b2 b1 c2 c1 d2 d1); try by done.
+      -- by rewrite orbC orbA orbC orbA orbA.
+      -- by rewrite sg_sym.
+      -- by apply/orP; right.
   + case: (orP d1d2) => [/eqP d1_eq_d2 | d1_adj_d2].
     * (* a a --- b1 b2 --- c1 c2 *)
       (*          d d            *)
@@ -1385,9 +1344,9 @@ case/orP: b1b2 => [/eqP b1_eq_b2 | b1_adj_b2].
                        rewrite sg_sym in c1_nadj_b2.
                        by rewrite (negbTE b1_neq_c2) (negbTE b2_neq_c1) (negbTE c1_nadj_b2) /= orbC /= orbC /= in b1c2b2c1.
                    +++ by rewrite -d1_eq_d2.
-         ++ case: (boolP (a1 == b2))=> [/eqP a1_eq_b2 | a1_neq_b2].
-            ** (* c1 c2 --- b1 b2 = a1 = a2 *)
-               (*            d d            *)
+         ++ case: (boolP (a1 == b2)) => [/eqP a1_eq_b2 | a1_neq_b2].
+            ** (* a a --- b a --- c1 c2 *)
+               (*         d d           *)
                have b1_neq_c2: b1 != c2 by move: a1_adj_b1; apply/contraTneq => ->.
                have b2_neq_c1: b2 != c1 by rewrite -a1_eq_b2 a1_eq_a2.
                have b2_nadj_c1: ~~ b2 -- c1 by rewrite -a1_eq_b2 a1_eq_a2.
@@ -1452,9 +1411,9 @@ case/orP: b1b2 => [/eqP b1_eq_b2 | b1_adj_b2].
                all: try by rewrite sg_sym.
                by rewrite a1_eq_a2 sg_sym.
          ++ case: (boolP (a2 -- b1)) => [a2_adj_b1 | a2_nadj_b1].
-            ** by apply/(@subcase_a1_eq_a2 h a1 a2 b1 b2 c1 c2 d1 d2).
+            ** by apply/(@subcase1_a1_eq_a2 h a1 a2 b1 b2 c1 c2 d1 d2).
             ** case: (boolP (a1 -- b2)) => [a1_adj_b2 | a1_nadj_b2].
-               --- apply/(@subcase_a1_eq_a2 h a2 a1 b2 b1 c2 c1 d2 d1); try by done.
+               --- apply/(@subcase1_a1_eq_a2 h a2 a1 b2 b1 c2 c1 d2 d1); try by done.
                    all: try by rewrite sg_sym.
                    by rewrite orbC orbA orbC orbA orbA.
                --- rewrite (negbTE a2_nadj_b1) (negbTE a1_nadj_b2) /= in a1b2a2b1.
