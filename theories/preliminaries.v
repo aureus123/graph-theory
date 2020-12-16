@@ -224,9 +224,9 @@ Proof.
   move => f_inj fP E y yP.
   pose rT' := { y : rT | P y}.
   pose f' (x:aT) : rT' := Sub (f x) (fP x).
-  have/inj_card_onto : injective f' by move => x1 x2 []; exact: f_inj.
-  case/(_ _ (Sub y yP))/Wrap => [|/codomP[x]]; first by rewrite card_sig E.
-  by move/(congr1 val) => /= ->; exact: codom_f.
+  have/inj_card_onto f'_inj : injective f'. { move => x1 x2 []. exact: f_inj. }
+  rewrite card_sig E in f'_inj. 
+  case/mapP : (f'_inj erefl (Sub y yP)) => x _ [] ->. exact: codom_f. 
 Qed.
 
 (** TODO: check whether the collection of lemmas on sets/predicates
@@ -437,44 +437,12 @@ Definition unique X (P : X -> Prop) := forall x y, P x -> P y -> x = y.
 Lemma empty_uniqe X (P : X -> Prop) : (forall x, ~ P x) -> unique P.
 Proof. firstorder. Qed.
 
-(** *** Disjointness *)
-
-(* This section is part of >=mathcomp-8.12 *)
-Section Disjoint.
-Variable (T : finType).
-Implicit Types (A B C D: {pred T}) (P Q : pred T) (x y : T) (s : seq T).
-
-Lemma disjointFr A B x : [disjoint A & B] -> x \in A -> x \in B = false.
-Proof. by move/pred0P/(_ x) => /=; case: (x \in A). Qed.
-
-Lemma disjointFl A B x : [disjoint A & B] -> x \in B -> x \in A = false.
-Proof. rewrite disjoint_sym; exact: disjointFr. Qed.
-
-Lemma disjointWl A B C :
-   A \subset B -> [disjoint B & C] -> [disjoint A & C].
-Proof. by rewrite 2!disjoint_subset; apply: subset_trans. Qed.
-
-Lemma disjointWr A B C : A \subset B -> [disjoint C & B] -> [disjoint C & A].
-Proof. rewrite ![[disjoint C & _]]disjoint_sym. exact:disjointWl. Qed.
-
-Lemma disjointW A B C D :
-  A \subset B -> C \subset D -> [disjoint B & D] -> [disjoint A & C].
-Proof.
-by move=> subAB subCD BD; apply/(disjointWl subAB)/(disjointWr subCD).
-Qed.
-
-Lemma disjoints1 A x : [disjoint [set x] & A] = (x \notin A).
-Proof. by rewrite (@eq_disjoint1 _ x) // => y; rewrite !inE. Qed.
-
-End Disjoint.
-
 Lemma disjointP (T : finType) (A B : pred T):
   reflect (forall x, x \in A -> x \in B -> False) [disjoint A & B].
-Proof. by rewrite disjoint_subset; apply:(iffP subsetP) => H x; move/H/negP. Qed.
-Arguments disjointP {T A B}.
-
-Definition disjointE (T : finType) (A B : pred T) (x : T) 
-  (D : [disjoint A & B]) (xA : x \in A) (xB : x \in B) := disjointP D _ xA xB.
+Proof.
+  rewrite disjoint_subset. 
+  apply:(iffP subsetP) => H x; by move/H/negP. 
+Qed.
 
 Lemma disjointsU (T : finType) (A B C : {set T}):
   [disjoint A & C] -> [disjoint B & C] -> [disjoint A :|: B & C].
@@ -482,6 +450,42 @@ Proof.
   move => a b. 
   apply/disjointP => x /setUP[]; by move: x; apply/disjointP.
 Qed.
+
+(** *** Disjointness *)
+Lemma disjointE (T : finType) (A B : pred T) x : 
+  [disjoint A & B] -> x \in A -> x \in B -> False.
+Proof. by rewrite disjoint_subset => /subsetP H /H /negP. Qed.
+
+Lemma disjointFr (T : finType) (A B : pred T) (x:T) : 
+  [disjoint A & B] -> x \in A -> x \in B = false.
+Proof. move => D L. apply/negbTE. apply/negP. exact: (disjointE D). Qed.
+
+Lemma disjointFl (T : finType) (A B : pred T) (x:T) : 
+  [disjoint A & B] -> x \in B -> x \in A = false.
+Proof. move => D L. apply/negbTE. apply/negP => ?. exact: (disjointE D) L. Qed.
+
+Lemma disjointNI (T : finType) (A B : pred T) (x:T) : 
+  x \in A -> x \in B -> ~~ [disjoint A & B].
+Proof. move => ? ?. apply/negP => /disjointE. move/(_ x). by apply. Qed.
+
+Lemma disjoint_exists (T : finType) (A B : pred T) : 
+  [disjoint A & B] = ~~ [exists x in A, x \in B].
+Proof. rewrite negb_exists_in disjoint_subset. by apply/subsetP/forall_inP; apply. Qed.
+
+Definition disjoint_transL := disjoint_trans.
+Lemma disjoint_transR (T : finType) (A B C : pred T) :
+ A \subset B -> [disjoint C & B] -> [disjoint C & A].
+Proof. rewrite ![[disjoint C & _]]disjoint_sym. exact:disjoint_trans. Qed.
+
+Lemma disjointW (T : finType) (A B C D : pred T) : 
+    A \subset B -> C \subset D -> [disjoint B & D] -> [disjoint A & C].
+Proof. 
+  move => subAB subCD BD. apply: (disjoint_trans subAB). 
+  move: BD. rewrite !(disjoint_sym B). exact: disjoint_trans.
+Qed.
+
+Lemma disjoints1 (T : finType) (x : T) (A : pred T) : [disjoint [set x] & A] = (x \notin A).
+Proof. rewrite (@eq_disjoint1 _ x) // => ?. by rewrite !inE. Qed.
 
 (** *** Function Update *)
 

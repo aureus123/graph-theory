@@ -11,32 +11,17 @@ Unset Strict Implicit.
 up to the equivalence of some setoid. *)
 
 (** ** setoids *)
-
-From HB Require Import structures.
-
-HB.mixin Record Setoid_of_Type A := 
-  { eqv : relation A; Eqv : Equivalence eqv }.
-
-HB.structure Definition Setoid := { A of Setoid_of_Type A }.
-Notation setoid := Setoid.type.
-
-Declare Scope setoid_scope.
-Open Scope setoid_scope.
-Infix "≡" := eqv (at level 79) : setoid_scope.
-Notation "x ≡ y :> X" := ((x : X) ≡ (y : X)) 
-  (at level 79, y at next level, only parsing) : setoid_scope.
+Structure setoid :=
+  Setoid {
+      car:> Type;
+      eqv: relation car;
+      Eqv: Equivalence eqv
+    }.
+Arguments eqv {_} : simpl never. 
+Infix "≡" := eqv (at level 79).
 Global Existing Instance Eqv.
 
-Definition flat (A : Type) := A.
-Definition flat_setoid_mixin (A : Type) := 
-  Setoid_of_Type.Build A (@eq_equivalence A).
-Section A.
-
-(** TODO: Remove the section wrapper once HB supports this *)
-Variable (A : Type).
-HB.instance (flat A) (flat_setoid_mixin A).
-End A.
-HB.instance unit (flat_setoid_mixin unit).
+Definition eq_setoid (X: Type): setoid := Setoid (@eq_equivalence X).
 
 Lemma eqvxx (X : setoid) (x : X) : x ≡ x. reflexivity. Qed.
 Arguments eqvxx {X x}.
