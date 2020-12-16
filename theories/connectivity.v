@@ -387,8 +387,8 @@ Lemma separatesNE x y (U : {set G}) :
 Proof.
   move => xU yU /(introN separatesP). rewrite /separatesb xU yU !negb_and //= negb_forall.
   case: (altP (x =P y)) => [<-|xDy H]; first by rewrite connect0.
-  apply/connect_irredRP => //. case/existsP : H => p Hp. exists p => //. 
-  by rewrite -disjoint_subset disjoint_exists.
+  apply/connect_irredRP => //. case/existsP : H => p Hp. exists p => //.
+  exact/subsetP/(exists_inPn Hp). 
 Qed.
 
 Definition vseparator U := exists x y, separates x y U.
@@ -822,7 +822,7 @@ Qed.
 
 (** *** Edge Version *)
 
-Corollary independent_walks L (G : graph L) (a b : G) n : 
+Corollary independent_walks Lv Le (G : graph Lv Le) (a b : G) n : 
   a != b -> (forall E, eseparates a b E -> n <= #|E|) -> 
   exists2 W : 'I_n -> seq (edge G), 
     forall i, walk a b (W i) & forall i j, i != j -> [disjoint W i & W j].
