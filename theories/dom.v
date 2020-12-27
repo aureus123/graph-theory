@@ -182,7 +182,7 @@ Proof. apply: forall_inPP => v; exact: exists_inP. Qed.
 
 Lemma dominatingEedge : dominating = [forall (v | v \notin D), exists u in D, u -- v].
 Proof.
-  apply/forallP. /forall_inP => [H v vND |H v].
+  apply/forallP/forall_inP => [H v vND |H v].
   - have [u udomv] := bigcupP (H v).
     rewrite in_cln; case/predU1P => [?|uv]; first by subst;contrab.
     by apply/exists_inP; exists u.
