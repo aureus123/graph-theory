@@ -224,9 +224,9 @@ Proof.
   move => f_inj fP E y yP.
   pose rT' := { y : rT | P y}.
   pose f' (x:aT) : rT' := Sub (f x) (fP x).
-  have/inj_card_onto f'_inj : injective f'. { move => x1 x2 []. exact: f_inj. }
-  rewrite card_sig E in f'_inj. 
-  case/mapP : (f'_inj erefl (Sub y yP)) => x _ [] ->. exact: codom_f. 
+  have/inj_card_onto : injective f' by move => x1 x2 []; exact: f_inj.
+  case/(_ _ (Sub y yP))/Wrap => [|/codomP[x]]; first by rewrite card_sig E.
+  by move/(congr1 val) => /= ->; exact: codom_f.
 Qed.
 
 (** TODO: check whether the collection of lemmas on sets/predicates
@@ -315,48 +315,6 @@ Qed.
 Lemma bigcup_set1 (T I : finType) (i0 : I) (F : I -> {set T}) :
   \bigcup_(i in [set i0]) F i = F i0.
 Proof. by rewrite (big_pred1 i0) // => i; rewrite inE. Qed.
-
-(* This is an adapted version of partition_disjoint_bigcup in finset.v
- * where we force the index in the bigcup to satisfy P.
- * Could be more general for all bigops, not just sum. *)
-Lemma partition_disjoint_bigcup_P (T I : finType) (F : I -> {set T}) (P : pred I)
-    E : (forall i j, P i -> P j -> i != j -> [disjoint F i & F j]) ->
-  \sum_(x in \bigcup_(i | P i) F i) E x =
-    \sum_(i | P i) \sum_(x in F i) E x.
-Proof.
-move=> disjF. pose P' := [set F i | i in I & P i && (F i != set0)].
-have trivP: trivIset P'.
-  apply/trivIsetP=> _ _ /imsetP[i iP' ->] /imsetP[j jP' ->] neqFij.
-  apply: disjF; have/setId2P [_ iP _] := iP'. exact: iP.
-  have/setId2P [_ jP _] := jP'. exact: jP. by apply: contraNneq neqFij => ->.
-have ->: \bigcup_(i | P i) F i = cover P'.
-  apply/esym. rewrite cover_imset. 
-  under eq_bigl=> x. rewrite inE andbA [in X in X && _]andbC -andbA. over.
-  rewrite big_mkcondr; apply: eq_bigr => i _. by rewrite inE; case: eqP.
-rewrite big_trivIset // big_imset => [|i j Pi' /setIdP[_ /andP [Pj notFj0]] eqFij].
-  under eq_bigl=> x. rewrite inE andbA [in X in X && _]andbC -andbA. over.
-  rewrite big_mkcondr; apply: eq_bigr => i _; rewrite inE.
-  by case: eqP => //= ->; rewrite big_set0. have/setId2P [_ Pi _] := Pi'.
-  by apply: contraNeq (disjF _ _ Pi Pj) _; by rewrite -setI_eq0 eqFij setIid.
-Qed.
-
-Lemma sub_diff_sum (T : finType) (A B : {set T}) (F : T -> nat) :
- B \subset A -> \sum_(i in A :\: B) F i = \sum_(i in A) F i - \sum_(i in B) F i.
-Proof.
-  move/setIidPr=> BsubA.
-  rewrite [in X in _ = X - _](big_setID B) /=.
-  under [in X in _ = X + _ - _]eq_bigl do rewrite BsubA.
-  rewrite addnC -addnBA. by rewrite subnn addn0. auto.
-Qed.
-
-Lemma sub_leq_sum (T : finType) (A B : {set T}) (F : T -> nat) :
- A \subset B -> \sum_(i in A) F i <= \sum_(i in B) F i.
-Proof.
-  move/setIidPr=> AsubB.
-  rewrite [in X in _ <= X](big_setID A) /=.
-  under [in X in _ <= X + _]eq_bigl do rewrite AsubB.
-  by rewrite leq_addr.
-Qed.
 
 (** usage: [elim/(size_ind f) : x] *)
 Lemma size_ind (X : Type) (f : X -> nat) (P : X -> Type) : 
@@ -479,12 +437,44 @@ Definition unique X (P : X -> Prop) := forall x y, P x -> P y -> x = y.
 Lemma empty_uniqe X (P : X -> Prop) : (forall x, ~ P x) -> unique P.
 Proof. firstorder. Qed.
 
+(** *** Disjointness *)
+
+(* This section is part of >=mathcomp-8.12 *)
+Section Disjoint.
+Variable (T : finType).
+Implicit Types (A B C D: {pred T}) (P Q : pred T) (x y : T) (s : seq T).
+
+Lemma disjointFr A B x : [disjoint A & B] -> x \in A -> x \in B = false.
+Proof. by move/pred0P/(_ x) => /=; case: (x \in A). Qed.
+
+Lemma disjointFl A B x : [disjoint A & B] -> x \in B -> x \in A = false.
+Proof. rewrite disjoint_sym; exact: disjointFr. Qed.
+
+Lemma disjointWl A B C :
+   A \subset B -> [disjoint B & C] -> [disjoint A & C].
+Proof. by rewrite 2!disjoint_subset; apply: subset_trans. Qed.
+
+Lemma disjointWr A B C : A \subset B -> [disjoint C & B] -> [disjoint C & A].
+Proof. rewrite ![[disjoint C & _]]disjoint_sym. exact:disjointWl. Qed.
+
+Lemma disjointW A B C D :
+  A \subset B -> C \subset D -> [disjoint B & D] -> [disjoint A & C].
+Proof.
+by move=> subAB subCD BD; apply/(disjointWl subAB)/(disjointWr subCD).
+Qed.
+
+Lemma disjoints1 A x : [disjoint [set x] & A] = (x \notin A).
+Proof. by rewrite (@eq_disjoint1 _ x) // => y; rewrite !inE. Qed.
+
+End Disjoint.
+
 Lemma disjointP (T : finType) (A B : pred T):
   reflect (forall x, x \in A -> x \in B -> False) [disjoint A & B].
-Proof.
-  rewrite disjoint_subset. 
-  apply:(iffP subsetP) => H x; by move/H/negP. 
-Qed.
+Proof. by rewrite disjoint_subset; apply:(iffP subsetP) => H x; move/H/negP. Qed.
+Arguments disjointP {T A B}.
+
+Definition disjointE (T : finType) (A B : pred T) (x : T) 
+  (D : [disjoint A & B]) (xA : x \in A) (xB : x \in B) := disjointP D _ xA xB.
 
 Lemma disjointsU (T : finType) (A B C : {set T}):
   [disjoint A & C] -> [disjoint B & C] -> [disjoint A :|: B & C].
@@ -492,42 +482,6 @@ Proof.
   move => a b. 
   apply/disjointP => x /setUP[]; by move: x; apply/disjointP.
 Qed.
-
-(** *** Disjointness *)
-Lemma disjointE (T : finType) (A B : pred T) x : 
-  [disjoint A & B] -> x \in A -> x \in B -> False.
-Proof. by rewrite disjoint_subset => /subsetP H /H /negP. Qed.
-
-Lemma disjointFr (T : finType) (A B : pred T) (x:T) : 
-  [disjoint A & B] -> x \in A -> x \in B = false.
-Proof. move => D L. apply/negbTE. apply/negP. exact: (disjointE D). Qed.
-
-Lemma disjointFl (T : finType) (A B : pred T) (x:T) : 
-  [disjoint A & B] -> x \in B -> x \in A = false.
-Proof. move => D L. apply/negbTE. apply/negP => ?. exact: (disjointE D) L. Qed.
-
-Lemma disjointNI (T : finType) (A B : pred T) (x:T) : 
-  x \in A -> x \in B -> ~~ [disjoint A & B].
-Proof. move => ? ?. apply/negP => /disjointE. move/(_ x). by apply. Qed.
-
-Lemma disjoint_exists (T : finType) (A B : pred T) : 
-  [disjoint A & B] = ~~ [exists x in A, x \in B].
-Proof. rewrite negb_exists_in disjoint_subset. by apply/subsetP/forall_inP; apply. Qed.
-
-Definition disjoint_transL := disjoint_trans.
-Lemma disjoint_transR (T : finType) (A B C : pred T) :
- A \subset B -> [disjoint C & B] -> [disjoint C & A].
-Proof. rewrite ![[disjoint C & _]]disjoint_sym. exact:disjoint_trans. Qed.
-
-Lemma disjointW (T : finType) (A B C D : pred T) : 
-    A \subset B -> C \subset D -> [disjoint B & D] -> [disjoint A & C].
-Proof. 
-  move => subAB subCD BD. apply: (disjoint_trans subAB). 
-  move: BD. rewrite !(disjoint_sym B). exact: disjoint_trans.
-Qed.
-
-Lemma disjoints1 (T : finType) (x : T) (A : pred T) : [disjoint [set x] & A] = (x \notin A).
-Proof. rewrite (@eq_disjoint1 _ x) // => ?. by rewrite !inE. Qed.
 
 (** *** Function Update *)
 
@@ -885,33 +839,6 @@ Proof.
   do 2 (case/or3P => /eqP->); try by rewrite ?eqxx // 1?disjoint_sym. 
 Qed.
 
-
-(** Function for generating graphs (used by wirred.v and solver) *)
-
-(* give_sg generate the sedge relation from a function f such that:
-     f u v (with 0 <= u < v < n) is true iff (u,v) is an edge of G *)
-Definition give_sg (f : nat -> nat -> bool) (n : nat) (i j : 'I_n) :=
-  let u := nat_of_ord i in
-    let v := nat_of_ord j in
-      if (u == v) then false else
-        if (u < v) then f u v else f v u.
-
-Fact give_sg_sym (f : nat -> nat -> bool) (n : nat) : symmetric (give_sg f (n:=n)).
-Proof.
-  rewrite /symmetric /give_sg => u v.
-  case: (boolP (u == v))=> [ | uneqv] ; first by move/eqP->.
-  rewrite (ifN _ _ uneqv).
-  rewrite eq_sym in uneqv.
-  rewrite (ifN _ _ uneqv).
-  rewrite neq_ltn in uneqv.
-  by case: (orP uneqv) => ultv;
-    move: (ltnW ultv) ; rewrite leqNgt => nvltu; rewrite (ifN _ _ nvltu) ultv.
-Qed.
-
-Fact give_sg_irrefl (f : nat -> nat -> bool) (n : nat) : irreflexive (give_sg f (n:=n)).
-Proof. by rewrite /irreflexive /give_sg => ? ; rewrite eq_refl. Qed.
-
-
 (** Extra Morphism declatations *)
 
 Require Import Setoid Morphisms.
@@ -1013,7 +940,7 @@ Lemma sorted_leq_nth s (srt_s : sorted leq s) :
 Proof. 
 move => i j /ltnW i_j i_s j_s. apply: sorted_le_nth => //. exact: leq_trans.
 Qed.
-Arguments sorted_leq_nth : clear implicits.
+Arguments sorted_leq_nth : clear implicits. 
 
 End Preliminaries_dom.
 

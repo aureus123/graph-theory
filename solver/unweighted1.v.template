@@ -1,6 +1,4 @@
 
-(* Template for a certificate *)
-
 From mathcomp Require Import all_ssreflect.
 Require Import preliminaries digraph sgraph dom.
 
@@ -25,9 +23,6 @@ Section Instance.
   Let inst_sym : symmetric inst_rel. Proof. exact: give_sg_sym. Qed.
   Let inst_irrefl : irreflexive inst_rel. Proof. exact: give_sg_irrefl. Qed.
   Definition inst := SGraph inst_sym inst_irrefl.
-
-  Definition weight (v : inst) := match v with
-#      end.
 End Instance.
 
 Notation "''v' m" := (@Ordinal n m isT) (at level 0, m at level 8, format "''v' m").
@@ -36,7 +31,8 @@ Notation "''v' m" := (@Ordinal n m isT) (at level 0, m at level 8, format "''v' 
 Section Certificate.
   Let inst_set := [set #].
 
-  Fact inst_set_is_irr' : @irredundant inst inst_set.
+  Fact inst_set_is_irr : @irredundant inst inst_set.
+  Proof.
     apply/irredundantP.
     move=> [v vltn] ; do # try destruct v.
     all : try ( rewrite (bool_irrelevance vltn isT);
@@ -45,15 +41,16 @@ Section Certificate.
       by move: vltn ; apply/negP.
   Qed.
 
-  Fact IR_w_lb : IR_w inst weight >= #.
+  Fact IR_lb : IR inst >= #.
   Proof.
-    suff: weight_set weight inst_set = #.
-    move<- ; apply: IR_max ; exact: inst_set_is_irr'.
-    rewrite /inst_set.
+    rewrite eq_IR_IR1.
+    suff: weight_set (@ones inst) inst_set = #.
+    move<- ; apply: IR_max ; exact: inst_set_is_irr.
+    rewrite -cardwset1 /inst_set.
     try rewrite -!setUA.
-    rewrite !weightsU1 !inE.
+    rewrite !cardsU1 !inE.
     try rewrite negb_or.
-    by rewrite /weight_set big_set1.
+    by rewrite cards1.
   Qed.
 
 End Certificate.
