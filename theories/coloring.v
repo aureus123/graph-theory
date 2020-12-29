@@ -86,12 +86,27 @@ End f_to_pColoring.
 (* A trivial coloring: a partition where each set is a singleton with diff. vertices *)
 Definition singl_part := [set [set x] | x in G].
 
+Lemma stable1 (x : G) : stable [set x].
+Proof. by apply/stableP=> u v ; rewrite !in_set1 ; move/eqP-> ; move/eqP-> ; rewrite sg_irrefl. Qed.
+
 Lemma singl_part_is_coloring : is_coloring_p singl_part.
 Proof.
   rewrite /is_coloring_p ; apply/andP ; split.
   - rewrite /partition ; apply/and3P ; split.
-    + rewrite /cover.
-Admitted.
+    + rewrite /cover eqEsubset ; apply/andP ; split ; first exact: subsetT.
+      apply/subsetP=> x _ ; apply/bigcupP ; rewrite /singl_part.
+      exists [set x] ; last by rewrite in_set1.
+      apply/imsetP ; exists x ; by [].
+    + apply/trivIsetP=> A B Asin Bsin AneqB ; apply/disjointP=> x ; move: AneqB.
+      move: Asin ; rewrite /singl_part ; move/imsetP=> [x' _] ; move->.
+      move: Bsin ; rewrite /singl_part ; move/imsetP=> [x'' _] ; move->.
+      rewrite !in_set1 ; move=> x'neqx'' /eqP xeqx' /eqP xeqx''.
+      by move: x'neqx'' ; rewrite -xeqx' -xeqx'' eqxx.
+    + rewrite /singl_part ; apply/imsetP=> [[x _ H]].
+      by move: (set10 x) ; rewrite H ; move/eqP.
+  - apply/forall_inP=> S ; rewrite /singl_part ; move/imsetP=> [x _] ->.
+    exact: stable1.
+Qed.
 
 Lemma singl_part_card : #|singl_part| = #|G|.
 Admitted.
