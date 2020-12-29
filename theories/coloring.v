@@ -34,16 +34,16 @@ Proof. apply/cliqueP ; rewrite /setv ; apply: clique1. Qed.
 
 Definition omega : nat := #|arg_max setv (@cliqueb G) W1|.
 
-Fact omega_max S : @cliqueb G S -> #|S| <= omega.
-Proof. by move: S ; rewrite /omega ; case: (arg_maxnP W1 setv1). Qed.
+Fact omega_max (Q : {set G}) : cliqueb Q -> #|Q| <= omega.
+Proof. by move: Q ; rewrite /omega ; case: (arg_maxnP W1 setv1). Qed.
 
-Fact omega_witness : exists2 S, cliqueb S & W1 S = omega.
+Fact omega_witness : exists2 Q, cliqueb Q & W1 Q = omega.
 Proof. by rewrite /omega; case: (arg_maxnP W1 setv1) => A; exists A. Qed.
 
-Fact omega_maxset S : cliqueb S -> W1 S = omega -> maxset (@cliqueb G) S.
+Fact omega_maxset (Q : {set G}) : cliqueb Q -> W1 Q = omega -> maxset (@cliqueb G) Q.
 Proof.
-  move=> ? Somega ; apply/maxset_properP ; split ; first by [].
-  move=> F ; apply/contraL=> Fclq ; move: (omega_max Fclq) ; rewrite -Somega.
+  move=> ? Qomega ; apply/maxset_properP ; split ; first by [].
+  move=> F ; apply/contraL=> Fclq ; move: (omega_max Fclq) ; rewrite -Qomega.
   by apply/contraL ; rewrite properEcard ltnNge ; move/andP=> [_].
 Qed.
 
@@ -215,7 +215,44 @@ End ColoringBasics.
 
 
 (* A main result of graph colorings *)
-Theorem omega_leq_chi : omega <= chi.
+Theorem clique_leq_coloring (Q : {set G}) (P : {set {set G}}) :
+  cliqueb Q -> is_coloring_p P -> #|Q| <= #|P|.
+Proof.
+  move/cliqueP=> Qclq ; rewrite /is_coloring_p => /andP [Ppart /is_coloring_pP-Pcol].
+  set f := fun (x : G) => odflt x [pick y in pblock P x].
+  set QQ := [set (f x) | x in Q].
+  have QQsubT: QQ \subset transversal P setT.
+  { apply/subsetP=> x ; rewrite /QQ /transversal ; move/imsetP=> [y ? ?].
+    by apply/imsetP ; exists y. }
+  suff QeqQQ : #|Q| = #|QQ|.
+  { rewrite QeqQQ ; move: (subset_leq_card QQsubT).
+    by rewrite (card_transversal (transversalP Ppart)). }
+  rewrite /QQ card_in_imset ; first by [].
+  (* now, we have to prove that f is injective *)
+  rewrite /injective => x1 x2 x1inQ x2inQ fx1eqfx2.
+  apply/eqP.
+  set S := pblock P x1.
+  have Sx2 : S = pblock P x2.
+  { apply: same_pblock; first by move: Ppart=> /and3P [_ ? _].
+    admit. }           (* FINISH!! it should come from fx1eqfx2 *)
+  have SinP : S \in P.
+  { rewrite pblock_mem ; first by [].
+    by move: Ppart=> /and3P [/eqP-coverT _ _] ; rewrite coverT. }
+  have x1inS : x1 \in S
+  by rewrite mem_pblock ; move: Ppart=> /and3P [/eqP-coverT _ _] ; rewrite coverT.
+  have x2inS : x2 \in S.
+  by rewrite Sx2 mem_pblock ; move: Ppart=> /and3P [/eqP-coverT _ _] ; rewrite coverT.
+  move: (Pcol S SinP x1 x2 x1inS x2inS) ; apply: contraR.
+  (* finally, we use the fact that Q is a clique *)
+  by apply: Qclq.
 Admitted.
+
+
+Theorem omega_leq_chi : omega <= chi.
+Proof.
+  move: chi_witness=> [P Pcol] <-.
+  move: omega_witness=> [Q Qclq] <-.
+  exact: clique_leq_coloring.
+Qed.
 
 End GraphColoring.
