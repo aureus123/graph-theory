@@ -23,9 +23,9 @@ Section fColoring.
 
   Definition is_coloring : bool := [forall u, forall v, u -- v ==> (f u != f v)].
 
-  Definition number_of_colors : nat := #|f @: setT|.
+  Definition card_coloring : nat := #|f @: setT|.
 
-  Definition is_kcoloring (k : nat) : bool :=  is_coloring && (number_of_colors <= k).
+  Definition is_kcoloring (k : nat) : bool :=  is_coloring && (card_coloring <= k).
 
   Proposition is_coloringP : reflect (forall u v : G, u -- v -> (f u != f v)) is_coloring.
   Proof.
@@ -38,55 +38,82 @@ End fColoring.
 
 (* Colorings as partitions *)
 Section pColoring.
-  Variable R : rel G.   (* the relation that tells if two vertices share the same color *)
-  Hypothesis eqiR : {in setT & &, equivalence_rel R}. (* it should be an equivalence relationship *)
+  Variable P : {set {set G}}.
 
-  Definition part_p := equivalence_partition R setT.
+  Definition is_coloring_p : bool := partition P setT && [forall S in P, stable S].
 
-  Definition is_coloring_p : bool := partition part_p setT && [forall S in part_p, stable S].
+  Definition card_coloring_p := #|P|.
 
-  Definition number_of_colors_p : nat := #|part_p|.
-
-  Proposition is_coloring_pP :
-    reflect (forall S : {set G}, S \in part_p -> {in S&, forall u v, ~~ u -- v}) is_coloring_p.
+  Proposition is_coloring_pP : reflect
+    (forall S : {set G}, S \in P -> {in S&, forall u v, ~~ u -- v}) [forall S in P, stable S].
 (* Daniel: I tried to put "{in part_p, forall S, {...}}" but it doesn't checktype, don't know why *)
   Proof.
-    rewrite /is_coloring_p ; apply: (iffP andP).
-    - move=> [_ /forallP-P] S Sinpart u v uinS vinS.
-      by move: (P S) ; rewrite Sinpart implyTb ; move/stableP ; move=> /(_ u v uinS vinS).
-    - move=> P ; split ; first by exact: equivalence_partitionP.
-      apply/forallP=> S ; apply/implyP=> Sinpart ; apply/stableP=> u v uinS vinS.
-      by move: (P S Sinpart u v uinS vinS).
+    apply: (iffP forallP).
+    - move=> H S Sinpart u v uinS vinS.
+      by move: (H S) ; rewrite Sinpart implyTb ; move/stableP ; move=> /(_ u v uinS vinS).
+    - move=> H S ; apply/implyP=> Sinpart ; apply/stableP=> u v uinS vinS.
+      by move: (H S Sinpart u v uinS vinS).
   Qed.
 End pColoring.
 
+
 (* Conversion between one and the another *)
-Definition f_to_R (C : finType) (f : {ffun G -> C}) := [rel x y | f x == f y].
+Section f_to_pColoring.
+  Variable C : finType.
+  Variable f : {ffun G -> C}.
 
-Definition f_to_part (C : finType) (f : {ffun G -> C}) := part_p (f_to_R f).
+  Definition f_to_part := preim_partition f setT.
+  Let P := f_to_part.
 
-Lemma f_to_part_is_partition (C : finType) (f : {ffun G -> C}) : partition (f_to_part f) setT.
-Proof. rewrite /f_to_part ; exact: preim_partitionP. Qed.
+  Lemma f_to_part_is_coloring : is_coloring f -> is_coloring_p P.
+  Proof.
+    set R := [rel x y | f x == f y].
+    have P_is_part : partition P setT by rewrite /f_to_part ; exact: preim_partitionP.
+    move/is_coloringP=> H ; rewrite /is_coloring_p ; apply/andP ; split ; first exact: P_is_part.
+    apply/is_coloring_pP ; move=> S Sinpart u v uinS vinS.
+    rewrite (contra (H u v)) // negbK.
+    move: P_is_part => /andP [_ /andP [dsj _]].
+    move: vinS ; rewrite -(@def_pblock _ P S u dsj Sinpart uinS).
+    have eqiR : {in setT & &, equivalence_rel R} by split=> //= /eqP->.
+    by rewrite (@pblock_equivalence_partition _ R setT eqiR u v (in_setT u) (in_setT v)).
+  Qed.
 
-Lemma f_to_part_is_coloring (C : finType) (f : {ffun G -> C}) :
-  is_coloring f -> is_coloring_p (f_to_R f).
+  Lemma f_to_part_same_card : is_coloring f -> card_coloring f = #|P|.
+  Admitted.
+End f_to_pColoring.
+
+
+(* A trivial coloring: a partition where each set is a singleton with diff. vertices *)
+Definition singl_part := [set [set x] | x in G].
+
+Lemma singl_part_is_coloring : is_coloring_p singl_part.
 Proof.
-  have eqiR : {in setT & &, equivalence_rel (f_to_R f)} by split=> //= /eqP->.
-  move/is_coloringP=> P ; apply/is_coloring_pP ; first by [].
-  move=> S Sinpart u v uinS vinS.
-  rewrite (contra (P u v)) // negbK.
-  move: (f_to_part_is_partition f) => /andP [_ /andP [dsj _]].
-  suff: (f_to_R f) u v by [].
-  move: vinS ; rewrite -(@def_pblock _ (part_p (f_to_R f)) S u dsj Sinpart uinS).
-  by rewrite (@pblock_equivalence_partition _ (f_to_R f) setT eqiR u v (in_setT u) (in_setT v)).
+  rewrite /is_coloring_p ; apply/andP ; split.
+  - rewrite /partition ; apply/and3P ; split.
+    + rewrite /cover.
+Admitted.
+
+Lemma singl_part_card : #|singl_part| = #|G|.
+Admitted.
+
+Definition chi : nat := #|arg_min singl_part is_coloring_p card_coloring_p|.
+
+Fact chi_min P : is_coloring_p P -> chi <= #|P|.
+Proof.
+  rewrite /chi.
+  case: (arg_minP card_coloring_p singl_part_is_coloring) => A _ ; apply.
 Qed.
 
+Fact chi_witness : exists2 P, is_coloring_p P & #|P| = chi.
+Proof.
+  rewrite /chi.
+  case: (arg_minP card_coloring_p singl_part_is_coloring) => D.
+  by exists D.
+Qed.
 
+Fact chi_minset P : is_coloring_p P -> #|P| = chi -> minset is_coloring_p P.
+Admitted.
 
-Definition chi : nat := is_coloring f && (#|f @: setT| <= k).
-
-
-Check mem_pred {ffun G -> C}.
 
 
 
