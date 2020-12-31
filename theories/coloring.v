@@ -79,19 +79,18 @@ Section fColoring.
 End fColoring.
 
 
-(* Colorings as partitions *)
+(* Colorings as partitions of stable sets *)
 Section pColoring.
   Variable P : {set {set G}}.
 
-  Definition is_coloring_p : bool := partition P setT && [forall S in P, stable S].
+  Definition is_stablepart : bool := partition P setT && [forall S in P, stable S].
 
-  Definition card_coloring_p := #|P|.
+  Definition card_stablepart := #|P|.
 
-  Definition is_kcoloring_p (k : nat) : bool :=  is_coloring_p && (card_coloring_p <= k).
+  Definition is_kstablepart (k : nat) : bool :=  is_stablepart && (card_stablepart <= k).
 
-  Proposition is_coloring_pP : reflect
+  Proposition is_stablepartP : reflect
     (forall S : {set G}, S \in P -> {in S&, forall u v, ~~ u -- v}) [forall S in P, stable S].
-(* Daniel: I tried to put "{in part_p, forall S, {...}}" but it doesn't checktype, don't know why *)
   Proof.
     apply: (iffP forallP).
     - move=> H S Sinpart u v uinS vinS.
@@ -100,9 +99,9 @@ Section pColoring.
       by move: (H S Sinpart u v uinS vinS).
   Qed.
 
-  Proposition card_coloring_p_gte_1 : is_coloring_p -> #|P| >= 1.
+  Proposition card_stablepart_gte_1 : is_stablepart -> #|P| >= 1.
   Proof.
-    rewrite /is_coloring_p => /andP [Ppart _].
+    rewrite /is_stablepart => /andP [Ppart _].
     move: Gnotempty ; move: (card_partition Ppart) ; rewrite cardsT ; move->.
     rewrite !ltnNge ; apply/contraNN ; rewrite leqn0 cards_eq0 ; move/eqP->.
     by rewrite big_set0.
@@ -113,24 +112,24 @@ Section pColoring.
   Definition repr_coll := transversal P setT.
   Definition repr_class (v : G) : G := transversal_repr somev repr_coll (pblock P v).
 
-  Proposition repr_coll_card : is_coloring_p -> #|repr_coll| = #|P|.
+  Proposition repr_coll_card : is_stablepart -> #|repr_coll| = #|P|.
   Proof. 
-    rewrite /is_coloring_p => /andP [Ppart _].
+    rewrite /is_stablepart => /andP [Ppart _].
     move: (transversalP Ppart) ; rewrite -/repr_coll ; exact: card_transversal.
   Qed.
 
-  Proposition repr_class_in_coll v : is_coloring_p -> repr_class v \in repr_coll.
+  Proposition repr_class_in_coll v : is_stablepart -> repr_class v \in repr_coll.
   Proof.
-    rewrite /is_coloring_p => /andP [Ppart _].
+    rewrite /is_stablepart => /andP [Ppart _].
     move: (transversalP Ppart) ; rewrite -/repr_coll => repr_coll_is_transv.
     apply: (repr_mem_transversal repr_coll_is_transv).
     have vincoverP: v \in cover P by move: Ppart => /and3P [/eqP-coverT _ _] ; rewrite coverT.
     by move: (pblock_mem vincoverP).
   Qed.
 
-  Proposition repr_same_class v : is_coloring_p -> pblock P v == pblock P (repr_class v).
+  Proposition repr_same_class v : is_stablepart -> pblock P v == pblock P (repr_class v).
   Proof.
-    rewrite /is_coloring_p => /andP [Ppart _].
+    rewrite /is_stablepart => /andP [Ppart _].
     have vincoverP: v \in cover P by move: Ppart => /and3P [/eqP-coverT _ _] ; rewrite coverT.
     move: (pblock_mem vincoverP) => vclassinP.
     move: (repr_mem_pblock (transversalP Ppart) somev vclassinP) => rcinvclass.
@@ -138,38 +137,38 @@ Section pColoring.
     by rewrite -(same_pblock dsj rcinvclass).
   Qed.
 
-  Proposition repr_not_adj u v : is_coloring_p -> repr_class u = repr_class v -> ~~ u -- v.
+  Proposition repr_not_adj u v : is_stablepart -> repr_class u = repr_class v -> ~~ u -- v.
   Proof.
-    move=> iscolp rcueqrcv.
-    move/eqP: (repr_same_class u iscolp).
-    move/eqP: (repr_same_class v iscolp).
+    move=> isstp rcueqrcv.
+    move/eqP: (repr_same_class u isstp).
+    move/eqP: (repr_same_class v isstp).
     rewrite rcueqrcv ; move<- => uclasseqvclass.
-    move: iscolp ; rewrite /is_coloring_p => /andP [Ppart /is_coloring_pP-Pcol].
+    move: isstp ; rewrite /is_stablepart => /andP [Ppart /is_stablepartP-Pstab].
     have vincoverP: v \in cover P by move: Ppart => /and3P [/eqP-coverT _ _] ; rewrite coverT.
     move: (pblock_mem vincoverP) => vclassinP.
     set S := pblock P v.
     move: vincoverP ; rewrite -mem_pblock => vinS.
     have uincoverP: u \in cover P by move: Ppart => /and3P [/eqP-coverT _ _] ; rewrite coverT.
     move: uincoverP ; rewrite -mem_pblock uclasseqvclass => uinS.
-    by move: (Pcol S vclassinP u v uinS vinS).
+    by move: (Pstab S vclassinP u v uinS vinS).
   Qed.
 End pColoring.
 
 
 (* Conversion between one and the another *)
-Section f_to_pColoring.
+Section col_to_pColoring.
   Variable C : finType.
   Variable f : {ffun G -> C}.
 
-  Definition f_to_part := preim_partition f setT.
-  Let P := f_to_part.
+  Definition col_to_part := preim_partition f setT.
+  Let P := col_to_part.
 
-  Lemma f_to_part_is_coloring : is_coloring f -> is_coloring_p P.
+  Lemma col_to_part_is_stablepart : is_coloring f -> is_stablepart P.
   Proof.
     set R := [rel x y | f x == f y].
-    have Ppart : partition P setT by rewrite /f_to_part ; exact: preim_partitionP.
-    move/is_coloringP=> H ; rewrite /is_coloring_p ; apply/andP ; split ; first exact: Ppart.
-    apply/is_coloring_pP ; move=> S Sinpart u v uinS vinS.
+    have Ppart : partition P setT by rewrite /col_to_part ; exact: preim_partitionP.
+    move/is_coloringP=> H ; rewrite /is_stablepart ; apply/andP ; split ; first exact: Ppart.
+    apply/is_stablepartP ; move=> S Sinpart u v uinS vinS.
     rewrite (contra (H u v)) // negbK.
     move: Ppart => /andP [_ /andP [dsj _]].
     move: vinS ; rewrite -(@def_pblock _ P S u dsj Sinpart uinS).
@@ -177,17 +176,17 @@ Section f_to_pColoring.
     by rewrite (@pblock_equivalence_partition _ R setT eqiR u v (in_setT u) (in_setT v)).
   Qed.
 
-  Lemma f_to_part_same_card : is_coloring f -> card_coloring f = #|P|.
+  Lemma col_to_part_same_card : is_coloring f -> card_coloring f = #|P|.
   Admitted.
 
-  Lemma f_to_part_same_kcom (k : nat) :
-    is_coloring f -> (is_kcoloring f k) = (is_kcoloring_p P k).
+  Lemma col_to_part_same_kcom (k : nat) :
+    is_coloring f -> (is_kcoloring f k) = (is_kstablepart P k).
   Proof.
     move=> fcol.
-    rewrite /is_kcoloring /is_kcoloring_p fcol (f_to_part_is_coloring fcol) !andTb.
-    by rewrite (f_to_part_same_card fcol) /card_coloring_p.
+    rewrite /is_kcoloring /is_kstablepart fcol (col_to_part_is_stablepart fcol) !andTb.
+    by rewrite (col_to_part_same_card fcol) /card_stablepart.
   Qed.
-End f_to_pColoring.
+End col_to_pColoring.
 
 
 (* A trivial coloring: a partition where each set is a singleton with diff. vertices *)
@@ -212,9 +211,9 @@ Proof.
     by move: (set10 x) ; rewrite H ; move/eqP.
 Qed.
 
-Lemma singl_part_is_coloring : is_coloring_p singl_part.
+Lemma singl_part_is_stablepart : is_stablepart singl_part.
 Proof.
-  rewrite /is_coloring_p ; apply/andP ; split.
+  rewrite /is_stablepart ; apply/andP ; split.
   - exact: singl_part_is_partition.
   - apply/forall_inP=> S ; rewrite /singl_part ; move/imsetP=> [x _] ->.
     exact: stable1.
@@ -229,22 +228,22 @@ Proof.
 Qed.
 
 (* Definition of chromatic number and some basic properties *)
-Definition chi : nat := #|arg_min singl_part is_coloring_p card_coloring_p|.
+Definition chi : nat := #|arg_min singl_part is_stablepart card_stablepart|.
 
-Fact chi_min P : is_coloring_p P -> chi <= #|P|.
+Fact chi_min P : is_stablepart P -> chi <= #|P|.
 Proof.
   rewrite /chi.
-  case: (arg_minnP card_coloring_p singl_part_is_coloring) => A _ ; apply.
+  case: (arg_minnP card_stablepart singl_part_is_stablepart) => A _ ; apply.
 Qed.
 
-Fact chi_witness : exists2 P, is_coloring_p P & #|P| = chi.
+Fact chi_witness : exists2 P, is_stablepart P & #|P| = chi.
 Proof.
   rewrite /chi.
-  case: (arg_minnP card_coloring_p singl_part_is_coloring) => D.
+  case: (arg_minnP card_stablepart singl_part_is_stablepart) => D.
   by exists D.
 Qed.
 
-Fact chi_minset P : is_coloring_p P -> #|P| = chi -> minset is_coloring_p P.
+Fact chi_minset P : is_stablepart P -> #|P| = chi -> minset is_stablepart P.
 Proof.
   move=> ? Pchi ; apply/minset_properP ; split ; first by [].
   move=> F ; apply/contraL=> Fcol ; move: (chi_min Fcol) ; rewrite -Pchi.
@@ -252,19 +251,19 @@ Proof.
 Qed.
 
 Fact chi_lte_n : chi <= #|G|.
-Proof. by move: (chi_min singl_part_is_coloring) ; rewrite singl_part_card. Qed.
+Proof. by move: (chi_min singl_part_is_stablepart) ; rewrite singl_part_card. Qed.
 
 Fact chi_gte_1 : chi >= 1.
-Proof. move: chi_witness=> [P Pcol] <- ; exact: card_coloring_p_gte_1. Qed.
+Proof. move: chi_witness=> [P Pstab] <- ; exact: card_stablepart_gte_1. Qed.
 
 End ColoringBasics.
 
 
 (* A main result of graph colorings *)
 Theorem clique_leq_coloring (Q : {set G}) (P : {set {set G}}) :
-  cliqueb Q -> is_coloring_p P -> #|Q| <= #|P|.
+  cliqueb Q -> is_stablepart P -> #|Q| <= #|P|.
 Proof.
-  move=> /cliqueP-Qclq iscolp.
+  move=> /cliqueP-Qclq isstp.
   (* QQ is the representative vertices of the vertices of Q *)
   set QQ := [set (repr_class P x) | x in Q].
   have QQsubRC: QQ \subset repr_coll P.
@@ -275,7 +274,7 @@ Proof.
   rewrite /QQ card_in_imset ; first by [].
   rewrite /injective => x1 x2 x1inQ x2inQ rc1eqrc2.
   apply/eqP.
-  move: (repr_not_adj iscolp rc1eqrc2).
+  move: (repr_not_adj isstp rc1eqrc2).
   apply: contraLR.
   rewrite negbK.
   (* now, we use the fact that Q is a clique *)
@@ -284,7 +283,7 @@ Qed.
 
 Theorem omega_leq_chi : omega <= chi.
 Proof.
-  move: chi_witness=> [P Pcol] <-.
+  move: chi_witness=> [P Pstab] <-.
   move: omega_witness=> [Q Qclq] <-.
   exact: clique_leq_coloring.
 Qed.
