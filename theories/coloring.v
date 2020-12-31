@@ -107,6 +107,36 @@ Section pColoring.
     rewrite !ltnNge ; apply/contraNN ; rewrite leqn0 cards_eq0 ; move/eqP->.
     by rewrite big_set0.
   Qed.
+
+  (* the following function gives a "representative vertex" of the same color than v *)
+  Definition repr_class (v : G) : G := transversal_repr somev (transversal P setT)
+    (pblock P v).
+
+  Proposition repr_same_class v : is_coloring_p -> pblock P v == pblock P (repr_class v).
+  Proof.
+    rewrite /is_coloring_p => /andP [Ppart _].
+    have vincoverP: v \in cover P by move: Ppart => /and3P [/eqP-coverT _ _] ; rewrite coverT.
+    move: (pblock_mem vincoverP) => vclassinP.
+    move: (repr_mem_pblock (transversalP Ppart) somev vclassinP) => rcinvclass.
+    move: Ppart => /andP [_ /andP [dsj _]].
+    by rewrite -(same_pblock dsj rcinvclass).
+  Qed.
+
+  Proposition repr_not_adj u v : is_coloring_p -> repr_class u = repr_class v -> ~~ u -- v.
+  Proof.
+    move=> iscolp rcueqrcv.
+    move/eqP: (repr_same_class u iscolp).
+    move/eqP: (repr_same_class v iscolp).
+    rewrite rcueqrcv ; move<- => uclasseqvclass.
+    move: iscolp ; rewrite /is_coloring_p => /andP [Ppart /is_coloring_pP-Pcol].
+    have vincoverP: v \in cover P by move: Ppart => /and3P [/eqP-coverT _ _] ; rewrite coverT.
+    move: (pblock_mem vincoverP) => vclassinP.
+    set S := pblock P v.
+    move: vincoverP ; rewrite -mem_pblock => vinS.
+    have uincoverP: u \in cover P by move: Ppart => /and3P [/eqP-coverT _ _] ; rewrite coverT.
+    move: uincoverP ; rewrite -mem_pblock uclasseqvclass => uinS.
+    by move: (Pcol S vclassinP u v uinS vinS).
+  Qed.
 End pColoring.
 
 
@@ -121,11 +151,11 @@ Section f_to_pColoring.
   Lemma f_to_part_is_coloring : is_coloring f -> is_coloring_p P.
   Proof.
     set R := [rel x y | f x == f y].
-    have P_is_part : partition P setT by rewrite /f_to_part ; exact: preim_partitionP.
-    move/is_coloringP=> H ; rewrite /is_coloring_p ; apply/andP ; split ; first exact: P_is_part.
+    have Ppart : partition P setT by rewrite /f_to_part ; exact: preim_partitionP.
+    move/is_coloringP=> H ; rewrite /is_coloring_p ; apply/andP ; split ; first exact: Ppart.
     apply/is_coloring_pP ; move=> S Sinpart u v uinS vinS.
     rewrite (contra (H u v)) // negbK.
-    move: P_is_part => /andP [_ /andP [dsj _]].
+    move: Ppart => /andP [_ /andP [dsj _]].
     move: vinS ; rewrite -(@def_pblock _ P S u dsj Sinpart uinS).
     have eqiR : {in setT & &, equivalence_rel R} by split=> //= /eqP->.
     by rewrite (@pblock_equivalence_partition _ R setT eqiR u v (in_setT u) (in_setT v)).
