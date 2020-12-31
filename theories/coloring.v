@@ -108,9 +108,25 @@ Section pColoring.
     by rewrite big_set0.
   Qed.
 
-  (* the following function gives a "representative vertex" of the same color than v *)
-  Definition repr_class (v : G) : G := transversal_repr somev (transversal P setT)
-    (pblock P v).
+  (* repr_class gives a "representative vertex" of the same color than v,
+     while repr_coll gives the collection of all representatives *)
+  Definition repr_coll := transversal P setT.
+  Definition repr_class (v : G) : G := transversal_repr somev repr_coll (pblock P v).
+
+  Proposition repr_coll_card : is_coloring_p -> #|repr_coll| = #|P|.
+  Proof. 
+    rewrite /is_coloring_p => /andP [Ppart _].
+    move: (transversalP Ppart) ; rewrite -/repr_coll ; exact: card_transversal.
+  Qed.
+
+  Proposition repr_class_in_coll v : is_coloring_p -> repr_class v \in repr_coll.
+  Proof.
+    rewrite /is_coloring_p => /andP [Ppart _].
+    move: (transversalP Ppart) ; rewrite -/repr_coll => repr_coll_is_transv.
+    apply: (repr_mem_transversal repr_coll_is_transv).
+    have vincoverP: v \in cover P by move: Ppart => /and3P [/eqP-coverT _ _] ; rewrite coverT.
+    by move: (pblock_mem vincoverP).
+  Qed.
 
   Proposition repr_same_class v : is_coloring_p -> pblock P v == pblock P (repr_class v).
   Proof.
@@ -248,35 +264,23 @@ End ColoringBasics.
 Theorem clique_leq_coloring (Q : {set G}) (P : {set {set G}}) :
   cliqueb Q -> is_coloring_p P -> #|Q| <= #|P|.
 Proof.
-  move/cliqueP=> Qclq ; rewrite /is_coloring_p => /andP [Ppart /is_coloring_pP-Pcol].
-  set f := fun (x : G) => odflt x [pick y in pblock P x].
-  set QQ := [set (f x) | x in Q].
-  have QQsubT: QQ \subset transversal P setT.
-  { apply/subsetP=> x ; rewrite /QQ /transversal ; move/imsetP=> [y ? ?].
-    by apply/imsetP ; exists y. }
+  move=> /cliqueP-Qclq iscolp.
+  (* QQ is the representative vertices of the vertices of Q *)
+  set QQ := [set (repr_class P x) | x in Q].
+  have QQsubRC: QQ \subset repr_coll P.
+  { apply/subsetP=> x ; rewrite /QQ ; move/imsetP => [y _].
+    move-> ; exact: repr_class_in_coll. }
   suff QeqQQ : #|Q| = #|QQ|.
-  { rewrite QeqQQ ; move: (subset_leq_card QQsubT).
-    by rewrite (card_transversal (transversalP Ppart)). }
+  { by rewrite QeqQQ -repr_coll_card ; move: (subset_leq_card QQsubRC). }
   rewrite /QQ card_in_imset ; first by [].
-  (* now, we have to prove that f is injective *)
-  rewrite /injective => x1 x2 x1inQ x2inQ fx1eqfx2.
+  rewrite /injective => x1 x2 x1inQ x2inQ rc1eqrc2.
   apply/eqP.
-  set S := pblock P x1.
-  have Sx2 : S = pblock P x2.
-  { apply: same_pblock; first by move: Ppart=> /and3P [_ ? _].
-    admit. }           (* FINISH!! it should come from fx1eqfx2 *)
-  have SinP : S \in P.
-  { rewrite pblock_mem ; first by [].
-    by move: Ppart=> /and3P [/eqP-coverT _ _] ; rewrite coverT. }
-  have x1inS : x1 \in S
-  by rewrite mem_pblock ; move: Ppart=> /and3P [/eqP-coverT _ _] ; rewrite coverT.
-  have x2inS : x2 \in S.
-  by rewrite Sx2 mem_pblock ; move: Ppart=> /and3P [/eqP-coverT _ _] ; rewrite coverT.
-  move: (Pcol S SinP x1 x2 x1inS x2inS) ; apply: contraR.
-  (* finally, we use the fact that Q is a clique *)
-  by apply: Qclq.
-Admitted.
-
+  move: (repr_not_adj iscolp rc1eqrc2).
+  apply: contraLR.
+  rewrite negbK.
+  (* now, we use the fact that Q is a clique *)
+  exact: (Qclq x1 x2 x1inQ x2inQ).
+Qed.
 
 Theorem omega_leq_chi : omega <= chi.
 Proof.
