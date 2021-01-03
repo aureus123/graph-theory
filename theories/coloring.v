@@ -263,34 +263,37 @@ Section fColoring.
   Qed.
 
   Proposition leq_preimset (aT rT : finType) (g : aT -> rT) (A : {set rT}) :
-    #|A| <= #|g @^-1: A|.
+    A \subset g @: setT -> #|A| <= #|g @^-1: A|.
   (* this result should be obvious, but I didn't find it in the math-comp  :S  *)
   Proof.
-    suff: forall (n : nat) (X : {set rT}), #|X| = n -> n <= #|g @^-1: X|
-      by move/(_ #|A| A erefl). 
+    suff: forall (n : nat) (X : {set rT}), X \subset g @: setT -> #|X| = n -> n <= #|g @^-1: X|
+     by move/(_ #|A| A _ erefl).
     move=> n ; elim/nat_ind: n.
-    - by move=> ? ; move/cards0_eq-> ; rewrite preimset0 cards0.
-    - move=> n IH X Xn1 ; move: (ltn0Sn n) ; rewrite -{1}Xn1.
+    - by move=> ? _ ; move/cards0_eq-> ; rewrite preimset0 cards0.
+    - move=> n IHn X Xsubim Xeqn1 ; move: (ltn0Sn n) ; rewrite -{1}Xeqn1.
       move/card_gt0P=> [x xinX].
       set Y := X :\ x.
-      move: (cardsD1 x X) ; rewrite xinX //= add1n Xn1 ; move/eqP.
+      move: (cardsD1 x X) ; rewrite xinX //= add1n Xeqn1 ; move/eqP.
       rewrite eqSS -/Y eq_sym ; move/eqP=> Yeqn.
-      move: (IH Y Yeqn).
-(*      rewrite /Y (preimsetD g X [set x]) => H1.
+      move: (subset_trans (subsetDl X [set x]) Xsubim) ; rewrite -/Y => Ysubim.
+      move: (IHn Y Ysubim Yeqn).
       move: (cardsD (g @^-1: X) (g @^-1: [set x])).
-      rewrite -preimsetI.
-
-have: n <= #|g @^-1: X| - #|g @^-1: [set x]|.
-
-      move: (subset_leq_card (subsetDl (g @^-1: X) (g @^-1: [set x]))) => H2.
-Check leq_trans H1 H2.
-
-Lemma preimsetD (A B : {set rT}) :
-  f @^-1: (A :\: B) = (f @^-1: A) :\: (f @^-1: B).
-
-      have Yeqn : #|Y| = n.
-      { rewrite /Y. *)
-  Admitted.
+      rewrite -preimsetI => H1.
+      rewrite /Y (preimsetD g X [set x]) H1.
+      have sxinX: [set x] \subset X.
+        by apply/subsetP=> y ; rewrite in_set1 ; move/eqP->.
+      move: (setIidPr sxinX)->.
+      have H2: #|g @^-1: [set x]| <= #|g @^-1: X|.
+        by rewrite subset_leq_card // (preimsetS g sxinX).
+      rewrite (leq_subRL n H2).
+      have H3: 0 < #|g @^-1: [set x]|.
+      { rewrite card_gt0 ; apply/set0Pn.
+        move: (subsetP Xsubim x xinX) ; move/imsetP => [z _ xeqgz].
+        by exists z ; rewrite /preimset in_set -xeqgz set11. }
+      rewrite -(prednK H3) addSn.
+      have H4: n <= #|g @^-1: [set x]|.-1 + n by exact: leq_addl.
+      exact: (leq_ltn_trans H4).  
+  Qed.
 
   Lemma col_to_part_same_card : is_coloring -> card_coloring = #|P|.
   Proof.
