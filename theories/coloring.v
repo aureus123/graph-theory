@@ -115,6 +115,15 @@ Section pColoring.
     by rewrite -(same_pblock dsj rcinvclass).
   Qed.
 
+  Proposition repr_class_rev v : is_stablepart -> v \in repr_coll -> v = repr_class v.
+  Proof.
+    move=> isstp vinrc.
+    move: (isstp) ; rewrite /is_stablepart => /andP [Ppart _].
+    move/eqP: (repr_same_class v isstp).
+    move: (pblock_inj (transversalP Ppart)) ; rewrite /injective.
+    by move=> /(_ v (repr_class v) vinrc (repr_class_in_coll v isstp)).
+  Qed.
+
   Proposition repr_not_adj u v : is_stablepart -> repr_class u = repr_class v -> ~~ u -- v.
   Proof.
     move=> isstp rcueqrcv.
@@ -292,28 +301,63 @@ Section fColoring.
         by exists z ; rewrite /preimset in_set -xeqgz set11. }
       rewrite -(prednK H3) addSn.
       have H4: n <= #|g @^-1: [set x]|.-1 + n by exact: leq_addl.
-      exact: (leq_ltn_trans H4).  
+      exact: (leq_ltn_trans H4).
   Qed.
 
   Lemma col_to_part_same_card : is_coloring -> card_coloring = #|P|.
   Proof.
-    move=> fcol ; apply/eqP.
-    move: (col_to_part_is_stablepart fcol) => isstp.
+    move=> fcol ; move: (col_to_part_is_stablepart fcol) => isstp.
     set cols := f @: setT.
-    rewrite -(repr_coll_card isstp) eqn_leq /card_coloring -/cols.
-    apply/andP ; split.
-    - set verts := f @^-1: cols.
-      set repr_verts := [set (repr_class P x) | x in verts].
-      have rvsubRC: repr_verts \subset repr_coll P.
-      { apply/subsetP=> x ; rewrite /repr_verts ; move/imsetP => [y _].
-        move-> ; move: isstp ; exact: repr_class_in_coll. }
-      move: (subset_leq_card rvsubRC).
-      have: #|cols| <= #|verts| by rewrite /verts ; exact: leq_preimset.
-      suff: #|verts| = #|repr_verts| by move-> ; exact: leq_trans.
-      rewrite /repr_verts card_in_imset ; first by [].
-      rewrite /injective => x1 x2 x1inve x2inve rc1eqrc2.
-      admit.
-    - admit.
+    set repr_verts := [set (repr_class P x) | x in (f @^-1: cols)].
+    have cols_eq_repr_verts: #|cols| = #|repr_verts|.
+    { 
+      rewrite /repr_verts.
+      suff: forall (n : nat) (X : {set C}), #|X| = n ->
+        #|[set repr_class P x | x in f @^-1: X]| = n by move/(_ #|cols| cols erefl).
+      move=> n ; elim/nat_ind: n.
+      - move=> ? ; move/cards0_eq-> ; rewrite preimset0 eq_card0 //=.
+        by move=> ? ; rewrite inE imset0 in_set0.
+      - move=> n IHn X Xeqn1 ; move: (ltn0Sn n) ; rewrite -{1}Xeqn1.
+        move/card_gt0P=> [x xinX].
+        set Y := X :\ x.
+        move: (cardsD1 x X) ; rewrite xinX //= add1n Xeqn1 ; move/eqP.
+        rewrite eqSS -/Y eq_sym ; move/eqP=> Yeqn.
+        move: (IHn Y Yeqn)<-.
+        have XeqYx: X = x |: Y by rewrite /Y setD1K.
+        rewrite XeqYx preimsetU imsetU cardsU addnC -addn1 -addnBA.
+        + apply/eqP. rewrite eqn_add2l.
+          have: #|[set repr_class P z | z in f @^-1: [set x]]| = 1.
+          { apply/eqP/cards1P.
+            set somez := odflt somev [pick z in f @^-1: [set x]].
+            exists (repr_class P somez).
+            apply/eqP ; rewrite eqEsubset ; apply/andP ; split.
+            * apply/subsetP=> z ; move/imsetP=> [w] ; rewrite in_set in_set1 /somez.
+              move/eqP<- ; move-> ; rewrite in_set.
+              admit.
+            * apply/subsetP=> z ; rewrite in_set1 ; move/eqP-> ; apply/imsetP.
+              exists somez ; last by [].
+              admit.
+          }
+          move->.
+          have: #|[set repr_class P z | z in f @^-1: [set x]]
+                :&: [set repr_class P z | z in f @^-1: Y]| = 0.
+          { apply/eqP ; rewrite cards_eq0 -subset0 ; apply/subsetP=> z.
+            rewrite in_setI ; move/andP=> [] ; move/imsetP=> [w].
+            rewrite in_set in_set1 /Y ; move/eqP<- ; move->.
+            move/imsetP=> [w']. rewrite /preimset in_set=> H2.
+            admit.
+          }
+          by move->.
+        + rewrite subset_leq_card //= ; apply/subsetP=> z.
+          by rewrite in_setI => /andP [? _].
+    }
+    rewrite -(repr_coll_card isstp) /card_coloring -/cols cols_eq_repr_verts.
+    suff: repr_verts == repr_coll P by move/eqP->.
+    rewrite eqEsubset ; apply/andP ; split.
+    - apply/subsetP=> x ; rewrite /repr_verts ; move/imsetP => [y _].
+      move-> ; move: isstp ; exact: repr_class_in_coll.
+    - apply/subsetP=> x xinrc ; rewrite /repr_verts ; apply/imsetP.
+      exists x ; [ by rewrite in_set /cols mem_imset | exact: repr_class_rev ].
   Admitted.
 
   Corollary clique_leq_kcoloring (k : nat) (Q : {set G}) :
