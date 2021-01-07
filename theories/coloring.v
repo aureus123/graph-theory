@@ -312,39 +312,57 @@ Section fColoring.
     have cols_eq_repr_verts: #|cols| = #|repr_verts|.
     { 
       rewrite /repr_verts.
-      suff: forall (n : nat) (X : {set C}), #|X| = n ->
-        #|[set repr_class P x | x in f @^-1: X]| = n by move/(_ #|cols| cols erefl).
+      suff: forall (n : nat) (X : {set C}), X \subset f @: setT -> #|X| = n ->
+        #|[set repr_class P x | x in f @^-1: X]| = n
+        by move/(_ #|cols| cols (subxx cols) erefl).
       move=> n ; elim/nat_ind: n.
-      - move=> ? ; move/cards0_eq-> ; rewrite preimset0 eq_card0 //=.
+      - move=> ? _ ; move/cards0_eq-> ; rewrite preimset0 eq_card0 //=.
         by move=> ? ; rewrite inE imset0 in_set0.
-      - move=> n IHn X Xeqn1 ; move: (ltn0Sn n) ; rewrite -{1}Xeqn1.
+      - move=> n IHn X Xsubim Xeqn1 ; move: (ltn0Sn n) ; rewrite -{1}Xeqn1.
         move/card_gt0P=> [x xinX].
         set Y := X :\ x.
         move: (cardsD1 x X) ; rewrite xinX //= add1n Xeqn1 ; move/eqP.
         rewrite eqSS -/Y eq_sym ; move/eqP=> Yeqn.
-        move: (IHn Y Yeqn)<-.
+        move: (subset_trans (subsetDl X [set x]) Xsubim) ; rewrite -/Y => Ysubim.
+        move: (IHn Y Ysubim Yeqn)<-.
         have XeqYx: X = x |: Y by rewrite /Y setD1K.
         rewrite XeqYx preimsetU imsetU cardsU addnC -addn1 -addnBA.
-        + apply/eqP. rewrite eqn_add2l.
-          have: #|[set repr_class P z | z in f @^-1: [set x]]| = 1.
-          { apply/eqP/cards1P.
-            set somez := odflt somev [pick z in f @^-1: [set x]].
-            exists (repr_class P somez).
-            apply/eqP ; rewrite eqEsubset ; apply/andP ; split.
-            * apply/subsetP=> z ; move/imsetP=> [w] ; rewrite in_set in_set1 /somez.
-              move/eqP<- ; move-> ; rewrite in_set.
-              admit.
-            * apply/subsetP=> z ; rewrite in_set1 ; move/eqP-> ; apply/imsetP.
-              exists somez ; last by [].
-              admit.
-          }
+        + apply/eqP ; rewrite eqn_add2l.
+          have xincols: [set x] \subset cols.
+          { move: Xsubim ; apply: subset_trans ; apply/subsetP => w.
+            by rewrite in_set1 ; move/eqP->. }
+          move: (leq_preimset xincols) ; rewrite cards1.
+          move/card_gt0P=> [z zinpreim].
+          have zpreimx: [set repr_class P z0 | z0 in f @^-1: [set x]] = [set repr_class P z].
+          { apply/eqP ; rewrite eqEsubset ; apply/andP ; split.
+            * apply/subsetP=> z' ; move/imsetP=> [z'' z''inpreim].
+              rewrite in_set. move->.
+              set R := [rel x y | f x == f y].
+              have eqiR : {in setT & &, equivalence_rel R} by split=> //= /eqP->.
+              have H1: z'' \in pblock (equivalence_partition R [set: G]) z.
+              { rewrite (@pblock_equivalence_partition _ R setT eqiR z z'' (in_setT z) (in_setT z'')).
+                rewrite /R //=.
+                move: zinpreim ; rewrite in_set in_set1 ; move/eqP->.
+                by move: z''inpreim ; rewrite in_set in_set1 ; move/eqP->. }
+              move: (isstp) ; rewrite /is_stablepart ; move/andP=>[ /and3P [_ dsj _] _].
+              by rewrite /repr_class (same_pblock dsj H1).
+            * apply/subsetP=> z' ; rewrite in_set1 ; move/eqP-> ; apply/imsetP.
+              by exists z. }
+          have: #|[set repr_class P z0 | z0 in f @^-1: [set x]]| = 1
+            by apply/eqP/cards1P ; exists (repr_class P z).
           move->.
-          have: #|[set repr_class P z | z in f @^-1: [set x]]
-                :&: [set repr_class P z | z in f @^-1: Y]| = 0.
-          { apply/eqP ; rewrite cards_eq0 -subset0 ; apply/subsetP=> z.
-            rewrite in_setI ; move/andP=> [] ; move/imsetP=> [w].
-            rewrite in_set in_set1 /Y ; move/eqP<- ; move->.
-            move/imsetP=> [w']. rewrite /preimset in_set=> H2.
+          have: #|[set repr_class P z0 | z0 in f @^-1: [set x]]
+                :&: [set repr_class P z0 | z0 in f @^-1: Y]| = 0.
+          { apply/eqP ; rewrite cards_eq0 -subset0 zpreimx ; apply/subsetP=> z'.
+            rewrite in_setI ; move/andP=> [].
+            rewrite in_set ; move/eqP-> ; move/imsetP=> [z''].
+            move: zinpreim ; rewrite in_set in_set1 in_set in_set in_set1. move/eqP<-.
+            move=> /andP[fzz''neqfz _].
+            apply: contra_eqT=> _ ; move: fzz''neqfz ; apply: contra => rczeqrcz''.
+            set R := [rel x y | f x == f y].
+            suff: R z z'' by rewrite /R //= eq_sym.
+            (* have eqiR : {in setT & &, equivalence_rel R} by split=> //= /eqP->.
+            Check (@pblock_equivalence_partition _ R setT eqiR z z'' (in_setT z) (in_setT z'')). *)
             admit.
           }
           by move->.
