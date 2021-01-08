@@ -360,10 +360,23 @@ Section fColoring.
             move=> /andP[fzz''neqfz _].
             apply: contra_eqT=> _ ; move: fzz''neqfz ; apply: contra => rczeqrcz''.
             set R := [rel x y | f x == f y].
-            suff: R z z'' by rewrite /R //= eq_sym.
-            (* have eqiR : {in setT & &, equivalence_rel R} by split=> //= /eqP->.
-            Check (@pblock_equivalence_partition _ R setT eqiR z z'' (in_setT z) (in_setT z'')). *)
-            admit.
+            have eqiR : {in setT & &, equivalence_rel R} by split=> //= /eqP->.
+            suff: z'' \in pblock P z.
+            rewrite (@pblock_equivalence_partition _ R setT eqiR z z'' (in_setT z) (in_setT z'')).
+            by rewrite /R //= eq_sym.
+            move: isstp ; rewrite /is_stablepart ; move/andP=> [Ppart _].
+            move: (Ppart) ; move/and3P=> [/eqP-coverT dsj _].
+            have zincoverP: z \in cover P by rewrite coverT.
+            rewrite -(@eq_pblock _ P z z'' dsj zincoverP).
+            move: rczeqrcz''.
+            rewrite /repr_class.
+            have pzinP : pblock P z \in P by apply: pblock_mem.
+            move: (transversal_reprK (transversalP Ppart) somev pzinP) => pteqpz.
+            have z''incoverP: z'' \in cover P by rewrite coverT.
+            have pz''inP : pblock P z'' \in P by apply: pblock_mem.
+            move: (transversal_reprK (transversalP Ppart) somev pz''inP) => pteqpz''.
+            rewrite -{2}pteqpz -{2}pteqpz''.
+            by move/eqP->.
           }
           by move->.
         + rewrite subset_leq_card //= ; apply/subsetP=> z.
@@ -376,7 +389,7 @@ Section fColoring.
       move-> ; move: isstp ; exact: repr_class_in_coll.
     - apply/subsetP=> x xinrc ; rewrite /repr_verts ; apply/imsetP.
       exists x ; [ by rewrite in_set /cols mem_imset | exact: repr_class_rev ].
-  Admitted.
+  Qed.
 
   Corollary clique_leq_kcoloring (k : nat) (Q : {set G}) :
     cliqueb Q -> kcoloring k -> #|Q| <= k.
