@@ -280,8 +280,12 @@ End Basics.
 
 (** * Perfection *)
 
-Definition perfect (G : sgraph) := [forall A : {set G}, ω(A) == χ(A)].
+Definition perfect_mem (G : sgraph) (U : mem_pred G) := 
+  [forall (A : {set G} | A \subset U), ω(A) == χ(A)].
 
+Notation perfect U := (perfect_mem (mem U)).
+
+(** relativize as well *)
 Definition mimimally_imperfect (G : sgraph) := 
   (ω(G) != χ(G)) && [forall (A : {set G} | A \proper [set: G]), ω(A) == χ(A)].
 
@@ -336,12 +340,12 @@ apply/exists_inP; exists K; first by rewrite inE geH (cliquesD clK).
 by move: clK; rewrite !inE subsetD negbK setI_eq0 disjoint_sym -andbA => /and3P[_ -> _].
 Qed.
 
-Lemma perfectEstrong (H : {set G}) (v : G) :
-  perfect G -> v \in H -> 
+Lemma perfectEstrong (U H : {set G}) (v : G) :
+  perfect U -> H \subset U -> v \in H -> 
   exists S, [/\ stable S, S \subset H, v \in S & [forall K in maxcliques H, S :&: K != set0]].
 Proof.
-move=> perfG vH; have/eqP := forallP perfG H. case: chiP => P /andP[partP stabP] optP E.
-pose S := pblock P v. 
+move=> perfG subHU vH. have/eqP := forall_inP perfG _ subHU. 
+case: chiP => P /andP[partP stabP] optP E. pose S := pblock P v. 
 have vP : v \in cover P by rewrite (cover_partition partP) vH.
 have SP : S \in P by rewrite pblock_mem // vP.
 have SH : S \subset H by rewrite -(cover_partition partP); apply: bigcup_sup SP.
@@ -357,27 +361,37 @@ apply: leq_ltn_trans ωH _. apply: leq_ltn_trans (omega_leq_chi _) _.
 by apply: leq_ltn_trans (color_bound colP') _; rewrite [#|P|](cardsD1 S) SP.
 Qed.
 
-Lemma perfectIweak : 
-  (forall H : {set G}, H != set0 ->
+Lemma perfectIweak (U : {set G}) : 
+  (forall H : {set G}, H \subset U -> H != set0 -> 
    exists S : {set G}, [/\ stable S, S \subset H & [forall K in maxcliques H, S :&: K != set0]]) 
-  -> perfect G.
+  -> perfect U.
 Proof.
-move=> ex_stable; apply/forallP => /= H.
-elim/card_ind : H => H IH.
+move=> ex_stable; apply/forall_inP => /= H.
+elim/card_ind : H => H IH subHU.
 have [->|[HD0]] := eqVneq H set0; first by rewrite omega0 chi0.
-have [S [stabS subSH /forall_inP cutS]] := ex_stable H HD0.
+have [S [stabS subSH /forall_inP cutS]] := ex_stable H subHU HD0.
 rewrite eqn_leq omega_leq_chi /=. 
 case: {-}_ /(omegaP H) => /= K maxK.
 have cardHS : #|H :\: S| < #|H|. 
 { rewrite cardsDS // ltn_subrL; move/set0Pn : (cutS K maxK) => [x /setIP[xS _]].
   by apply/andP; split; apply/card_gt0P; exists x => //; apply: (subsetP subSH). }
-apply: leq_trans (chiD1 stabS subSH) _; rewrite -(eqP (IH _ _)) //.
-exact: omega_cut. 
+apply: leq_trans (chiD1 stabS subSH) _.
+rewrite -(eqP (IH _ _ _)) //; first exact: omega_cut. 
+by rewrite subDset subsetU // subHU orbT.
 Qed.
 
-(* TOTHINK: do we want perfect to be a property of subsets as well, or
-do we want to lift lemmas using induced subgraphs? *)
-Definition perfects (U : {set G}) := perfect (induced U).
+
+Let setG : [set x in mem [set: G]] = [set x in mem G]. 
+Proof. by apply/setP => x; rewrite !inE. Qed.
+
+Lemma chiT : χ([set: G]) = χ(G).
+Proof. by rewrite /chi_mem setG. Qed.
+
+Lemma omegaT : ω([set: G]) = ω(G). 
+Proof. by rewrite /omega_mem setG. Qed.
+
+Lemma perfectT : perfect([set: G]) = perfect(G). 
+Proof. by apply: eq_forallb => A; rewrite subsetT subset_predT. Qed.
 
 End PerfectBasics.
 
@@ -386,16 +400,45 @@ Definition in_induced (G : sgraph) (U H : {set G}) : {set induced U} :=
   [set x | val x \in H].
 Arguments in_induced [G U] H, [G] U H.
 
-Lemma perfectsEstrong (G : sgraph) (U : {set G}) (H : {set G}) (v : G) :
-  perfects U -> v \in H -> H \subset U -> 
-  exists S, [/\ stable S, S \subset H, v \in S & [forall K in maxcliques H, S :&: K != set0]].
-Proof.
-move=> perfU vH subHU. have vU : v \in U by apply: (subsetP subHU).
-have vH' : Sub v vU \in in_induced U H by rewrite inE.
-have := @perfectEstrong (induced U) (in_induced H) (Sub v vU) perfU vH'.
-move => [S] [S1 S2 S3 S4]; exists (val @: S).
-(* BORING *)
+Section Induced.
+Variables (G : sgraph).
+Implicit Types (A B H : {set G}).
+
+Lemma val_subset (T: finType) (A : {set T}) (K : {set sig [eta mem A]}) :
+  [set val x | x in K] \subset A.
 Admitted.
+
+Lemma induced_cliques A K : 
+  (K \in cliques [set: induced A]) = (val @: K \in cliques A).
+Proof.
+rewrite !inE subsetT andTb. rewrite val_subset.
+Admitted.
+
+Lemma cliques_induced A K : 
+  K \in cliques A -> 
+  in_induced K \in cliques [set: induced A] /\ #|in_induced A K| = #|K|.
+Admitted.
+
+Lemma omega_induced A : ω(induced A) = ω(A).
+Proof. 
+apply/eqP; rewrite eqn_leq -omegaT; apply/andP; split.
+- have [K] := omegaP setT. 
+  rewrite inE induced_cliques => /andP[ckK _]; rewrite -(card_imset _ val_inj).
+  exact: clique_bound.
+- have [K] := omegaP A; rewrite inE => /andP[/cliques_induced[K1 <-] _].
+  exact: clique_bound.
+Qed.
+
+Lemma chi_induced A : χ(induced A) = χ(A).
+Admitted.
+
+Lemma perfect_induced A : perfect(induced A) = perfect(A).
+Admitted.
+
+End Induced.
+
+(* TODO: scope ... *)
+Notation "F ≃ G" := (diso F G) (at level 79).
 
 Section Iso.
 Variables (F G : sgraph) (i : diso F G).
@@ -404,32 +447,74 @@ Implicit Types (A : {set F}).
 Lemma diso_stable A : stable A = stable (i @: A).
 Admitted.
 
+Lemma diso_clique A : cliqueb A = cliqueb (i @: A).
+Admitted.
+
 Lemma diso_omega A : ω(A) = ω(i @: A).
 Admitted.
 
 Lemma diso_chi A : χ(A) = χ(i @: A).
 Admitted.
 
-Lemma diso_perfect_aux : perfect G -> perfect F.
-Proof. 
-by move/forallP => perfP; apply/forallP => H; rewrite diso_omega diso_chi.
-Qed.
+Lemma diso_perfect A : perfect A = perfect (i @: A).
+Admitted.
+
+Lemma diso_perfectT : perfect F = perfect G.
+Admitted.
 
 End Iso.
 
-Lemma diso_perfect (F G : sgraph) (i : diso F G) : perfect F = perfect G.
-Proof. by apply/idP/idP; apply: diso_perfect_aux; first apply: diso_sym. Qed.
+Lemma diso_add_edge (F G : sgraph) (i : F ≃ G) (x y : F) : 
+  add_edge x y ≃ add_edge (i x) (i y).
+Admitted.
+
+Lemma diso_add_node (F G : sgraph) (i : F ≃ G) (A : {set F}) : 
+  add_node F A ≃ add_node G (i @: A).
+Admitted.
+
+
+Lemma diso_perfect_induced (G : sgraph) (U V : {set G}) : 
+  induced U ≃ induced V -> perfect U -> perfect V.
+Proof. 
+move => i; rewrite -perfect_induced -perfectT (diso_perfect i).
+have -> : i @: [set: induced U] = [set: induced V]. 
+{ by apply/setP => x; rewrite !inE -[x](bijK' i) imset_f. }
+by rewrite perfectT perfect_induced.
+Qed.
 
 Definition replicate (G : sgraph) (v : G) := add_node G N[v].
 
+(* holds for add_node in general *)
+Lemma diso_replicate (G : sgraph) (v : G) : 
+  G ≃ @induced (replicate v) [set~ None].
+Proof.
+Admitted.
+
+(* [v != v'] would suffice *)
+Lemma replication_aux (G : sgraph) (v v' : G) : 
+  v -- v' -> N[v] = N[v'] -> perfect [set~ v'] -> perfect G.
+Proof.
+move => vv' Nvv' perfNv'. 
+have perfNv : perfect [set~ v]. 
+{ apply: diso_perfect_induced perfNv'.
+  (* isomorphic by mapping v to v' *) admit. }
+rewrite -perfectT. apply: perfectIweak => H subHG H0. 
+have [vv'_H|vv'NH] := boolP ([set v;v'] \subset H); last first.
+- (* wlog. v' \notin H, so H is perfect *) admit.
+- have perfHv : perfect (H :\ v'). admit.
+  have := @perfectEstrong _ [set~ v'] (H :\ v')  v perfNv'.
+  case/(_ _ _)/Wrap. admit. admit.
+  move => [S] [stabS subSH vS cutS]. 
+  exists S. split => //. admit. 
+Admitted.  
+
 Lemma replication (G : sgraph) (v : G) : perfect G -> perfect (replicate v).
 Proof.
-move => perfG; apply: perfectIweak => H inhH.
-have [NsubvNH|subvNH] := boolP ([set Some v; None] \subset H); last first.
-- (* induced H is isomorphic to induced H' (in G), and hence H is perfect *) 
-  admit. 
-- admit.
-Abort.
+move => perfG; apply: (@replication_aux (replicate v) (Some v) None).
+- by rewrite /edge_rel/= v_in_clneigh. (* fixme: name! *)
+- by apply/setP => -[x|] ; rewrite !inE /edge_rel//= ?v_in_clneigh ?Some_eqE ?in_cln 1?eq_sym.
+- by rewrite -perfect_induced -(diso_perfectT (diso_replicate v)).
+Qed.
 
 
 Section LovaszGraph.
