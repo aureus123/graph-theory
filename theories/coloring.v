@@ -33,6 +33,26 @@ Proof.
 move => subAB stB. exact: (hereditaryP _ (st_hereditary G) _ _ subAB).
 Qed.
 
+(** isomorphisms *)
+
+(* TODO: scope ... *)
+Notation "F ≃ G" := (diso F G) (at level 79).
+
+Lemma diso_add_nodeK (G : sgraph) (A : {set G}) : 
+  G ≃ @induced (add_node G A) [set~ None].
+Proof.
+set H := induced _. (* todo: factor out the bijetion *)
+have h_proof (x : G) : Some x \in [set~ None] by rewrite !inE.
+pose h (x : G) : H := Sub (Some x) (h_proof x).
+have default (x : H) : G by case: x => -[x//|]; rewrite !inE eqxx.
+pose g (x : H) : G := if val x is Some z then z else default x.
+have can_h : cancel h g by [].
+have can_g : cancel g h. 
+  move => [[x|] p]; [exact: val_inj|by exfalso; rewrite !inE eqxx in p].
+exact: Diso' can_h can_g _.
+Defined.
+
+
 (** partitions and related properties *)
 
 Section partition.
@@ -140,6 +160,23 @@ apply/card_gt0P; exists set0; rewrite inE sub0set; apply/cliqueP.
 by apply: small_clique; rewrite cards0.
 Qed.
 
+Lemma sub_cliques (A B K : {set G}) : A \subset B -> K \in cliques A -> K \in cliques B.
+Proof. 
+by move=> subAB; rewrite !inE => /andP[subKA ->]; rewrite (subset_trans subKA). 
+Qed.
+
+Lemma cliqueU1 x K : K \subset N(x) -> clique K -> clique (x |: K).
+Proof. 
+move => /subsetP subKNx clK u v /setU1P[-> {u}|uK] /setU1P[-> {v}|vK].
+- by rewrite eqxx.
+- by move/subKNx : vK; rewrite inE.
+- by move/subKNx : uK; rewrite inE sgP.
+- exact: clK.
+Qed.
+
+Lemma cliqueD K H : clique K -> clique (K :\: H).
+Proof. by move => clK x y /setDP[xK _] /setDP[yK _]; exact: clK. Qed.
+
 Definition omega_mem (A : mem_pred G) := 
   \max_(B in cliques [set x in A]) #|B|.
 
@@ -152,10 +189,7 @@ Definition maxcliques (G : sgraph) (H : {set G}) :=
 
 Section OmegaBasics.
 Variables (G : sgraph).
-Implicit Types (A K : {set G}).
-
-Lemma clique_bound K A : K \in cliques A -> #|K| <= ω(A).
-Proof. by move => clK; apply: bigmax_sup (leqnn _); rewrite set_mem. Qed.
+Implicit Types (A B K H : {set G}).
 
 Variant omega_spec A : nat -> Prop :=
   OmegaSpec K of K \in maxcliques A : omega_spec A #|K|.
@@ -167,12 +201,49 @@ have [/= K clK maxK] := eq_bigmax_cond (fun A => #|A|) (cliques_gt0 A).
 by rewrite maxK; apply: OmegaSpec; rewrite inE clK -maxK -{2}[A]set_mem leqnn.
 Qed.
 
-End OmegaBasics.
+Lemma clique_bound K A : K \in cliques A -> #|K| <= ω(A).
+Proof. by move => clK; apply: bigmax_sup (leqnn _); rewrite set_mem. Qed.
 
-Lemma omega0 (G : sgraph) : ω(@set0 G) = 0.
+Lemma card_maxclique K H : K \in maxcliques H -> #|K| = ω(H).
+Proof. 
+rewrite inE => /andP[clK ltK]; apply/eqP; rewrite eqn_leq ltK andbT.
+exact: clique_bound.
+Qed.
+
+Lemma maxclique_edge K H x y : x \in K -> y \in K -> K \in maxcliques H -> x != y -> x -- y.
+Proof.
+by move=> xK yK; rewrite !inE -andbA => /and3P[_ /cliqueP clK _]; apply: clK.
+Qed.
+
+Lemma sub_omega A B : A \subset B -> ω(A) <= ω(B).
+Proof.
+move=> subAB; have [K] := omegaP A; rewrite inE => /andP[clA _]. 
+exact/clique_bound/(sub_cliques subAB).
+Qed.
+
+Lemma maxclique_disjoint K H A : 
+  K \in maxcliques H -> [disjoint K & A] -> K \in maxcliques (H :\: A).
+Proof.
+rewrite !inE -!andbA subsetD => /and3P[-> -> maxK] -> /=. 
+apply: leq_trans (sub_omega _) maxK. exact: subsetDl.
+Qed.
+
+Lemma maxclique_opn H K v : 
+  v \in H -> K \in maxcliques H -> K \subset N(v) -> v \in K.
+Proof.
+rewrite !inE -andbA => vH /and3P[subKH /cliqueP clK maxK] subNvK.
+have/cliqueP clvK : clique (v |: K) by apply: cliqueU1.
+apply: contraTT maxK => vNK ; rewrite -ltnNge.
+rewrite -add1n -[1 + _]/(true + #|K|) -vNK -cardsU1; apply: clique_bound.
+by rewrite !inE clvK subUset sub1set vH subKH.
+Qed.
+
+Lemma omega0 : ω(@set0 G) = 0.
 Proof.  
 by case: omegaP => K; rewrite !inE subset0 -andbA => /andP[/eqP-> _]; rewrite cards0.
 Qed.
+
+End OmegaBasics.
 
 (** ** chromatic number *)
 
@@ -293,10 +364,10 @@ Section PerfectBasics.
 Variables (G : sgraph).
 Implicit Types (A B H : {set G}) (P : {set {set G}}).
 
-Lemma card_maxclique K H : K \in maxcliques H -> #|K| = ω(H).
+Lemma sub_perfect A B : A \subset B -> perfect B -> perfect A.
 Proof. 
-rewrite inE => /andP[clK ltK]; apply/eqP; rewrite eqn_leq ltK andbT.
-exact: clique_bound.
+move=> subAB /forall_inP perfB; apply/forall_inP => C subCA. 
+apply: perfB. exact: subset_trans _ subAB.
 Qed.
 
 Definition optimal P H := forall P', coloring P' H -> #|P| <= #|P'|.
@@ -437,8 +508,6 @@ Admitted.
 
 End Induced.
 
-(* TODO: scope ... *)
-Notation "F ≃ G" := (diso F G) (at level 79).
 
 Section Iso.
 Variables (F G : sgraph) (i : diso F G).
@@ -464,15 +533,6 @@ Admitted.
 
 End Iso.
 
-Lemma diso_add_edge (F G : sgraph) (i : F ≃ G) (x y : F) : 
-  add_edge x y ≃ add_edge (i x) (i y).
-Admitted.
-
-Lemma diso_add_node (F G : sgraph) (i : F ≃ G) (A : {set F}) : 
-  add_node F A ≃ add_node G (i @: A).
-Admitted.
-
-
 Lemma diso_perfect_induced (G : sgraph) (U V : {set G}) : 
   induced U ≃ induced V -> perfect U -> perfect V.
 Proof. 
@@ -484,29 +544,78 @@ Qed.
 
 Definition replicate (G : sgraph) (v : G) := add_node G N[v].
 
-(* holds for add_node in general *)
 Lemma diso_replicate (G : sgraph) (v : G) : 
   G ≃ @induced (replicate v) [set~ None].
+Proof. exact: diso_add_nodeK. Qed.
+
+Arguments val : simpl never.
+Arguments Sub : simpl never.
+
+Lemma cln_eq (G : sgraph) (x x' y : G) : 
+  N[x] = N[x'] -> y != x -> y != x' -> x -- y = x' -- y.
 Proof.
-Admitted.
+by move/setP=> /(_ y); rewrite !inE; case: (eqVneq x y); case: (eqVneq x' y).
+Qed.
+
+(* [v -- v'] is not necessary, as it follows from [v != v'] and the
+case for [v == v'] is trivial. But we have it at the only point of use *)
+Lemma eq_cln_iso (G : sgraph) (v v' : G) : 
+  v -- v' -> N[v] = N[v'] -> induced [set~ v'] ≃ induced [set~ v].
+Proof.
+move=> vv' Nvv'.
+set Hv := induced [set~ v']; set Hv' := induced _.
+have [vI v'I] : v \in [set~ v'] /\ v' \in [set~ v] by rewrite !inE [v' == _]eq_sym (sg_edgeNeq vv').
+pose f (x : Hv) : Hv' := insubd (Sub v' v'I) (val x).
+pose g (x : Hv') : Hv := insubd (Sub v vI) (val x).
+have can_f : cancel f g. (* TODO: merge induced subgraphs from wagner branch *)
+{ move => x. apply: val_inj. rewrite /f/g/= !val_insubd !inE !SubK. 
+  have [/= ->|/=] := eqVneq (val x) v; rewrite ?eqxx // ifT // -in_set1 -in_setC. exact (valP x). }
+have can_g : cancel g f. 
+{ move => x. apply: val_inj. rewrite /f/g/= !val_insubd !inE !SubK. 
+  have [/= ->|/=] := eqVneq (val x) v'; rewrite ?eqxx // ifT // -in_set1 -in_setC. exact (valP x). }
+apply: Diso' can_f can_g _.
+move => [x px] [y py]; rewrite /f/=. rewrite /edge_rel/= !val_insubd !SubK !inE.
+rewrite !inE in px py. 
+have [?/=|/=] := eqVneq x v; subst.
+  have [->|/= yDv] := eqVneq y v; [by rewrite !sgP | by rewrite (cln_eq Nvv')].
+by have [->/= xDv|//] := eqVneq y v; rewrite sgP (cln_eq Nvv') // sgP.
+Qed.
+
+Lemma opn_cln (G : sgraph) (x : G) : N(x) = N[x] :\ x.
+Proof. by apply/setP => y; rewrite !inE; case: (eqVneq x y) => //= ->; rewrite sgP. Qed.
 
 (* [v != v'] would suffice *)
 Lemma replication_aux (G : sgraph) (v v' : G) : 
   v -- v' -> N[v] = N[v'] -> perfect [set~ v'] -> perfect G.
 Proof.
-move => vv' Nvv' perfNv'. 
-have perfNv : perfect [set~ v]. 
-{ apply: diso_perfect_induced perfNv'.
-  (* isomorphic by mapping v to v' *) admit. }
-rewrite -perfectT. apply: perfectIweak => H subHG H0. 
-have [vv'_H|vv'NH] := boolP ([set v;v'] \subset H); last first.
-- (* wlog. v' \notin H, so H is perfect *) admit.
-- have perfHv : perfect (H :\ v'). admit.
-  have := @perfectEstrong _ [set~ v'] (H :\ v')  v perfNv'.
-  case/(_ _ _)/Wrap. admit. admit.
-  move => [S] [stabS subSH vS cutS]. 
-  exists S. split => //. admit. 
-Admitted.  
+move => vv' Nvv' perfNv'; rewrite -perfectT; apply: perfectIweak => H _ /set0Pn [z zH].
+have [vv'_H|] := boolP ([set v;v'] \subset H); last first.
+- have perfNv : perfect [set~ v]. 
+  { apply: diso_perfect_induced perfNv'. exact: eq_cln_iso. }
+  rewrite subUset !sub1set negb_and => vNH. 
+  wlog vNH : v v' vv' {Nvv'} {perfNv'} perfNv {vNH} / v \notin H. 
+    by case/orP: vNH => [vNH /(_ v v') |v'NH /(_ v' v)]; apply; rewrite // sgP.
+  have [|S [S1 S2 _ S3]] := @perfectEstrong _ [set~ v] H z perfNv _ zH.
+    by rewrite subsetC sub1set inE.
+  by exists S. 
+- have Hvv' : H :\ v' \subset [set~ v'] by rewrite subDset setUCr subsetT.
+  have vHv' : v \in H :\ v' by rewrite !inE (sg_edgeNeq vv') (subsetP vv'_H) // !inE eqxx.
+  have perfHv : perfect (H :\ v') by apply: sub_perfect perfNv'. 
+  have := @perfectEstrong _ [set~ v'] (H :\ v')  v perfNv' Hvv' vHv'.
+  move => [S] [stabS subSH vS cutS]; exists S; split => //. 
+    exact: subset_trans subSH (subsetDl _ _).
+  apply/forall_inP => K maxK. 
+  have [v'K|v'NK] := boolP (v' \in K).
+  - (* a maximal clique contains every vertex total to it *)
+    suff vK : v \in K by apply/set0Pn; exists v; rewrite inE vS vK.
+    apply: wlog_neg => v'NK.
+    apply: maxclique_opn (maxK) _ ; first by case/setD1P : vHv'.
+    apply/subsetP => x xK; case: (eqVneq x v) => [xv|xDv]; first by rewrite -xv xK in v'NK.
+    rewrite opn_cln Nvv' !inE xDv -implyNb sgP; apply/implyP.
+    exact: maxclique_edge maxK.
+  - suff: K \in maxcliques (H :\ v') by move/(forall_inP cutS).
+    by apply: maxclique_disjoint => //; rewrite disjoint_sym disjoints1.
+Qed.
 
 Lemma replication (G : sgraph) (v : G) : perfect G -> perfect (replicate v).
 Proof.
@@ -516,6 +625,11 @@ move => perfG; apply: (@replication_aux (replicate v) (Some v) None).
 - by rewrite -perfect_induced -(diso_perfectT (diso_replicate v)).
 Qed.
 
+Print Assumptions replication.
+(* Axioms: *)
+(* perfect_induced : forall (G : sgraph) (A : {set G}), perfect (induced A) = perfect A *)
+(* diso_perfectT : forall F G : sgraph, F ≃ G -> perfect F = perfect G *)
+(* diso_perfect : forall (F G : sgraph) (i : F ≃ G) (A : {set F}), perfect A = perfect [set i x | x in A] *)
 
 Section LovaszGraph.
 Variables (G : sgraph) (m : G -> nat).
