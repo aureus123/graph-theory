@@ -12,7 +12,7 @@ graph parameter.
 An additional feature of the algorithm that finds a solution of the MWIS is that it generates
 a Coq file with the instance and the proposed solution.
 
-## Files and folders
+## Files and folders 🔧
 
 - mwis: The formalized theory. Use "make" inside this folder to compile it.
   - mwis/check_ir.v: Some tools to check irredundancy, cardinality and weights of given graph and set.
@@ -31,12 +31,13 @@ a Coq file with the instance and the proposed solution.
 - certs: Coq certificates of the instances. Use "make easy" or "make hard" to check
       the easy or hard instances resp., or "make weighted" to check the weighted instance.	  
 
-## Requirements
+## Requirements 📋
 
-MWIS formalization requires packages graph-theory 0.8 and its dependencies (Coq 8.10+, MathComp 1.10+, finmap, hierarchy builder 1.0.0).
-Certificates requires to previously compile MWIS formalization.
+MWIS formalization requires packages [_graph-theory 0.8_](https://github.com/coq-community/graph-theory) and its
+dependencies (Coq 8.11+, MathComp 1.10+, finmap, hierarchy builder 0.10).
+Certificate verification requires previously compiling the MWIS formalization.
 
-## Authors and contact information
+## Authors and contact information ✒️
 
-- Ricardo Katz ([**@rdkatz**]), mail: katz@cifasis-conicet.gov.ar
-- Daniel Severín ([**@aureus123**]), mail: daniel@fceia.unr.edu.ar
+- Ricardo Katz ([**@rdkatz**](https://github.com/rdkatz)), mail: katz@cifasis-conicet.gov.ar
+- Daniel Severín ([**@aureus123**](https://github.com/aureus123)), mail: daniel@fceia.unr.edu.ar
