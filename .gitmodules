@@ -1,3 +1,0 @@
-[submodule "coq/coqdocjs"]
-	path = coqdocjs
-	url = https://github.com/chdoc/coqdocjs.git
