@@ -96,7 +96,7 @@ Definition subgraph (S G : sgraph) :=
 Section InducedSubgraph.
   Variables (G : sgraph) (S : {set G}).
 
-  Definition induced_type := sig [eta mem S].
+  Definition induced_type := { x | x \in S }.
 
   Definition induced_rel := [rel x y : induced_type | val x -- val y].
 

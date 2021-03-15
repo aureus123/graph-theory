@@ -21,6 +21,18 @@ Qed.
 Lemma setD1K (T : finType) (a : T) (A : {set T}) : a \in A -> a |: A :\ a = A.
 Proof. by move=> aA; rewrite setUC setDK // sub1set. Qed.
 
+Lemma inj_imsetS (aT rT : finType) (f : aT -> rT) (A B : {pred aT}) : 
+  injective f -> (f @: A \subset f @: B) = (A \subset B).
+Proof.
+move=> inj_f; apply/subsetP/subsetP => [/= subAB x xA|subAB ? /imsetP[x xA ->]]. 
+  by move: (subAB (f x)); rewrite !(mem_imset_eq _ _ inj_f); apply.
+by rewrite (mem_imset_eq _ _ inj_f); apply: subAB.
+Qed.
+
+Lemma val_subset (T: finType) (H : {set T}) (A B : {set sig [eta mem H]}) :
+  (val @: A \subset val @: B) = (A \subset B).
+Proof. by rewrite inj_imsetS //; exact: val_inj. Qed.
+
 (** dom.v *)
 
 Lemma stable1 (G : sgraph) (x : G) : stable [set x].
@@ -112,6 +124,7 @@ move => /setUP[?|?] /setUP[?|?]; first [exact:tQ|exact:tP|move => _].
 by rewrite disjoint_sym; apply: disjointW dQP; rewrite bigcup_sup.
 Qed.
 
+(* name clash *)
 Lemma trivIsetU1 S : trivIset P -> [disjoint S & cover P] -> trivIset (S |: P).
 Proof. by move=> tP dSP; apply: trivIsetU => //; rewrite ?cover1 ?trivIset1. Qed.
 
@@ -142,7 +155,57 @@ Qed.
 Lemma empty_partition : partition set0 (@set0 T).
 Proof. by rewrite /partition inE /trivIset/cover !big_set0 cards0 !eqxx. Qed.
 
+Section Image.
+Variables (T' : finType) (f : T -> T') (inj_f : injective f).
+Let fP := [set f @: (S : {set T}) | S in P].
+
+Lemma imset_inj : injective (fun A : {set T} => f @: A).
+Proof. 
+move => A B => /setP E; apply/setP => x. 
+by rewrite -(mem_imset_eq (mem A) x inj_f) E mem_imset_eq.
+Qed.
+
+Lemma imset_disjoint (A B : {pred T}) :
+  [disjoint f @: A & f @: B] = [disjoint A & B].
+Proof.
+apply/pred0Pn/pred0Pn => /= [[? /andP[/imsetP[x xA ->]] xB]|].
+  by exists x; rewrite xA -(mem_imset_eq (mem B) x inj_f).
+by move => [x /andP[xA xB]]; exists (f x); rewrite !mem_imset_eq ?xA.
+Qed.
+
+Lemma imset_trivIset : trivIset P = trivIset fP.
+Proof.
+apply/trivIsetP/trivIsetP.
+- move=> trivP ? ? /imsetP[A AP ->] /imsetP[B BP ->].
+  by rewrite (inj_eq imset_inj) imset_disjoint; apply: trivP.
+- move=> trivP A B AP BP; rewrite -imset_disjoint -(inj_eq imset_inj).
+  by apply: trivP; rewrite imset_f.
+Qed.
+
+Lemma imset0mem : (set0 \in fP) = (set0 \in P).
+Proof. 
+apply/imsetP/idP => [[A AP /esym/eqP]|P0]; last by exists set0; rewrite ?imset0.
+by rewrite imset_eq0 => /eqP<-.
+Qed.
+
+Lemma bigcup_imset:
+  \bigcup_(i in P) [set f x | x in i] = [set f x | x in cover P].
+Proof.
+apply/setP=> y; apply/bigcupP/imsetP => [[A AP /imsetP[x xA ->]]|].
+  by exists x => //; apply/bigcupP; exists A.
+by move=> [x /bigcupP[A AP xA] ->]; exists A => //; rewrite imset_f.
+Qed.  
+
+Lemma imset_partition : partition P D = partition fP (f @: D).
+Proof.
+suff cov: (cover fP == f @:D) = (cover P == D).
+  by rewrite /partition -imset_trivIset imset0mem cov.
+by rewrite /fP cover_imset bigcup_imset (inj_eq imset_inj).
+Qed.
+End Image.
+
 End partition.
+
 
 (** * Clique Number and Chromatic Number *)
 
@@ -160,10 +223,16 @@ apply/card_gt0P; exists set0; rewrite inE sub0set; apply/cliqueP.
 by apply: small_clique; rewrite cards0.
 Qed.
 
-Lemma sub_cliques (A B K : {set G}) : A \subset B -> K \in cliques A -> K \in cliques B.
+Lemma cliquesW (A B K : {set G}) : A \subset B -> K \in cliques A -> K \in cliques B.
 Proof. 
 by move=> subAB; rewrite !inE => /andP[subKA ->]; rewrite (subset_trans subKA). 
 Qed.
+
+Lemma sub_cliques (A K K' : {set G}) : K' \subset K -> K \in cliques A -> K' \in cliques A.
+Admitted.
+
+Lemma cliques_subset (A K : {set G}) : K \in cliques A -> K \subset A.
+Proof. by rewrite !inE => /andP[-> _]. Qed.
 
 Lemma cliqueU1 x K : K \subset N(x) -> clique K -> clique (x |: K).
 Proof. 
@@ -173,6 +242,9 @@ move => /subsetP subKNx clK u v /setU1P[-> {u}|uK] /setU1P[-> {v}|vK].
 - by move/subKNx : uK; rewrite inE sgP.
 - exact: clK.
 Qed.
+
+Lemma sub_clique K K' : K' \subset K -> clique K -> clique K'.
+Proof. by move=> /subsetP subK clK x y /subK xK /subK yK; exact: clK. Qed.
 
 Lemma cliqueD K H : clique K -> clique (K :\: H).
 Proof. by move => clK x y /setDP[xK _] /setDP[yK _]; exact: clK. Qed.
@@ -218,7 +290,7 @@ Qed.
 Lemma sub_omega A B : A \subset B -> ω(A) <= ω(B).
 Proof.
 move=> subAB; have [K] := omegaP A; rewrite inE => /andP[clA _]. 
-exact/clique_bound/(sub_cliques subAB).
+exact/clique_bound/(cliquesW subAB).
 Qed.
 
 Lemma maxclique_disjoint K H A : 
@@ -439,7 +511,7 @@ Lemma perfectIweak (U : {set G}) :
 Proof.
 move=> ex_stable; apply/forall_inP => /= H.
 elim/card_ind : H => H IH subHU.
-have [->|[HD0]] := eqVneq H set0; first by rewrite omega0 chi0.
+have [->|HD0] := eqVneq H set0; first by rewrite omega0 chi0.
 have [S [stabS subSH /forall_inP cutS]] := ex_stable H subHU HD0.
 rewrite eqn_leq omega_leq_chi /=. 
 case: {-}_ /(omegaP H) => /= K maxK.
@@ -466,52 +538,337 @@ Proof. by apply: eq_forallb => A; rewrite subsetT subset_predT. Qed.
 
 End PerfectBasics.
 
+Notation sval := (@sval _ _).
 
 Definition in_induced (G : sgraph) (U H : {set G}) : {set induced U} := 
   [set x | val x \in H].
 Arguments in_induced [G U] H, [G] U H.
 
+Lemma val_in_induced (G : sgraph) (H A : {set G}) : 
+  val @: in_induced H A = A :&: H.
+Proof. 
+apply/setP => x; apply/imsetP/idP => [/= [y yH ->]|/= /setIP[xA xH]]. 
+  by move: yH; rewrite !inE (svalP y) andbT.
+exists (Sub x xH) => //; by rewrite inE.
+Qed.
+
+Lemma val_in_induced' (G : sgraph) (H A : {set G}) : 
+  (A \subset H) -> val @: in_induced H A = A.
+Proof. by move => subAH; rewrite val_in_induced (setIidPl subAH). Qed.
+
+Lemma in_induced_val (G : sgraph) (H : {set G}) (A : {set induced H}) : 
+  in_induced H (val @: A) = A.
+Proof. by apply/setP => x; rewrite !inE mem_imset_eq //; apply: val_inj. Qed.
+
+Lemma in_inducedT (G : sgraph) (H : {set G}) : 
+  in_induced H H = [set: induced H].
+Proof. by apply/setP => x; rewrite !inE (valP x). Qed.  
+
+Lemma card_in_induced (G : sgraph) (H A : {set G}) : 
+  A \subset H -> #|in_induced H A| = #|A|.
+Proof. by move => subAH; rewrite -(card_imset _ val_inj) val_in_induced'. Qed.
+Arguments card_in_induced [G] H [A].
+
+Lemma sub_induced (G : sgraph) (H : {set G}) (A : {set induced H}) : 
+  val @: A \subset H.
+Proof. by apply/subsetP => ? /imsetP[x xH ->]; apply: valP. Qed.
+
+Lemma forall_imset (aT rT : finType) (f : aT -> rT) (p : {pred aT}) (q : {pred rT}) :
+  [forall x in [set f z | z in p], q x] = [forall x in p, q (f x)].
+Proof.
+apply/forall_inP/forall_inP=>[allQ x xp|]; first by apply: allQ; rewrite imset_f.
+by move => allQ ? /imsetP[z zp ->]; apply: allQ.
+Qed.
+
+Lemma forall2_imset (aT rT : finType) (f g : aT -> rT) (p : {pred aT}) (q : rel rT) :
+  [forall x in [set f z | z in p], forall y in [set g z | z in p], q x y] = 
+  [forall x in p, forall y in p, q (f x) (g y)].
+Proof.
+by rewrite forall_imset; under eq_forallb => y do rewrite forall_imset.
+Qed.
+
+Lemma eq_forall_in (T : finType) (A P1 P2 : {pred T}) : 
+  {in A, P1 =1 P2} -> [forall x in A, P1 x] = [forall x in A, P2 x].
+Proof. move=> eqP. apply/eq_forallb => x; case xA: (x \in A) => //=. exact: eqP. Qed.
+
+Lemma induced_edge (G : sgraph) (A : {set G}) (x y : induced A) : 
+  (x -- y) = (val x -- val y).
+Proof. by move: x y => [x xA] [y yA]. Qed.
+
+
+(* better statement *)
+Lemma Diso' [F G : diGraph] [f : F -> G] [g : G -> F] : 
+  cancel f g -> cancel g f -> {mono f : x y / x -- y} -> F ≃ G.
+Proof. 
+move => can_f can_g mono_f; apply: Diso' can_f can_g _.
+abstract (by move => x y; apply/Bool.eq_iff_eq_true).
+Defined.
+
+(** [G] contains [F] as an induced subgraph *)
+Record isubgraph (F G : diGraph) := 
+  ISubgraph { isubgraph_fun :> F -> G ; 
+              isubgraph_inj : injective isubgraph_fun ; 
+              isubgraph_mono : {mono isubgraph_fun : x y / x -- y} }.
+Arguments isubgraph_inj [F G] i.
+Notation "F ⇀ G" := (isubgraph F G) (at level 30).
+
+Lemma induced_isubgraph (G : sgraph) (A : {set G}) : induced A ⇀ G.
+Proof.
+pose f (x : induced A) : G := val x.
+have : {mono f : x y / x -- y} by abstract by move => x y; rewrite induced_edge.
+apply: ISubgraph; exact: val_inj.
+Defined.
+
+Lemma isubgraph_induced (F G : sgraph) (i : F ⇀ G) : 
+  F ≃ induced [set x in codom i].
+Proof.
+set A := [set _ in _].
+have jP (x : induced A) : val x \in codom i. 
+  abstract by move: (valP x); rewrite inE.
+pose j (x : induced A) : F := iinv (jP x).
+have iP (x : F) : i x \in A by abstract by rewrite inE codom_f.
+pose i' (x : F) : induced A := Sub (i x) (iP x).
+have can_i : cancel i' j. 
+  abstract by move=> x; apply: (isubgraph_inj i); rewrite f_iinv.
+have can_j : cancel j i'. 
+  abstract by move => [x xA]; apply: val_inj; rewrite /j/=f_iinv.
+apply: Diso' can_i can_j _. 
+  abstract by move => x y; rewrite induced_edge /= isubgraph_mono.
+Defined.
+
+Lemma isubgraph_iso (F G : diGraph) (i : F ⇀ G) : #|G| <= #|F| -> F ≃ G.
+Proof.
+move => leqGF. apply: Diso' (isubgraph_mono i).
+Abort.
+
+Lemma isubgraph_comp (F G H : diGraph) (i : F ⇀ G) (j : G ⇀ H) : F ⇀ H.
+Proof.
+apply: ISubgraph (j \o i) _ _. 
+exact: inj_comp (isubgraph_inj j) (isubgraph_inj i).
+abstract by move=> x y /=; rewrite !isubgraph_mono.
+Defined.
+
+Section Induced.
+Variables (F G : sgraph) (i : F ⇀ G).
+
+Lemma cliqueb_induced (K : {set F}) : cliqueb K = cliqueb (i @: K).
+Proof.
+rewrite /cliqueb (@forall2_imset _ _ i i).
+apply: eq_forall_in => x xK; apply: eq_forall_in => y yK.
+by rewrite (inj_eq (isubgraph_inj i)) isubgraph_mono.
+Qed.
+
+Lemma stable_induced (S  : {set F}) : stable S = stable (i @: S).
+Proof.
+rewrite !stableEedge (@forall2_imset _ _ i i).
+apply: eq_forall_in => x xS; apply: eq_forall_in => y yS.
+by rewrite isubgraph_mono.
+Qed.
+
+Lemma coloring_induced (P : {set {set F}}) (D : {set F}) : 
+  coloring P D = @coloring G [set i @: (S : {set F}) | S in P] (i @: D).
+Proof.
+rewrite /coloring -imset_partition; last exact: isubgraph_inj.
+by rewrite forall_imset; under [in RHS]eq_forallb => S do rewrite -stable_induced.
+Qed.
+
+Lemma can_preimset (f : F -> G) (A : {set G}) : 
+  A \subset codom f -> [set f x | x in f @^-1: A] = A.
+Proof. 
+move/subsetP => subAi; apply/setP => z; apply/imsetP/idP => [[x]|zA].
+  by rewrite inE => ? ->.
+by exists (iinv (subAi _ zA)); rewrite ?inE f_iinv.
+Qed.
+
+Let i_inj := isubgraph_inj i.
+
+(* also relies on injectivity *)
+Lemma inj_card_preimset (A : {set G}) : A \subset codom i -> #|i @^-1: A| = #|A|.
+Proof. 
+move/subsetP => subAi.
+have [->|[y yA]] := set_0Vmem A; first by rewrite preimset0 !cards0.
+have x0 : F := (iinv (subAi _ yA)).
+pose j (x : G) : F := if @idP (x \in codom i) is ReflectT p then iinv p else x0.
+apply: on_card_preimset; exists j. 
+- move => x /subAi; rewrite /j. case E : {1}_ / idP => //. by rewrite iinv_f.
+- move => x /subAi; rewrite /j. case E : {1}_ / idP => //. by rewrite f_iinv.
+Qed.
+
+Lemma imset_codom (f : F -> G) (A : {set F}) : 
+  [set f x | x in A] \subset codom f.
+Proof. apply/subsetP => ? /imsetP[x xA ->]; exact: codom_f. Qed.
+
+Lemma preim_coloring (P : {set {set G}}) (D : {set F}) : 
+  coloring P (i @: D) -> coloring [set i @^-1: (B : {set G}) | B in P] D.
+Proof.
+move => colP; rewrite coloring_induced -imset_comp /comp /=.
+have coB B : B \in P -> B \subset codom i. 
+{ case/andP: colP => partP _; move/(partition_subset partP) => sub.
+  apply: subset_trans sub _. exact: imset_codom. }
+under [X in coloring X _]eq_in_imset => B BP. 
+  rewrite (@can_preimset i) ?coB //; over. 
+by rewrite imset_id.
+Qed.
+
+Lemma chi_induced (A : {set F}) : χ(A) = χ(i @: A).
+Proof.
+apply/eqP; rewrite eqn_leq; apply/andP; split.
+- case: (chiP (i @: A)) => P /preim_coloring colP minP.
+  exact: leq_trans (color_bound colP) (leq_imset_card _ _).
+- case: (chiP A) => P colP minP.
+  rewrite coloring_induced in colP; apply: leq_trans (color_bound colP) _.
+  by rewrite card_imset //; apply/imset_inj/isubgraph_inj.
+Qed.
+
+Lemma induced_cliques (B K : {set F}) : 
+  (K \in cliques B) = (i @: K \in cliques (i @: B)).
+Proof. by rewrite !inE inj_imsetS // -cliqueb_induced. Qed.
+
+Lemma clique_to_induced (K A : {set G}) : 
+  K \in cliques A -> i @^-1: K \in cliques (i @^-1: A).
+Proof.
+rewrite !inE => /andP[subKA /cliqueP clK]. 
+rewrite preimsetS //= cliqueb_induced; apply/cliqueP.
+by apply: sub_clique clK; rewrite sub_imset_pre preimsetS.
+Qed.
+
+Lemma can_inj_imset (A : {set F}) : i @^-1: (i @: A) = A.
+Proof. by apply/setP => x; rewrite !inE (mem_imset_eq). Qed.
+
+Lemma omega_induced (B : {set F}) : ω(B) = ω(i @: B).
+Proof.
+apply/eqP; rewrite eqn_leq; apply/andP; split.
+- have [K] := omegaP B. 
+  rewrite inE induced_cliques => /andP[ckK _]; rewrite -(card_imset _ i_inj).
+  exact: clique_bound.
+- have [K] := omegaP; rewrite inE => /andP[clK].
+  move/clique_to_induced : (clK). rewrite can_inj_imset => clK' _. 
+  apply: leq_trans (clique_bound clK'). rewrite inj_card_preimset //.
+  exact: subset_trans (cliques_subset clK) (imset_codom _ _).
+Qed.
+
+Lemma perfect_imset (A : {set F}) : perfect A = perfect(i @: A).
+Proof.
+apply/idP/idP.
+- move/forall_inP => perfIA; apply/forall_inP => B subBA.
+  have subBi : B \subset codom i by apply: subset_trans subBA (imset_codom _ _).
+  rewrite -[B](@can_preimset i) //  -omega_induced -chi_induced; apply perfIA. 
+  by rewrite -(@inj_imsetS _ _ i) // can_preimset.
+- move/forall_inP => perfA; apply/forall_inP => B ?.
+  by rewrite omega_induced chi_induced; apply/perfA/imsetS.
+Qed.
+
+End Induced.
+
+Lemma perfect_induced (G : sgraph) (A : {set G}) : 
+  perfect (induced A) = perfect A.
+Proof.
+pose i := induced_isubgraph A.
+by rewrite -perfectT (perfect_imset i) /= imset_valT set_mem.
+Qed.
+
+Arguments perfect_imset [F G] i A.
+
+(** Graph Properties - useful? *)
+Section GProp.
+Variable (rT : eqType).
+
+Definition gprop (P : sgraph -> rT) := 
+  forall F G : sgraph, F ≃ G -> P F = P G.
+
+Definition gset_prop (P : forall (G : sgraph), {set G} -> rT) :=
+  forall (F G : sgraph) (i : F ⇀ G) (A : {set F}), P F A = P G (i @: A).
+
+Lemma gset_prop_induced P (G : sgraph) (H : {set G}) (A : {set induced H}) :
+  gset_prop P -> P (induced H) A = P G (val @: A).
+Proof. by move/(_ _ _ (induced_isubgraph H)); apply. Qed.
+
+End GProp.
+
+Lemma gset_cliqueb : gset_prop cliqueb. 
+Proof. exact: cliqueb_induced. Qed.
+
+
+
+Module Legacy. (* should be subsumed *)
 Section Induced.
 Variables (G : sgraph).
 Implicit Types (A B H : {set G}).
 
-Lemma val_subset (T: finType) (A : {set T}) (K : {set sig [eta mem A]}) :
-  [set val x | x in K] \subset A.
-Admitted.
-
-Lemma induced_cliques A K : 
-  (K \in cliques [set: induced A]) = (val @: K \in cliques A).
+Lemma cliqueb_induced H (K : {set induced H}) : 
+  cliqueb K = cliqueb (val @: K).
 Proof.
-rewrite !inE subsetT andTb. rewrite val_subset.
-Admitted.
-
-Lemma cliques_induced A K : 
-  K \in cliques A -> 
-  in_induced K \in cliques [set: induced A] /\ #|in_induced A K| = #|K|.
-Admitted.
-
-Lemma omega_induced A : ω(induced A) = ω(A).
-Proof. 
-apply/eqP; rewrite eqn_leq -omegaT; apply/andP; split.
-- have [K] := omegaP setT. 
-  rewrite inE induced_cliques => /andP[ckK _]; rewrite -(card_imset _ val_inj).
-  exact: clique_bound.
-- have [K] := omegaP A; rewrite inE => /andP[/cliques_induced[K1 <-] _].
-  exact: clique_bound.
+rewrite /cliqueb forall2_imset.
+apply: eq_forall_in => -[x xH] xK; apply: eq_forall_in => -[y yH] yK.
+by rewrite -val_eqE /= induced_edge.
 Qed.
 
-Lemma chi_induced A : χ(induced A) = χ(A).
-Admitted.
+Lemma induced_cliques H (B K : {set induced H}) : 
+  (K \in cliques B) = (val @: K \in cliques (val @: B)).
+Proof. by rewrite !inE val_subset -cliqueb_induced. Qed.
 
-Lemma perfect_induced A : perfect(induced A) = perfect(A).
-Admitted.
+Lemma clique_to_induced H (K A : {set G}) : 
+  K \in cliques A -> in_induced H K \in cliques (in_induced H A).
+Proof.
+rewrite !inE => /andP[subKA /cliqueP clK]. 
+rewrite -val_subset cliqueb_induced !val_in_induced setISS //.
+by apply/cliqueP; apply: sub_clique clK; apply: subIset; rewrite subxx.
+Qed.
+
+Lemma omega_induced A (B : {set induced A}) : ω(B) = ω(val @: B).
+Proof.
+apply/eqP; rewrite eqn_leq; apply/andP; split.
+- have [K] := omegaP B. 
+  rewrite inE induced_cliques => /andP[ckK _]; rewrite -(card_imset _ val_inj).
+  exact: clique_bound.
+- have [K] := omegaP; rewrite inE => /andP[clK].
+  move/clique_to_induced : (clK) => /(_ A); rewrite in_induced_val => clK' _.
+  rewrite -(card_in_induced A); first exact: clique_bound clK'.
+  exact: subset_trans (cliques_subset clK) (sub_induced _).
+Qed.
+
+Lemma omega_inducedT A : ω(induced A) = ω(A).
+Proof. by rewrite -omegaT omega_induced -in_inducedT val_in_induced setIid. Qed.
+
+Lemma stable_induced H (S : {set induced H}) : 
+  stable S = stable (val @: S).
+Proof.
+rewrite !stableEedge forall2_imset.
+apply: eq_forall_in => -[x xH] xS; apply: eq_forall_in => -[y yH] yS.
+by rewrite induced_edge.
+Qed.
+
+(* Lemma perfect_induced A : perfect(induced A) = perfect(A). *)
+(* Proof. *)
+(* apply/idP/idP. *)
+(* - move/forall_inP => perfIA; apply/forall_inP => B subBA. *)
+(*   rewrite -[B](val_in_induced' subBA) -omega_induced -chi_induced.  *)
+(*   apply: perfIA. by rewrite subset_predT. *)
+(* - move/forall_inP => perfA; apply/forall_inP => B _. *)
+(*   rewrite omega_induced chi_induced; exact/perfA/sub_induced. *)
+(* Qed. *)
 
 End Induced.
+End Legacy.
 
+
+Lemma imset_bijT (aT rT : finType) (i : bij aT rT) : i @: setT = setT.
+Proof. 
+apply/setP => x; rewrite inE; apply/imsetP; exists (i^-1 x) => //.
+by rewrite bijK'.
+Qed.
 
 Section Iso.
 Variables (F G : sgraph) (i : diso F G).
 Implicit Types (A : {set F}).
+
+Let i_mono : {mono i : x y / x -- y}.
+Proof. by move => x y; rewrite edge_diso. Qed.
+
+Let i_inj : injective i.
+Proof. by apply: (can_inj (g := i^-1)) => x; rewrite bijK. Qed.
+
+Definition i' : F ⇀ G := ISubgraph i_inj i_mono.
 
 Lemma diso_stable A : stable A = stable (i @: A).
 Admitted.
@@ -526,10 +883,10 @@ Lemma diso_chi A : χ(A) = χ(i @: A).
 Admitted.
 
 Lemma diso_perfect A : perfect A = perfect (i @: A).
-Admitted.
+Proof. by rewrite (perfect_imset i'). Qed.
 
 Lemma diso_perfectT : perfect F = perfect G.
-Admitted.
+Proof. by rewrite -!perfectT diso_perfect imset_bijT. Qed.
 
 End Iso.
 
@@ -537,7 +894,7 @@ Lemma diso_perfect_induced (G : sgraph) (U V : {set G}) :
   induced U ≃ induced V -> perfect U -> perfect V.
 Proof. 
 move => i; rewrite -perfect_induced -perfectT (diso_perfect i).
-have -> : i @: [set: induced U] = [set: induced V]. 
+have -> : i @: [set: induced U] = [set: induced V].
 { by apply/setP => x; rewrite !inE -[x](bijK' i) imset_f. }
 by rewrite perfectT perfect_induced.
 Qed.
@@ -578,7 +935,7 @@ move => [x px] [y py]; rewrite /f/=. rewrite /edge_rel/= !val_insubd !SubK !inE.
 rewrite !inE in px py. 
 have [?/=|/=] := eqVneq x v; subst.
   have [->|/= yDv] := eqVneq y v; [by rewrite !sgP | by rewrite (cln_eq Nvv')].
-by have [->/= xDv|//] := eqVneq y v; rewrite sgP (cln_eq Nvv') // sgP.
+by have [->/= xDv|//] := eqVneq y v; rewrite [RHS]sgP (cln_eq Nvv') // sgP.
 Qed.
 
 Lemma opn_cln (G : sgraph) (x : G) : N(x) = N[x] :\ x.
@@ -626,10 +983,6 @@ move => perfG; apply: (@replication_aux (replicate v) (Some v) None).
 Qed.
 
 Print Assumptions replication.
-(* Axioms: *)
-(* perfect_induced : forall (G : sgraph) (A : {set G}), perfect (induced A) = perfect A *)
-(* diso_perfectT : forall F G : sgraph, F ≃ G -> perfect F = perfect G *)
-(* diso_perfect : forall (F G : sgraph) (i : F ≃ G) (A : {set F}), perfect A = perfect [set i x | x in A] *)
 
 Section LovaszGraph.
 Variables (G : sgraph) (m : G -> nat).
