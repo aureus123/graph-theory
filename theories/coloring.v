@@ -479,11 +479,28 @@ by apply/setP => P; apply/imsetP/imsetP => -[x xA ->]; exists x => //; rewrite E
 Qed.
 Arguments trivial_coloringP {A}.
 
+(*
+Fact x_in_part (P : {set {set G}}) (D : {set G}) (x : G) (xD : x \in D) (colP : coloring P D):
+  exists C : {set G}, (C \in P) && (x \in C).
+Admitted.
+
+Let induced_col' (P : {set {set G}}) (D : {set G}) (x : G) (xD : x \in D) (colP : coloring P D)
+    := xchoose (x_in_part xD colP).
+
+Definition induced_col (P : {set {set G}}) (D : {set G}) (x : G) (colP : coloring P D)
+    := if @idP (x \in D) is ReflectT p then induced_col' p colP else set0.
+*)
+
+Definition induced_col (P : {set {set G}}) (D : {set G}) (x : G) (colP : coloring P D) := pblock P x.
+
 Definition chi_mem (A : mem_pred G) := 
   #|[arg min_(P < trivial_coloring [set x in A] | coloring P [set x in A]) #|P|]|.
 
 Notation "χ( A )" := (chi_mem (mem A)) (format "χ( A )").
 
+Lemma chi_gives_part (D : {set G}) (n : nat) : χ(D) == n -> exists P : {set {set G}},
+    coloring P D && (#|P| == n).
+Admitted.
 
 Section Basics.
 
@@ -553,6 +570,8 @@ Admitted.
 
 (* Fin de teoremas auxiliares *)
 
+Let induced_col_2 (P : {set {set G}}) (D : {set G}) (x y : G) (colP : coloring P D)
+    := induced_col x colP :|: induced_col y colP.
 
 Definition is_neigh (S : {set G}) : bool := [exists v : G, N(v) == S].
 
@@ -588,7 +607,7 @@ Proof.
   move=> n HI J J1; move: (ltn0Sn n); rewrite J1 card_gt0; move/set0Pn=> [x xJ].
   set H := J :\ x.
   move: (cardsD1 x J); rewrite xJ -J1; move/eqP; rewrite add1n eqSS; move/eqP; rewrite -/H=> Hn.
-  move: (HI H Hn)=> HI2 connected [not_complete not_oddcycle].
+  move: (HI H Hn)=> HI2 connJ [not_complete not_oddcycle].
   rewrite leqNgt; apply/contraT; move/negPn=> CR.
   set compH := components H.
   (* Para cada componente conexa de H, su numero cromatico es menor al delta de J *)
@@ -603,12 +622,35 @@ Proof.
 
   (* Arranca la parte difícil... *)
 
-  
+  (* Vamos a trabajar con este coloreo *)
+  move: (chi_gives_part (eqxx χ(H))) => [P /andP [colPH card_PH]].
+  (* induced_col_2 toma dos vértices y devuelve el subgrafo inducido por
+   * los vertices coloreados igual a esos dos vértices. *)
+
+  (* 1. Para todos dos vértices vecinos de x, estos recaen en la misma componente
+   * conexa de Hij, donde Hij = induced_col_2 i j *)
+  have ij_conn (i j : G) : i \in N(x) -> j \in N(x) ->
+    connect (restrict (induced_col_2 i j colPH) sedge) i j.
+    (*exists C : {set G}, C \subset (induced_col_2 i j colPH) ->
+    i \in C /\ j \in C /\ connected C.*) {admit. }
+
+  (* Acá habría que buscar la manera de obtener un objeto Cij para i,j
+   * podríamos caracterizar con "induced_comp i j" a este conjunto.
+   * Falta arreglar los dos sublemas que siguen.... *)
+
+  (* 2. Esta componente conexa es un path entre i y j *)
+  have ij_conn (i j : G) : 
+    {in (induced_comp i j colPH)&,
+     forall a b, nodes (Path a b) = nodes (Path i j)} . {admit. }
+
+  (* 3. Para vertices i,j,k, los paths Cij y Cik solo coinciden en i *)
+  have ijk_join_i (i j k : G) : i \in N(x) -> j \in N(x) -> k \in N(x) ->
+    (induced_comp i j colPH) :&: (induced_comp i k colPH) = [set i].
 Admitted.
 
 Theorem chi_leq_delta :   (* Brook's Theorem *)
   connected [set: G] -> (* G is connected *)
-  (exists u v : G, (u != v) /\ ~ (u -- v)) /\  (* G is not a complete graph *)
+  ~ (clique [set: G]) /\  (* G is not a complete graph *)
   ~ (odd #|G| /\ forall v : G, #|N(v)| == 2) -> (* G is not an odd cycle *)
   χ(G) <= Δ(G).
 Proof.
