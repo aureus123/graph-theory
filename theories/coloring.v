@@ -553,20 +553,37 @@ End Basics.
 (** ** Definition and Proof of Brook's Theorem from Mauricio Salichs *)
 
 
-(* Algunos teoremas auxiliares que pueden resultar útiles.
+(* Algunas definiciones y teoremas auxiliares que pueden resultar útiles.
    Ver si ya estan definidos en otro lado y/o reubicar. *)
+
+Definition is_path_of (S : {set G}) (x y : G) :=
+  unique (fun p : Path x y => (S \subset p) /\ (p \subset S)).
+
+Definition same_col (D : {set G}) (P : {set {set G}}) (x y : G) (colPD : coloring P D) :=
+  [exists C : {set G}, (C \in P) && (x \in C) && (y \in C)]. Check mem_map.
+
+(* change_col debe intercambiar de subconjunto en la partición a todos los elementos de C.  
+ * En C habrá vértices que corresponderán a DOS subconjuntos de la partición P.
+ * Deben intercambiarse entre ellos en P y devolver una nueva partición. *)
+
+Let dif_sym (A B : {set G}) := (A :\: B) :|: (B :\: A).
+Definition change_col (P : {set {set G}}) (C : {set G}) :=
+  P(*seq_sub (map (dif_sym C) (enum P))*).
 
 Lemma chi_components (A : {set G}) : χ(A) = \max_(B in components A) χ(B).
 Admitted.
 
-Lemma aux1 (A : {set G}) (x : G) : χ(A :\ x) < χ(A) -> χ(A :\ x) + 1 = χ(A).
+Lemma chi_del_x (A : {set G}) (x : G) : χ(A :\ x) < χ(A) -> χ(A :\ x).+1 = χ(A).
 Admitted.
 
-Lemma aux2 (a b c : nat) : a + 1 = b -> a <= c -> c < b -> c + 1 = b.
+Lemma ind_G : induced [set: G] = G.
 Admitted.
 
-Lemma aux3 : induced [set: G] = G.
-Admitted.
+Lemma aux (a b c : nat) : a.+1 = b -> a <= c -> c < b -> c.+1 = b.
+Proof.
+  move <-; rewrite ltnS=> ? ?; have: a <= c <= a by apply/andP; split.
+  by rewrite -eqn_leq; move/eqP ->.
+Qed.
 
 (* Fin de teoremas auxiliares *)
 
@@ -592,7 +609,7 @@ Qed.
 Theorem chi_leq_delta_sub (n : nat) :   (* Brook's Theorem for Subgraphs *)
   (forall A : {set G}, n = #|A| -> (* Tuve que hacer esto para que me saliera la inducción *)
   connected A -> (* G is connected *)
-  (exists u v : (induced A), (u != v) /\ ~ (u -- v)) /\  (* G is not a complete graph *)
+  ~ (clique [set: G]) /\  (* G is not a complete graph *)
   ~ (odd #|A| /\ forall v : (induced A), #|N(v)| == 2) -> (* G is not an odd cycle *)
   χ(A) <= Δ(A)).
 Proof.
@@ -616,9 +633,9 @@ Proof.
   have chiH_leq_deltaJ : χ(H) <= Δ(J). {admit. }
   (* Si el numero cromatico aumenta agregando el vertice x, entonces deg(x) = Δ(J) *)
   have degx_eq_delta : χ(J :\ x) < χ(J) -> #|N(x)| = Δ(J). {
-    move/aux1=> chiH_leq_chiJ. move: (aux2 chiH_leq_chiJ chiH_leq_deltaJ CR).  }
+    move/chi_del_x=> chiH_leq_chiJ. move: (aux chiH_leq_chiJ chiH_leq_deltaJ CR).  }
   (* Y con esto podemos afirmar que #|N(x)| = Δ(J) *)
-  move: (degx_eq_delta (leq_ltn_trans chiH_leq_deltaJ CR)).
+  move: (degx_eq_delta (leq_ltn_trans chiH_leq_deltaJ CR))=> Nx_leq_ΔJ.
 
   (* Arranca la parte difícil... *)
 
@@ -629,33 +646,56 @@ Proof.
 
   (* 1. Para todos dos vértices vecinos de x, estos recaen en la misma componente
    * conexa de Hij, donde Hij = induced_col_2 i j *)
-  have ij_conn (i j : G) : i \in N(x) -> j \in N(x) ->
-    connect (restrict (induced_col_2 i j colPH) sedge) i j.
-    (*exists C : {set G}, C \subset (induced_col_2 i j colPH) ->
-    i \in C /\ j \in C /\ connected C.*) {admit. }
-
-  (* Acá habría que buscar la manera de obtener un objeto Cij para i,j
-   * podríamos caracterizar con "induced_comp i j" a este conjunto.
-   * Falta arreglar los dos sublemas que siguen.... *)
+  have ij_conn (i j : G) (C : {set {set G}}) (col : coloring C H) : i \in N(x) -> j \in N(x) ->
+    (*connect (restrict (induced_col_2 i j colPH) sedge) i j.*)
+    exists C : {set G}, (C \in (components (induced_col_2 i j col))) &&
+    (i \in C) && (j \in C). {admit. }
+  have induced_comp (i j : G) (iX : i \in N(x)) (jX : j \in N(x)) (C : {set {set G}}) (col : coloring C H)
+      := xchoose (ij_conn i j C col iX jX).
 
   (* 2. Esta componente conexa es un path entre i y j *)
-  have ij_conn (i j : G) : 
-    {in (induced_comp i j colPH)&,
-     forall a b, nodes (Path a b) = nodes (Path i j)} . {admit. }
+  have ind_comp_is_path (i j : G) (iX : i \in N(x)) (jX : j \in N(x)) (C : {set {set G}}) (col : coloring C H)
+        : is_path_of (induced_comp i j iX jX C col) i j. {admit. }
 
   (* 3. Para vertices i,j,k, los paths Cij y Cik solo coinciden en i *)
-  have ijk_join_i (i j k : G) : i \in N(x) -> j \in N(x) -> k \in N(x) ->
-    (induced_comp i j colPH) :&: (induced_comp i k colPH) = [set i].
+  have ijk_join_i (i j k : G) (iX : i \in N(x)) (jX : j \in N(x)) (kX : k \in N(x)) 
+                  (C : {set {set G}}) (col : coloring C H) :
+    (induced_comp i j iX jX C col) :&: (induced_comp i k iX kX C col) = [set i]. {admit. }
+
+  (* 4. Existen dos vertices vecinos de x que no son adyacentes (y existe un tercer vértice vecino de x). *)
+  have: (exists a b c : G, a \in N(x) /\ b \in N(x) /\ c \in N(x) /\ ~~ (a -- b)). {admit. }
+  elim=> x1 [x2 [x3 [x1adjx [x2adjx [x3adjx x1nadjx2]]]]].
+
+  (* Construímos el vértice u, vecino de x1 en C12, que tiene mismo color que x2 *)
+  have: exists u : G, (u -- x1) && (u != x2) && (same_col u x2 colPH). {admit. }
+  elim=> u /andP [/andP [uadjx1 uneqx1] sc_u_x2].
+
+  (* Definimos una nueva partición P' que da lugar a un nuevo coloreo colP'H,
+   * donde solo intercambiamos de conjunto en la partición a los vértices de C{i,j} *)
+  have P' := change_col P (induced_comp x1 x3 x1adjx x3adjx P colPH).
+  have colP'H : coloring P' H. {admit. }
+
+  (* As a neighbour of x1 = x'3 , our vertex u now lies in C'{x2,x3} *)
+  have u_inC'23 : u \in (induced_comp x2 x3 x2adjx x3adjx P' colP'H). {admit. }
+
+  (* By (4) for P, however, the path C{1,2} - x1 retained its original colouring, so u ∈ [C{1,2} - x] ⊆ C'{1,2} *)
+  have u_inC'12 : u \in (induced_comp x2 x1 x2adjx x1adjx P' colP'H). {admit. }
+
+  (* Hence u ∈ C'{2,3} ∩ C'{1,2}, contradicting (3) for P'. *)
+  have: u \in (induced_comp x2 x3 x2adjx x3adjx P' colP'H) :&: (induced_comp x2 x1 x2adjx x1adjx P' colP'H)
+    by apply/setIP; split => [|].
+  rewrite (ijk_join_i x2 x3 x1 x2adjx x3adjx x1adjx P' colP'H) in_set1.
+  by move/eqP=> ueqx1; move: uneqx1; apply/contra_neqT.
 Admitted.
 
 Theorem chi_leq_delta :   (* Brook's Theorem *)
   connected [set: G] -> (* G is connected *)
   ~ (clique [set: G]) /\  (* G is not a complete graph *)
-  ~ (odd #|G| /\ forall v : G, #|N(v)| == 2) -> (* G is not an odd cycle *)
+  ~ (odd #|[set: G]| /\ forall v : G, #|N(v)| == 2) -> (* G is not an odd cycle *)
   χ(G) <= Δ(G).
 Proof.
   move: (@chi_leq_delta_sub #|[set: G]| [set: G] (erefl #|[set: G]|)).
-  rewrite aux3. (* Falta demostrar que χ(G) = χ([set: G]) (análogo Δ) *)
+  rewrite ind_G. (* Falta demostrar que χ(G) = χ([set: G]) (análogo Δ) *)
 Admitted.
 
 (** ** End of Brook's Theorem from Mauricio Salichs *)
