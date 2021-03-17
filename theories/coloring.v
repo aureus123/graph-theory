@@ -7,6 +7,9 @@ Unset Printing Implicit Defensive.
 
 (** Preliminaries *)
 
+Axiom admitted_case : False.
+Ltac admit := case admitted_case.
+
 (** sets *)
 
 Lemma set_mem (T : finType) (A : {set T}) : [set x in mem A] = A.
@@ -62,6 +65,36 @@ have can_h : cancel h g by [].
 have can_g : cancel g h. 
   move => [[x|] p]; [exact: val_inj|by exfalso; rewrite !inE eqxx in p].
 exact: Diso' can_h can_g _.
+Defined.
+
+Section complement.
+Variable (G : sgraph).
+Definition compl_rel := [rel x y : G | (x != y) && ~~ x -- y].
+
+Fact compl_rel_irrefl : irreflexive compl_rel. 
+Proof. by move=> x; rewrite /= eqxx. Qed.
+
+Fact compl_rel_sym : symmetric compl_rel. 
+Proof. by move=> x y; rewrite /= eq_sym sgP. Qed.
+
+Definition compl := SGraph compl_rel_sym compl_rel_irrefl.
+
+End complement.
+
+(* better statement *)
+Lemma Diso' [F G : diGraph] [f : F -> G] [g : G -> F] : 
+  cancel f g -> cancel g f -> {mono f : x y / x -- y} -> F ≃ G.
+Proof. 
+move => can_f can_g mono_f; apply: Diso' can_f can_g _.
+abstract (by move => x y; apply/Bool.eq_iff_eq_true).
+Defined.
+
+Lemma diso_compl (G : sgraph) : compl (compl G) ≃ G.
+Proof.
+apply: (@Diso' (compl (compl G)) G id id) => // x y.
+abstract 
+ by rewrite [RHS]/edge_rel/= [in RHS]/edge_rel/= negb_and !negbK; 
+ case: eqVneq => /= [->|]; rewrite sgP.
 Defined.
 
 
@@ -204,6 +237,28 @@ by rewrite /fP cover_imset bigcup_imset (inj_eq imset_inj).
 Qed.
 End Image.
 
+Lemma partition_pigeonhole A :
+  partition P D -> #|P| <= #|A| -> A \subset D -> {in P, forall B, #|A :&: B| <= 1} ->
+  {in P, forall B, A :&: B != set0}.
+Proof.
+move=> partP card_A_P /subsetP subAD sub1; apply/forall_inP.
+apply: contraTT card_A_P => /forall_inPn [B BP]; rewrite negbK => eq0.
+rewrite -!ltnNge -(setD1K BP) cardsU1 !inE eqxx /= add1n ltnS.
+have F (x : T) (xA : x \in A) : { C | (C \in P) & (x \in C) }.
+  by apply/sig2W/bigcupP; rewrite -/(cover P) (cover_partition partP) subAD.
+pose f (x : T) : {set T} :=
+  if @idP (x \in A) is ReflectT xA then s2val (F _ xA) else set0.
+have inj_f : {in A &, injective f}. 
+{ move => x y; rewrite /f; 
+  case : {1}_ / idP => // xA _; case : {1}_ / idP => // yA _ E.
+  case: (F x xA) E (s2valP' (F y yA)) => /= C CP xC <- yC.
+  by have/card_le1_eqP/(_ y x) := sub1 _ CP; apply; apply/setIP. }
+rewrite -(card_in_imset inj_f); apply: subset_leq_card.
+apply/subsetP => ? /imsetP[x xA ->]; rewrite /f; move: xA.
+case : {1}_ / idP => // xA _; case: (F x xA) => /= C CP xC; rewrite !inE CP andbT.
+by apply: contraTneq eq0 => <-; apply/set0Pn; exists x; apply/setIP.
+Qed.
+
 End partition.
 
 
@@ -282,10 +337,13 @@ rewrite inE => /andP[clK ltK]; apply/eqP; rewrite eqn_leq ltK andbT.
 exact: clique_bound.
 Qed.
 
-Lemma maxclique_edge K H x y : x \in K -> y \in K -> K \in maxcliques H -> x != y -> x -- y.
-Proof.
-by move=> xK yK; rewrite !inE -andbA => /and3P[_ /cliqueP clK _]; apply: clK.
-Qed.
+Lemma maxclique_clique K H : K \in maxcliques H -> clique K.
+Proof. by rewrite !inE -andbA => /and3P[_ /cliqueP ? _]. Qed.
+
+(* Lemma maxclique_edge K H x y : x \in K -> y \in K -> K \in maxcliques H -> x != y -> x -- y. *)
+(* Proof. *)
+(* by move=> xK yK; rewrite !inE -andbA => /and3P[_ /cliqueP clK _]; apply: clK. *)
+(* Qed. *)
 
 Lemma sub_omega A B : A \subset B -> ω(A) <= ω(B).
 Proof.
@@ -316,6 +374,75 @@ by case: omegaP => K; rewrite !inE subset0 -andbA => /andP[/eqP-> _]; rewrite ca
 Qed.
 
 End OmegaBasics.
+
+
+(** ** Stable Set Number *)
+
+Section StableSets.
+Variable (G : sgraph).
+Implicit Types (H A S : {set G}).
+
+Definition stabsets H := [set S : {set G} | S \subset H & stable S].
+
+Lemma stabsets_gt0 A : 0 < #|stabsets A|. 
+Proof.
+apply/card_gt0P; exists set0; rewrite inE sub0set; apply/stableP.
+by move => u v; rewrite inE.
+Qed.
+
+
+Definition alpha_mem (A : mem_pred G) := 
+  \max_(S in stabsets [set x in A]) #|S|.
+
+Lemma stable_compl A : stable (A : {set compl G}) = cliqueb A.
+Proof. 
+apply/stableP/cliqueP => [stabA|clA] x y xA yA; first move=> xDy.
+  by move: (stabA _ _ xA yA); rewrite {1}/edge_rel/= xDy negbK.
+have [<-|xDy] := eqVneq x y; by [rewrite sgP|rewrite /edge_rel/= xDy clA].
+Qed.
+
+(** alternative proof, using duality, likely not worth it *)
+Lemma clique_compl A : cliqueb (A : {set compl G}) = stable A.
+Proof. 
+apply/cliqueP/stableP => [clA|stabA] x y xA yA; last move=> xDy.
+  have [<-|xDy] := eqVneq x y; first by rewrite sgP.
+  by move:(clA _ _ xA yA xDy); rewrite {1}/edge_rel/= xDy.
+by move: (stabA _ _ xA yA); rewrite {2}/edge_rel/= xDy.
+Qed.
+
+End StableSets.
+
+Notation "α( A )" := (alpha_mem (mem A)) (format "α( A )").
+
+Definition maxstabsets (G : sgraph) (H : {set G}) := 
+  [set S in stabsets H | α(H) <= #|S|].
+
+Section AlphaBasics.
+Variables (G : sgraph).
+Implicit Types (A B K S H : {set G}).
+
+Variant alpha_spec A : nat -> Prop :=
+  AlphaSpec S of S \in maxstabsets A : alpha_spec A #|S|.
+
+Lemma maxstabset_stable S H : S \in maxstabsets H -> stable S.
+Proof. by rewrite !inE -andbA => /and3P[_ -> _]. Qed.
+
+
+Lemma alphaP A : alpha_spec A α(A).
+Proof. 
+rewrite /alpha_mem set_mem. 
+have [/= S stabS maxS] := eq_bigmax_cond (fun A => #|A|) (stabsets_gt0 A).
+by rewrite maxS; apply: AlphaSpec; rewrite inE stabS -maxS -{2}[A]set_mem leqnn.
+Qed.
+
+End AlphaBasics.
+
+Lemma alpha_compl (G : sgraph) (A : {set G}) : α(A : {set compl G}) = ω(A).
+Admitted.
+
+Lemma omega_compl (G : sgraph) (A : {set G}) : ω(A : {set compl G}) = α(A).
+Admitted.
+
 
 (** ** chromatic number *)
 
@@ -596,13 +723,6 @@ Lemma induced_edge (G : sgraph) (A : {set G}) (x y : induced A) :
 Proof. by move: x y => [x xA] [y yA]. Qed.
 
 
-(* better statement *)
-Lemma Diso' [F G : diGraph] [f : F -> G] [g : G -> F] : 
-  cancel f g -> cancel g f -> {mono f : x y / x -- y} -> F ≃ G.
-Proof. 
-move => can_f can_g mono_f; apply: Diso' can_f can_g _.
-abstract (by move => x y; apply/Bool.eq_iff_eq_true).
-Defined.
 
 (** [G] contains [F] as an induced subgraph *)
 Record isubgraph (F G : diGraph) := 
@@ -647,6 +767,27 @@ apply: ISubgraph (j \o i) _ _.
 exact: inj_comp (isubgraph_inj j) (isubgraph_inj i).
 abstract by move=> x y /=; rewrite !isubgraph_mono.
 Defined.
+
+Open Scope implicit_scope.
+
+Lemma isubgraph_compLR_mono (F G : sgraph) (i : compl F ⇀ G) (x y : F) :
+  i x -- i y :> compl G = x -- y.
+Proof.
+have I := isubgraph_inj i.
+rewrite [LHS]/edge_rel/= isubgraph_mono [in LHS]/edge_rel/= inj_eq //.
+rewrite negb_and !negbK andb_orr andbC andbN orFb andb_idl //.
+by move/sg_edgeNeq ->.
+Qed. 
+
+(** this is just a type cast *)
+Lemma isubgraph_complLR (F G : sgraph) (i : compl F ⇀ G) : F ⇀ compl G.
+Proof.
+have I := isubgraph_inj i; apply: (@ISubgraph F (compl G) i) => // x y.
+exact: isubgraph_compLR_mono.
+Defined.
+
+Close Scope implicit_scope.
+
 
 Section Induced.
 Variables (F G : sgraph) (i : F ⇀ G).
@@ -899,6 +1040,8 @@ have -> : i @: [set: induced U] = [set: induced V].
 by rewrite perfectT perfect_induced.
 Qed.
 
+(** ** Lovasz Replication Lemma *)
+
 Definition replicate (G : sgraph) (v : G) := add_node G N[v].
 
 Lemma diso_replicate (G : sgraph) (v : G) : 
@@ -968,8 +1111,8 @@ have [vv'_H|] := boolP ([set v;v'] \subset H); last first.
     apply: wlog_neg => v'NK.
     apply: maxclique_opn (maxK) _ ; first by case/setD1P : vHv'.
     apply/subsetP => x xK; case: (eqVneq x v) => [xv|xDv]; first by rewrite -xv xK in v'NK.
-    rewrite opn_cln Nvv' !inE xDv -implyNb sgP; apply/implyP.
-    exact: maxclique_edge maxK.
+    rewrite opn_cln Nvv' !inE xDv -implyNb sgP; apply/implyP => xDv'.
+    by rewrite (maxclique_clique maxK).
   - suff: K \in maxcliques (H :\ v') by move/(forall_inP cutS).
     by apply: maxclique_disjoint => //; rewrite disjoint_sym disjoints1.
 Qed.
@@ -983,6 +1126,8 @@ move => perfG; apply: (@replication_aux (replicate v) (Some v) None).
 Qed.
 
 Print Assumptions replication.
+
+(** ** Weak Perfect Graph Theorem *)
 
 Section LovaszGraph.
 Variables (G : sgraph) (m : G -> nat).
@@ -1000,8 +1145,155 @@ Proof. by move => [x i]; rewrite /LovaszRel/= !eqxx. Qed.
 
 Definition Lovasz := SGraph LovaszRel_sym LovaszRel_irrefl.
 
+Local Notation "⟨ x , m ⟩" := (existT _ x m).
+
+Lemma Lovasz_tag_clique (K : {set Lovasz}) : 
+  clique K -> clique (tag @: K).
+Proof.
+move => clK ? ? /imsetP[[x n] xnK ->] /imsetP[[y o] yoK ->] /= xDy.
+have := clK _ _ xnK yoK; rewrite -tag_eqE/tag_eq/= (negbTE xDy) => /(_ isT).
+by rewrite /edge_rel/=/LovaszRel/= (negbTE xDy).
+Qed.
+
+Lemma Lovasz_tag_stable (S : {set Lovasz}) : 
+  stable S -> stable (tag @: S).
+Proof.
+move/stableP => stabS. 
+apply/stableP => ? ? /imsetP[[/= u x] S1 ->] /imsetP[[/= v y] S2 ->].
+have [<-|uDv] := eqVneq u v; first by rewrite sgP.
+by have := stabS _ _ S1 S2; rewrite {1}/edge_rel/=/LovaszRel/= (negbTE uDv).
+Qed.
+
+Lemma Lovasz_tag_inj (S : {set Lovasz}) : 
+  stable S -> {in S &, injective tag}.
+Proof. 
+move=> /stableP stabS [/= u x] [/= v y] uS vS uv; subst v; apply:eq_sigT => /=.
+apply: contraNeq (stabS _ _ uS vS) => xDy.
+by rewrite /edge_rel/=/LovaszRel/= eqxx -tag_eqE/tag_eq/= tagged_asE eqxx /=.
+Qed.
+
+Lemma Lovasz_stable_card (S : {set Lovasz}) :
+  stable S -> #|tag @: S| = #|S|.
+Proof. move=> stabS. rewrite card_in_imset //. exact: Lovasz_tag_inj. Qed.
+
 Lemma Lovasz_perfect : perfect G -> perfect Lovasz.
-Abort. 
+Admitted.
 (* for m x > 1, this is replication, for m x = 0, this is deletion, for all x *)
 
 End LovaszGraph.
+
+Lemma maxcliques_compl (G : sgraph) (A : {set G}) : 
+  maxcliques (A : {set compl G}) = maxstabsets A.
+Admitted.
+
+
+Lemma foo (k n : nat) (p : {pred 'I_k}) : 
+  n < #|p| -> { i : 'I_k | i \in p & #|[pred j in p | j < i]| = n}.
+Admitted.
+
+Lemma foos (k n : nat) (A : {set 'I_k}) : 
+  n < #|A| -> { i : 'I_k | i \in A & #|[set j in A | j < i]| = n}.
+Proof.
+pose s := sort (fun i j : 'I_k => i <= j) (enum A).
+Admitted.
+
+Lemma maxstabset_coloring (G : sgraph) (P : {set {set G}}) (D : {set G}) :
+  partition P D -> {in P, forall S, S \in maxstabsets D} -> χ(D) = #|P|.
+Proof.
+move=> partP maxP.
+have colP : coloring P D. admit.
+apply/eqP; rewrite eqn_leq (color_bound colP) /=.
+have [P' /andP[partP' stabP'] maxP'] := chiP. 
+apply: contraTT (leqnn #|D|); rewrite -!ltnNge => lt_P'_P.
+have [trivP trivP'] : trivIset P /\ trivIset P'. admit.
+rewrite -{1}(cover_partition partP') -(cover_partition partP).
+rewrite -(eqP trivP) -(eqP trivP'). 
+(* RHS is #|P| * α(D), LHS can be bounded by #|P'| * α(D) *)
+Admitted.
+
+Lemma perfect_eq (G : sgraph) (A : mem_pred G) : 
+  perfect A -> omega_mem A = chi_mem A.
+Admitted.
+
+Local Notation "⟨ x , m ⟩" := (existT _ x m).
+
+Lemma weak_perfect_aux (G : sgraph) (x0 : G) : 
+  perfect G -> exists2 K, cliqueb K & [forall S in maxstabsets [set: G], K :&: S != set0].
+Proof.
+move => perfG.
+pose M := maxstabsets [set: G].
+pose k := #|M|.
+pose S (i : 'I_k) : {set G} := enum_val i.
+pose m (x : G) := #|[set i : 'I_k | x \in S i]|.
+pose G' := Lovasz m.
+pose before (x : G) (i : 'I_k) := [set j : 'I_k | j < i & x \in S j]. 
+pose B (i : 'I_k) := 
+  [set xn : G' | tag xn \in S i & #|before (tag xn) i| == tagged xn :> nat].
+pose P := [set B i | i : 'I_k].
+have BiP (i : 'I_k) : B i \in P by apply/imsetP; exists i.
+have beforeI (i : 'I_k) x : [set j in [set i0 | x \in S i0] | j < i] = before x i.
+{ by apply/setP => j; rewrite !inE andbC. }
+have ltn_before (i : 'I_k) x : x \in S i -> #|before x i| < m x. 
+{ move=> x_Si; rewrite /before /m. apply: proper_card; apply/properP; split.
+    by apply/subsetP => j; rewrite !inE => /andP[_ ->].
+  by exists i; rewrite !inE ?ltnn. }
+have coverP : [set: G'] \subset cover P.
+{ apply/subsetP => -[x n] _. 
+  have/foos [i] := ltn_ord n; rewrite !inE beforeI => x_Si b_xi. 
+  by apply/bigcupP; exists (B i) => //; rewrite !inE /= x_Si b_xi eqxx. }
+have tagB (i : 'I_k) : tag @: B i = S i.
+{ apply/setP => x; apply/imsetP/idP => /= [[[z n] xn_Bi ->]|x_Si].
+    by move: xn_Bi; rewrite inE => /andP[-> _].
+  by exists ⟨ x , Ordinal (ltn_before _ _ x_Si) ⟩; rewrite // !inE /= x_Si eqxx. }
+have disjB (i j : 'I_k) : i != j -> [disjoint B i & B j].
+{ move => iDj; apply/pred0Pn => -[[/= x n]].
+  rewrite !inE /= -!andbA => /and4P[/= x_Si /eqP <- x_Sj]; apply/negP.
+  wlog lt_i_j : i j {iDj} x_Si x_Sj / i < j => [W|].
+  { case: (ltnP i j); [exact: W|rewrite leq_eqVlt eq_sym].
+    by rewrite (inj_eq (@ord_inj _)) (negbTE iDj) eq_sym /=; apply: W. }
+  rewrite eq_sym eqn_leq negb_and -!ltnNge [X in _ || X]proper_card ?orbT //.
+  apply/properP; split. 
+  - by apply/subsetP => o; rewrite !inE => /andP[H ->]; rewrite (ltn_trans H lt_i_j).
+  - by exists i; rewrite !inE ?lt_i_j ?ltnn. }
+have maxB (i : 'I_k) : B i \in maxstabsets [set: G'].
+{ rewrite inE. admit. }
+have partP : partition P [set: G'].
+{ admit. }
+have cardP : #|P| = k. admit.
+have : ω([set: G']) = k.
+{ have perfG' : perfect G' by apply: Lovasz_perfect.
+  rewrite perfect_eq ?perfectT // -cardP; apply: maxstabset_coloring => //.
+  move => ? /imsetP[i _ ->]; exact: maxB. }
+have [K' maxK' cardK'] := omegaP.
+have cutK' (i : 'I_k) : K' :&: B i != set0.
+{ apply: partition_pigeonhole partP _ _ _ _ _ => // {i}.
+    by rewrite cardK' -[k]card_ord leq_imset_card.
+  move=> ? /imsetP[i _ ->]; rewrite setIC; apply: cliqueIstable.
+    exact: maxclique_clique maxK'.
+  exact: maxstabset_stable. }
+exists (tag @: K'). 
+- apply/cliqueP/Lovasz_tag_clique. exact: maxclique_clique maxK'. 
+- apply/forall_inP => A A_M; pose i : 'I_k := enum_rank_in A_M A.
+  have defA : A = S i by rewrite /S enum_rankK_in.
+  have [z /setIP[z_Bi z_K']] := set0Pn _ (cutK' i).
+  by apply/set0Pn; exists (tag z); rewrite defA -tagB inE !imset_f.
+Qed.
+
+Theorem weak_perfect (G : sgraph) : perfect G -> perfect (compl G).
+Proof.
+rewrite -!perfectT => perfG ; apply: perfectIweak => H _ H0.
+suff [K [clK subKH maxK]] :
+  exists (K : {set G}), [/\ cliqueb K, K \subset H & [forall S in @maxstabsets G H, K :&: S != set0]].
+{ by exists K; rewrite stable_compl clK subKH maxcliques_compl. }
+change {set G} in H; have {H0} [x xH]  := set0Pn _ H0.
+have perfH : perfect (induced H) by rewrite perfect_induced; apply: sub_perfect perfG.
+have [K [clK /forall_inP cutK]] := @weak_perfect_aux (induced H) (Sub x xH) perfH.
+pose i := induced_isubgraph H.
+exists (val @: K). rewrite -Legacy.cliqueb_induced clK sub_induced; split => //.
+apply/forall_inP => S maxstabS. 
+have/cutK : i @^-1: S \in maxstabsets [set: induced H]. admit.
+case/set0Pn => z; rewrite !inE => /andP[zK zS]; apply/set0Pn; exists (i z).
+by rewrite inE zS imset_f.
+Qed.
+
+Print Assumptions weak_perfect.
