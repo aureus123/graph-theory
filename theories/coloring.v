@@ -573,6 +573,10 @@ Definition change_col (P : {set {set G}}) (C : {set G}) :=
 Lemma chi_components (A : {set G}) : χ(A) = \max_(B in components A) χ(B).
 Admitted.
 
+Lemma components_def (H C : {set G}) :
+  C \in components H -> C \subset H /\ connected C.
+Admitted.
+
 Lemma chi_del_x (A : {set G}) (x : G) : χ(A :\ x) < χ(A) -> χ(A :\ x).+1 = χ(A).
 Admitted.
 
@@ -590,27 +594,65 @@ Qed.
 Let induced_col_2 (P : {set {set G}}) (D : {set G}) (x y : G) (colP : coloring P D)
     := induced_col x colP :|: induced_col y colP.
 
-Definition is_neigh (S : {set G}) : bool := [exists v : G, N(v) == S].
+(* Definición vieja de delta.
 
-Definition delta_mem (A : mem_pred G) := 
-  #|[arg max_(S > N(somev) | is_neigh S) #|S|]|.
+    Definition is_neigh (S : {set G}) : bool := [exists v : G, N(v) == S].
 
-Notation "Δ( A )" := (delta_mem (mem A)) (format "Δ( A )").
+    Definition delta_mem' (A : mem_pred G) := 
+      #|[arg max_(S > N(somev) | is_neigh S) #|S|]|.
 
-Fact delta_max : forall v : G, #|N(v)| <= Δ(G).
-Proof.
-  rewrite /delta_mem; case: arg_maxnP.
-  by apply/existsP; exists somev.
-  move=> Nw NwisNeigh Nv v.
-  have NvisNeigh: is_neigh N(v) by apply/existsP; exists v.
-  by move: (Nv N(v) NvisNeigh).
-Qed.
+    Notation "Δ( A )" := (delta_mem (mem A)) (format "Δ( A )").
+    (*
+    Fact delta_max : forall v : G, #|N(v)| <= Δ(G).
+    Proof.
+      rewrite /delta_mem; case: arg_maxnP.
+      by apply/existsP; exists somev.
+      move=> Nw NwisNeigh Nv v.
+      have NvisNeigh: is_neigh N(v) by apply/existsP; exists v.
+      by move: (Nv N(v) NvisNeigh).
+    Qed.
+    *)
+
+    Lemma delta_sub (A : {set G}) : forall B : {set G}, B \subset A -> Δ(B) <= Δ(A).
+    Admitted.
+*)
+
+(* Definición nueva *)
+
+    Definition sub_neigh (A : {set G}) (v : G) := N(v) :&: A.
+
+    Fact sub_neigh_compl (A : {set G}) (v : G) : N(v) = sub_neigh A v :|: sub_neigh (~: A) v.
+    Admitted.
+
+    Definition has_neigh (A : {set G}) (S : {set G}) : bool := [exists v : G, (sub_neigh A v) == S].
+
+    Definition delta_mem (A : {set G}) := 
+      #|[arg max_(S > set0 | has_neigh A S) #|S|]|.
+
+    Notation "Δ( A )" := (delta_mem A) (format "Δ( A )").
+
+    Fact delta_max (A : {set G}) : forall v : G, v \in A -> #|sub_neigh A v| <= Δ(A).
+    Admitted.
+
+    Fact delta_sub (A : {set G}) : forall B : {set G}, B \subset A -> Δ(B) <= Δ(A).
+    Admitted.
+
+
+
+(* Previous Lemma: if A clique, χ = Δ + 1 and every vertex has maximum degree in A *)
+Theorem clique_br : forall A : {set G}, cliqueb A -> (forall v : G, v \in A -> #|sub_neigh A v| = Δ(A)) /\ (χ(A) = Δ(A) + 1).
+Admitted.
+
+(* Previous Lemma: if A odd cycle, χ = Δ + 1 and every vertex has maximum degree in A *)
+Theorem odd_cycle_br : forall A : {set G}, odd #|A| && [forall v : G, #|sub_neigh A v| == 2] ->
+    (forall v : G, v \in A -> #|sub_neigh A v| = Δ(A)) /\ (χ(A) = Δ(A) + 1).
+Admitted.
 
 Theorem chi_leq_delta_sub (n : nat) :   (* Brook's Theorem for Subgraphs *)
   (forall A : {set G}, n = #|A| -> (* Tuve que hacer esto para que me saliera la inducción *)
-  connected A -> (* G is connected *)
-  ~ (clique [set: G]) /\  (* G is not a complete graph *)
-  ~ (odd #|A| /\ forall v : (induced A), #|N(v)| == 2) -> (* G is not an odd cycle *)
+  connected A -> (* A is connected *)
+  ~ (cliqueb A) /\  (* A is not a complete graph *)
+  ~ (odd #|A| /\ forall v : G, #|sub_neigh A v| == 2) -> (* A is not an odd cycle *)
   χ(A) <= Δ(A)).
 Proof.
   elim/nat_ind: n. move=> A.
@@ -626,9 +668,32 @@ Proof.
   move: (cardsD1 x J); rewrite xJ -J1; move/eqP; rewrite add1n eqSS; move/eqP; rewrite -/H=> Hn.
   move: (HI H Hn)=> HI2 connJ [not_complete not_oddcycle].
   rewrite leqNgt; apply/contraT; move/negPn=> CR.
-  set compH := components H.
   (* Para cada componente conexa de H, su numero cromatico es menor al delta de J *)
-  have chiH'_leq_deltaJ : forall H' : {set G}, H' \in compH -> χ(H') <= Δ(J). {admit. }
+  have chiH'_leq_deltaJ : forall H' : {set G}, H' \in components H -> χ(H') <= Δ(J). {
+    move=> H' /components_def [H'subH connH'].
+    (* Case 1: H' is clique *)
+    case: (boolP (cliqueb H')).
+    move/clique_br=> [all_delta ->].
+    have: exists2 v : G, v \in H' & v -- x. {admit. }
+    elim=> v [vH' vadjx]; move: (all_delta v vH') <-.
+    have df : #|sub_neigh H' v| + 1 <= #|sub_neigh J v|. {admit. }
+    have vJ : v \in J. {admit. } exact: leq_trans df (delta_max vJ).
+    (* Case 2: H' is odd cycle *)
+    case: (boolP (odd #|H'| && [forall v : G, #|sub_neigh H' v| == 2])).
+    move/odd_cycle_br=> [all_delta ->] _.
+    have: exists2 v : G, v \in H' & v -- x. {admit. }
+    elim=> v [vH' vadjx]; move: (all_delta v vH') <-.
+    have df : #|sub_neigh H' v| + 1 <= #|sub_neigh J v|. {admit. }
+    have vJ : v \in J. {admit. } exact: leq_trans df (delta_max vJ).
+    (* Case 3: H' is none of them *)
+    move=> /negP not_odd_cycle /negP not_clique. Check (HI2 connH' not_clique not_odd_cycle). (* CHEQUEAR ESTO *)
+    (* Acá necesito decir que #|N(v)| <= Δ(J), para que luego esto salga facil aludiendo a que la conexion con x
+     * le da su unidad extra. Pero N(v) está definido sobre todos los vertices de G, por lo tanto esto no es cierto.
+     * Ya que estamos trabajando sobre subconjuntos de los vértices, tenemos que redefinir lo que es la vecindad
+     * de un vértice dentro de un subconjunto, y luego redefinir delta. Una opción sería:
+     *    deg (A : {set G}) (v : G) := #| N(v) :&: A |  y luego con esto definir delta de nuevo. *)
+    exact: leq_trans (leq_trans ? (delta_sub H'subH)) (delta_sub (subD1set J x)).
+  }
   (* El numero cromatico de H es menor al delta de J *)
   have chiH_leq_deltaJ : χ(H) <= Δ(J). {admit. }
   (* Si el numero cromatico aumenta agregando el vertice x, entonces deg(x) = Δ(J) *)
@@ -690,7 +755,7 @@ Admitted.
 
 Theorem chi_leq_delta :   (* Brook's Theorem *)
   connected [set: G] -> (* G is connected *)
-  ~ (clique [set: G]) /\  (* G is not a complete graph *)
+  ~ (cliqueb [set: G]) /\  (* G is not a complete graph *)
   ~ (odd #|[set: G]| /\ forall v : G, #|N(v)| == 2) -> (* G is not an odd cycle *)
   χ(G) <= Δ(G).
 Proof.
