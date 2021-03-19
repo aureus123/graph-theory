@@ -560,7 +560,7 @@ Definition is_path_of (S : {set G}) (x y : G) :=
   unique (fun p : Path x y => (S \subset p) /\ (p \subset S)).
 
 Definition same_col (D : {set G}) (P : {set {set G}}) (x y : G) (colPD : coloring P D) :=
-  [exists C : {set G}, (C \in P) && (x \in C) && (y \in C)]. Check mem_map.
+  [exists C : {set G}, (C \in P) && (x \in C) && (y \in C)].
 
 (* change_col debe intercambiar de subconjunto en la partición a todos los elementos de C.  
  * En C habrá vértices que corresponderán a DOS subconjuntos de la partición P.
@@ -577,10 +577,28 @@ Lemma components_def (H C : {set G}) :
   C \in components H -> C \subset H /\ connected C.
 Admitted.
 
+Lemma components_sub_v (A : {set G}) (v : G) : connected A -> v \in A ->
+    forall B : {set G}, B \in components (A :\ v) -> exists2 w : G, w \in B & w -- v.
+Admitted.
+
 Lemma chi_del_x (A : {set G}) (x : G) : χ(A :\ x) < χ(A) -> χ(A :\ x).+1 = χ(A).
 Admitted.
 
 Lemma ind_G : induced [set: G] = G.
+Admitted.
+
+Lemma strong_ind (P : nat -> Prop) :
+  P 0 -> (forall k, (forall l, (l <= k) -> P l) -> P (S k)) -> (forall n, P n).
+Admitted.
+
+Lemma max_leq_n (T : finType) (n : nat) (A : {set {set T}}) (F : {set T} -> nat) :
+    \max_(x in A) F x <= n <-> forall x : {set T}, x \in A -> F x <= n.
+Admitted.
+
+Lemma setISP (T : finType) (A B C : {set T}) : C != A -> A \proper B -> C :&: A \proper C :&: B.
+Admitted.
+
+Lemma subIn (T : finType) (A B : {set T}) (x : T) : A \proper B -> x \in A -> x \in B.
 Admitted.
 
 Lemma aux (a b c : nat) : a.+1 = b -> a <= c -> c < b -> c.+1 = b.
@@ -637,7 +655,8 @@ Let induced_col_2 (P : {set {set G}}) (D : {set G}) (x y : G) (colP : coloring P
     Fact delta_sub (A : {set G}) : forall B : {set G}, B \subset A -> Δ(B) <= Δ(A).
     Admitted.
 
-
+    Lemma neigh_chi (A : {set G}) (x : G) : #|sub_neigh A x| < χ(A :\ x) -> χ(A) = χ(A :\ x).
+    Admitted.
 
 (* Previous Lemma: if A clique, χ = Δ + 1 and every vertex has maximum degree in A *)
 Theorem clique_br : forall A : {set G}, cliqueb A -> (forall v : G, v \in A -> #|sub_neigh A v| = Δ(A)) /\ (χ(A) = Δ(A) + 1).
@@ -649,56 +668,71 @@ Theorem odd_cycle_br : forall A : {set G}, odd #|A| && [forall v : G, #|sub_neig
 Admitted.
 
 Theorem chi_leq_delta_sub (n : nat) :   (* Brook's Theorem for Subgraphs *)
-  (forall A : {set G}, n = #|A| -> (* Tuve que hacer esto para que me saliera la inducción *)
+  (forall A : {set G}, n == #|A| -> (* Tuve que hacer esto para que me saliera la inducción *)
   connected A -> (* A is connected *)
-  ~ (cliqueb A) /\  (* A is not a complete graph *)
-  ~ (odd #|A| /\ forall v : G, #|sub_neigh A v| == 2) -> (* A is not an odd cycle *)
+  ~ (cliqueb A) ->  (* A is not a complete graph *)
+  ~ (odd #|A| && [forall v : G, #|sub_neigh A v| == 2]) -> (* A is not an odd cycle *)
   χ(A) <= Δ(A)).
 Proof.
-  elim/nat_ind: n. move=> A.
+  elim/strong_ind: n. move=> A.
   (* Caso Base *)
-  move/eqP; rewrite eq_sym; move/eqP/cards0_eq -> => _ _.
+  rewrite eq_sym; move/eqP/cards0_eq -> => _ _ _.
   have aux1: [set x in mem set0] = set0. { admit. }
   have aux2: [set [set x] | x in set0] = set0. { admit. }
   have aux3: [arg min_(P < set0 | coloring P set0) #|P|] = set0. { admit. }
   rewrite /chi_mem aux1 /trivial_coloring aux2 aux3 cards0 //=.
   (*  Paso Inductivo  *)
-  move=> n HI J J1; move: (ltn0Sn n); rewrite J1 card_gt0; move/set0Pn=> [x xJ].
+  move=> n HI J /eqP Jn connJ not_clique not_oddc.
+  move: (ltn0Sn n); rewrite Jn card_gt0; move/set0Pn=> [x xJ].
   set H := J :\ x.
-  move: (cardsD1 x J); rewrite xJ -J1; move/eqP; rewrite add1n eqSS; move/eqP; rewrite -/H=> Hn.
-  move: (HI H Hn)=> HI2 connJ [not_complete not_oddcycle].
+  move: (cardsD1 x J). rewrite xJ -Jn; move/eqP; rewrite add1n eqSS; move/eqP; rewrite -/H=> Hn.
   rewrite leqNgt; apply/contraT; move/negPn=> CR.
   (* Para cada componente conexa de H, su numero cromatico es menor al delta de J *)
   have chiH'_leq_deltaJ : forall H' : {set G}, H' \in components H -> χ(H') <= Δ(J). {
-    move=> H' /components_def [H'subH connH'].
+    move=> H' H'compH; move: (H'compH)=> /components_def [H'subH connH'].
+    have pH'J: H' \proper J. {admit. } (*FACIL*)
+
     (* Case 1: H' is clique *)
     case: (boolP (cliqueb H')).
     move/clique_br=> [all_delta ->].
     have: exists2 v : G, v \in H' & v -- x. {admit. }
-    elim=> v [vH' vadjx]; move: (all_delta v vH') <-.
+    elim=> v vH' vadjx; move: (all_delta v vH') <-.
     have df : #|sub_neigh H' v| + 1 <= #|sub_neigh J v|. {admit. }
     have vJ : v \in J. {admit. } exact: leq_trans df (delta_max vJ).
+
     (* Case 2: H' is odd cycle *)
     case: (boolP (odd #|H'| && [forall v : G, #|sub_neigh H' v| == 2])).
     move/odd_cycle_br=> [all_delta ->] _.
-    have: exists2 v : G, v \in H' & v -- x. {admit. }
-    elim=> v [vH' vadjx]; move: (all_delta v vH') <-.
-    have df : #|sub_neigh H' v| + 1 <= #|sub_neigh J v|. {admit. }
-    have vJ : v \in J. {admit. } exact: leq_trans df (delta_max vJ).
+    have [v vH' vadjx] := components_sub_v connJ xJ H'compH.
+    move: (all_delta v vH') <-.
+    have df : #|sub_neigh H' v| + 1 <= #|sub_neigh J v|. {
+      rewrite /sub_neigh.
+      suff: #|N(v) :&: H'| < #|N(v) :&: J|. {admit. } (*FACIL*)
+      apply/proper_card.
+      have NvneqH: N(v) != H'. {admit. } (*FACIL usando x como vértice que N(v) tiene pero H' no *)
+      exact: setISP NvneqH pH'J.
+    } have vJ := subIn pH'J vH'.
+      
+} exact: leq_trans df (delta_max vJ).
+
     (* Case 3: H' is none of them *)
-    move=> /negP not_odd_cycle /negP not_clique. Check (HI2 connH' not_clique not_odd_cycle). (* CHEQUEAR ESTO *)
-    (* Acá necesito decir que #|N(v)| <= Δ(J), para que luego esto salga facil aludiendo a que la conexion con x
-     * le da su unidad extra. Pero N(v) está definido sobre todos los vertices de G, por lo tanto esto no es cierto.
-     * Ya que estamos trabajando sobre subconjuntos de los vértices, tenemos que redefinir lo que es la vecindad
-     * de un vértice dentro de un subconjunto, y luego redefinir delta. Una opción sería:
-     *    deg (A : {set G}) (v : G) := #| N(v) :&: A |  y luego con esto definir delta de nuevo. *)
-    exact: leq_trans (leq_trans ? (delta_sub H'subH)) (delta_sub (subD1set J x)).
+    have H'leqH : #|H'| <= n by rewrite Hn; apply subset_leq_card.
+    move=> /negP not_oddcH' /negP not_cliqueH'.
+    have trans_1 := (HI #|H'| H'leqH H' (eqxx #|H'|) connH' not_cliqueH' not_oddcH').
+    have trans_3 := (delta_sub (subD1set J x)); rewrite -/H in trans_3.
+    exact: (leq_trans (leq_trans trans_1 (delta_sub H'subH)) trans_3).
   }
   (* El numero cromatico de H es menor al delta de J *)
-  have chiH_leq_deltaJ : χ(H) <= Δ(J). {admit. }
+  have chiH_leq_deltaJ : χ(H) <= Δ(J) by rewrite chi_components max_leq_n.
   (* Si el numero cromatico aumenta agregando el vertice x, entonces deg(x) = Δ(J) *)
-  have degx_eq_delta : χ(J :\ x) < χ(J) -> #|N(x)| = Δ(J). {
-    move/chi_del_x=> chiH_leq_chiJ. move: (aux chiH_leq_chiJ chiH_leq_deltaJ CR).  }
+  have degx_eq_delta : χ(J :\ x) < χ(J) -> #|sub_neigh J x| = Δ(J). {
+    move/chi_del_x=> chiH_leq_chiJ. move: (aux chiH_leq_chiJ chiH_leq_deltaJ CR).
+    move=> dJ1_eq_cJ. apply/eqP; rewrite eqn_leq; apply/andP.
+    split; first by exact: delta_max.
+    move: dJ1_eq_cJ; rewrite -chiH_leq_chiJ; move/eqP; rewrite eqSS; move/eqP ->.
+    apply contraT; rewrite -ltnNge. move/neigh_chi; rewrite -chiH_leq_chiJ -add1n.
+    (*FACIL*)
+  }
   (* Y con esto podemos afirmar que #|N(x)| = Δ(J) *)
   move: (degx_eq_delta (leq_ltn_trans chiH_leq_deltaJ CR))=> Nx_leq_ΔJ.
 
