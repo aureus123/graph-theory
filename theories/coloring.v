@@ -564,7 +564,8 @@ Definition same_col (D : {set G}) (P : {set {set G}}) (x y : G) (colPD : colorin
 
 (* change_col debe intercambiar de subconjunto en la partición a todos los elementos de C.  
  * En C habrá vértices que corresponderán a DOS subconjuntos de la partición P.
- * Deben intercambiarse entre ellos en P y devolver una nueva partición. *)
+ * Deben intercambiarse entre ellos en P y devolver una nueva partición.
+ * Averiguar si es necesario definir esta operación. *)
 
 Let dif_sym (A B : {set G}) := (A :\: B) :|: (B :\: A).
 Definition change_col (P : {set {set G}}) (C : {set G}) :=
@@ -573,8 +574,8 @@ Definition change_col (P : {set {set G}}) (C : {set G}) :=
 Lemma chi_components (A : {set G}) : χ(A) = \max_(B in components A) χ(B).
 Admitted.
 
-Lemma components_def (H C : {set G}) :
-  C \in components H -> C \subset H /\ connected C.
+Lemma components_def (A B : {set G}) :
+  B \in components A -> B \subset A /\ connected B.
 Admitted.
 
 Lemma components_sub_v (A : {set G}) (v : G) : connected A -> v \in A ->
@@ -584,7 +585,7 @@ Admitted.
 Lemma chi_del_x (A : {set G}) (x : G) : χ(A :\ x) < χ(A) -> χ(A :\ x).+1 = χ(A).
 Admitted.
 
-Lemma ind_G : induced [set: G] = G.
+Lemma ind_G : induced [set: G] = G. (*  Este lema no funciona   *)
 Admitted.
 
 Lemma strong_ind (P : nat -> Prop) :
@@ -595,10 +596,8 @@ Lemma max_leq_n (T : finType) (n : nat) (A : {set {set T}}) (F : {set T} -> nat)
     \max_(x in A) F x <= n <-> forall x : {set T}, x \in A -> F x <= n.
 Admitted.
 
-Lemma setISP (T : finType) (A B C : {set T}) : C != A -> A \proper B -> C :&: A \proper C :&: B.
-Admitted.
-
-Lemma subIn (T : finType) (A B : {set T}) (x : T) : A \proper B -> x \in A -> x \in B.
+Lemma setISP (T : finType) (A B C : {set T}) : 
+   (exists2 x : T, x \in C :&: B & x \notin A) -> A \proper B -> C :&: A \proper C :&: B.
 Admitted.
 
 Lemma aux (a b c : nat) : a.+1 = b -> a <= c -> c < b -> c.+1 = b.
@@ -607,65 +606,90 @@ Proof.
   by rewrite -eqn_leq; move/eqP ->.
 Qed.
 
+Lemma set2cond (T : finType) (a b : T) (P : T -> T -> bool):
+  P a b /\ P b a -> [forall x in [set a; b], forall y in [set a; b], (x != y) ==> P x y].
+Proof.
+  move=> [Pab Pba]. 
+  apply/forallP=> x; apply/implyP. rewrite in_set2; move/orP; case; move/eqP ->.
+  all: (apply/forallP=> y; apply/implyP; rewrite in_set2; move/orP; case; move/eqP ->).
+  all: by apply/implyP; move/negP.
+Qed.
+
+Lemma aux2 (n m : nat) : 0 < n -> 0 < m -> n < m -> n.-1 < m.-1.
+Admitted.
+
+Lemma cards_n (T : finType) (A : {set T}) (n : nat) :
+    0 < n -> n < #|A| -> exists2 x : T, x \in A & (n.-1) < #|A :\ x|.
+Proof.
+  move=> ng0 cAgn. move: (ltn_trans ng0 cAgn); rewrite card_gt0; move/set0Pn.
+  elim=> [x xA]. exists x. by []. move: cAgn. rewrite (cardsD1 x A) addnC xA addn1 //=.
+  by move: (aux2 ng0 (ltn0Sn #|A :\ x|)).
+Qed.
+
 (* Fin de teoremas auxiliares *)
+
+
+
+(* Definción de Delta sobre un conjunto de vértices. *)
+
+Definition sub_neigh (A : {set G}) (v : G) := N(v) :&: A.
+
+Fact sub_neigh_compl (A : {set G}) (v : G) : N(v) = sub_neigh A v :|: sub_neigh (~: A) v.
+Admitted.
+
+Definition has_neigh (A : {set G}) (S : {set G}) : bool := [exists v : G, (sub_neigh A v) == S].
+
+Definition delta_mem (A : {set G}) := 
+  #|[arg max_(S > set0 | has_neigh A S) #|S|]|.
+
+Notation "Δ( A )" := (delta_mem A) (format "Δ( A )").
+
+Lemma leq_delta A : Δ(A) <= #|A|. (* Esto vale? *)
+Admitted.
+
+Fact delta_max (A : {set G}) : forall v : G, v \in A -> #|sub_neigh A v| <= Δ(A).
+Admitted.
+
+Fact delta_sub (A : {set G}) : forall B : {set G}, B \subset A -> Δ(B) <= Δ(A).
+Admitted.
+
+Lemma neigh_chi (A : {set G}) (x : G) : #|sub_neigh A x| < χ(A :\ x) -> χ(A) = χ(A :\ x).
+Admitted.
+
+Lemma conn0 (A : {set G}) : connected A -> Δ(A) = 0 -> A = set0.
+Admitted.
+
+Lemma conn1 (A : {set G}) : connected A -> Δ(A) = 1 -> exists x y : G, A = [set x;y] /\ (x -- y).
+Admitted.
+
+(* Inicio de sección de Teorema de Brooks *)
 
 Let induced_col_2 (P : {set {set G}}) (D : {set G}) (x y : G) (colP : coloring P D)
     := induced_col x colP :|: induced_col y colP.
 
-(* Definición vieja de delta.
+Lemma col0 (P : {set {set G}}) : coloring P set0 -> P = set0.
+Proof. move/andP=> [p0 _].
+Admitted.
 
-    Definition is_neigh (S : {set G}) : bool := [exists v : G, N(v) == S].
+Lemma chi_set0 : χ(set0) = 0.
+Proof. apply/eqP; move: (leq_chi set0); by rewrite cards0 leqn0. Qed.
 
-    Definition delta_mem' (A : mem_pred G) := 
-      #|[arg max_(S > N(somev) | is_neigh S) #|S|]|.
-
-    Notation "Δ( A )" := (delta_mem (mem A)) (format "Δ( A )").
-    (*
-    Fact delta_max : forall v : G, #|N(v)| <= Δ(G).
-    Proof.
-      rewrite /delta_mem; case: arg_maxnP.
-      by apply/existsP; exists somev.
-      move=> Nw NwisNeigh Nv v.
-      have NvisNeigh: is_neigh N(v) by apply/existsP; exists v.
-      by move: (Nv N(v) NvisNeigh).
-    Qed.
-    *)
-
-    Lemma delta_sub (A : {set G}) : forall B : {set G}, B \subset A -> Δ(B) <= Δ(A).
-    Admitted.
-*)
-
-(* Definición nueva *)
-
-    Definition sub_neigh (A : {set G}) (v : G) := N(v) :&: A.
-
-    Fact sub_neigh_compl (A : {set G}) (v : G) : N(v) = sub_neigh A v :|: sub_neigh (~: A) v.
-    Admitted.
-
-    Definition has_neigh (A : {set G}) (S : {set G}) : bool := [exists v : G, (sub_neigh A v) == S].
-
-    Definition delta_mem (A : {set G}) := 
-      #|[arg max_(S > set0 | has_neigh A S) #|S|]|.
-
-    Notation "Δ( A )" := (delta_mem A) (format "Δ( A )").
-
-    Fact delta_max (A : {set G}) : forall v : G, v \in A -> #|sub_neigh A v| <= Δ(A).
-    Admitted.
-
-    Fact delta_sub (A : {set G}) : forall B : {set G}, B \subset A -> Δ(B) <= Δ(A).
-    Admitted.
-
-    Lemma neigh_chi (A : {set G}) (x : G) : #|sub_neigh A x| < χ(A :\ x) -> χ(A) = χ(A :\ x).
-    Admitted.
+Lemma delta_set0 : Δ(set0) = 0.
+Proof. apply/eqP; move: (leq_delta set0); by rewrite cards0 leqn0. Qed.
+  
 
 (* Previous Lemma: if A clique, χ = Δ + 1 and every vertex has maximum degree in A *)
-Theorem clique_br : forall A : {set G}, cliqueb A -> (forall v : G, v \in A -> #|sub_neigh A v| = Δ(A)) /\ (χ(A) = Δ(A) + 1).
+Lemma clique_br : forall A : {set G}, cliqueb A -> (forall v : G, v \in A -> #|sub_neigh A v| = Δ(A)) /\ (χ(A) = 1 + Δ(A)).
 Admitted.
 
 (* Previous Lemma: if A odd cycle, χ = Δ + 1 and every vertex has maximum degree in A *)
-Theorem odd_cycle_br : forall A : {set G}, odd #|A| && [forall v : G, #|sub_neigh A v| == 2] ->
-    (forall v : G, v \in A -> #|sub_neigh A v| = Δ(A)) /\ (χ(A) = Δ(A) + 1).
+Lemma odd_cycle_br : forall A : {set G}, odd #|A| && [forall v : G, #|sub_neigh A v| == 2] ->
+    (forall v : G, v \in A -> #|sub_neigh A v| = Δ(A)) /\ (χ(A) = 1 + Δ(A)).
 Admitted.
+
+Lemma clique_or_odd_cycle_br : forall A : {set G}, cliqueb A \/ (odd #|A| && [forall v : G, #|sub_neigh A v| == 2])
+      -> (forall v : G, v \in A -> #|sub_neigh A v| = Δ(A)) /\ (χ(A) = 1 + Δ(A)).
+Proof. move=> A; case. exact: clique_br. exact: odd_cycle_br. Qed.
 
 Theorem chi_leq_delta_sub (n : nat) :   (* Brook's Theorem for Subgraphs *)
   (forall A : {set G}, n == #|A| -> (* Tuve que hacer esto para que me saliera la inducción *)
@@ -677,10 +701,13 @@ Proof.
   elim/strong_ind: n. move=> A.
   (* Caso Base *)
   rewrite eq_sym; move/eqP/cards0_eq -> => _ _ _.
-  have aux1: [set x in mem set0] = set0. { admit. }
+  by rewrite chi_set0 delta_set0.
+(*
+  have aux1: [set x in mem set0] = set0. { move=> t. by []. admit. }
   have aux2: [set [set x] | x in set0] = set0. { admit. }
   have aux3: [arg min_(P < set0 | coloring P set0) #|P|] = set0. { admit. }
   rewrite /chi_mem aux1 /trivial_coloring aux2 aux3 cards0 //=.
+*)
   (*  Paso Inductivo  *)
   move=> n HI J /eqP Jn connJ not_clique not_oddc.
   move: (ltn0Sn n); rewrite Jn card_gt0; move/set0Pn=> [x xJ].
@@ -690,34 +717,28 @@ Proof.
   (* Para cada componente conexa de H, su numero cromatico es menor al delta de J *)
   have chiH'_leq_deltaJ : forall H' : {set G}, H' \in components H -> χ(H') <= Δ(J). {
     move=> H' H'compH; move: (H'compH)=> /components_def [H'subH connH'].
-    have pH'J: H' \proper J. {admit. } (*FACIL*)
+    have pH'J := sub_proper_trans H'subH (properD1 xJ).
+    have H'leqH : #|H'| <= n by rewrite Hn; apply subset_leq_card.
 
-    (* Case 1: H' is clique *)
-    case: (boolP (cliqueb H')).
-    move/clique_br=> [all_delta ->].
-    have: exists2 v : G, v \in H' & v -- x. {admit. }
-    elim=> v vH' vadjx; move: (all_delta v vH') <-.
-    have df : #|sub_neigh H' v| + 1 <= #|sub_neigh J v|. {admit. }
-    have vJ : v \in J. {admit. } exact: leq_trans df (delta_max vJ).
-
-    (* Case 2: H' is odd cycle *)
-    case: (boolP (odd #|H'| && [forall v : G, #|sub_neigh H' v| == 2])).
-    move/odd_cycle_br=> [all_delta ->] _.
+    (* Case 1: H' is clique or odd cycle *)
+    case: (boolP (cliqueb H' || odd #|H'| && [forall v : G, #|sub_neigh H' v| == 2])).
+    move/orP/clique_or_odd_cycle_br=> [all_delta ->].
     have [v vH' vadjx] := components_sub_v connJ xJ H'compH.
     move: (all_delta v vH') <-.
-    have df : #|sub_neigh H' v| + 1 <= #|sub_neigh J v|. {
-      rewrite /sub_neigh.
-      suff: #|N(v) :&: H'| < #|N(v) :&: J|. {admit. } (*FACIL*)
-      apply/proper_card.
-      have NvneqH: N(v) != H'. {admit. } (*FACIL usando x como vértice que N(v) tiene pero H' no *)
+    have NvinH'_l_NvinJ : 1 + #|sub_neigh H' v| <= #|sub_neigh J v|. {
+      rewrite add1n; apply/proper_card.
+      have NvneqH: (exists2 x : G, x \in N(v) :&: J & x \notin H').
+      { exists x. apply/setIP; split=> [|//=]; by rewrite in_opn.
+        apply/contraT; rewrite negbK=> xH'.
+        move/subsetP: (H'subH). move=> sH'H. move: (sH'H x xH').  (*No recuerdo como simplificar esto*)
+        by rewrite /H setD11.  }
       exact: setISP NvneqH pH'J.
-    } have vJ := subIn pH'J vH'.
-      
-} exact: leq_trans df (delta_max vJ).
+    }
+    move/subsetP: (proper_sub pH'J)=> sH'J.
+    exact: leq_trans NvinH'_l_NvinJ (delta_max (sH'J v vH')).
 
-    (* Case 3: H' is none of them *)
-    have H'leqH : #|H'| <= n by rewrite Hn; apply subset_leq_card.
-    move=> /negP not_oddcH' /negP not_cliqueH'.
+    (* Case 2: H' is none of them *)
+    move/norP=> [/negP not_cliqueH' /negP not_oddcH'].
     have trans_1 := (HI #|H'| H'leqH H' (eqxx #|H'|) connH' not_cliqueH' not_oddcH').
     have trans_3 := (delta_sub (subD1set J x)); rewrite -/H in trans_3.
     exact: (leq_trans (leq_trans trans_1 (delta_sub H'subH)) trans_3).
@@ -731,10 +752,28 @@ Proof.
     split; first by exact: delta_max.
     move: dJ1_eq_cJ; rewrite -chiH_leq_chiJ; move/eqP; rewrite eqSS; move/eqP ->.
     apply contraT; rewrite -ltnNge. move/neigh_chi; rewrite -chiH_leq_chiJ -add1n.
-    (*FACIL*)
+    rewrite -[in RHS](add0n χ(J :\ x)); move/eqP; by rewrite eqn_add2r.
   }
   (* Y con esto podemos afirmar que #|N(x)| = Δ(J) *)
   move: (degx_eq_delta (leq_ltn_trans chiH_leq_deltaJ CR))=> Nx_leq_ΔJ.
+
+  (* Probamos que Δ(J) >= 3 mostrando los casos para Δ(J) = 0,1,2 *)
+
+  case (boolP (Δ(J) <= 2)).
+
+  rewrite leq_eqVlt; move/orP; case. (* Caso para Δ(J) = 2 *)
+  {admit. }
+  rewrite ltnS leq_eqVlt ; move/orP; case. (* Caso para Δ(J) = 1 *)
+  { move/eqP=> ΔJ1. move: (conn1 connJ ΔJ1)=> [a [b [Jab ab]]].
+    move/negP: not_clique; rewrite /cliqueb. apply contraR=> _.
+    by rewrite Jab; apply/set2cond; split=> [//=|]; rewrite sg_sym. }
+  rewrite ltnS leq_eqVlt ; move/orP; case. (* Caso para Δ(J) = 0 *)
+  { by move/eqP=> ΔJ0; rewrite (conn0 connJ ΔJ0) in_set0 in xJ. }
+  by []. rewrite -ltnNge -Nx_leq_ΔJ.
+  (*Creamos 3 vertices distintos en N(x) a partir de este resultado *)
+  move/(cards_n (ltn0Sn 1)); elim=> [x1 x1Nx].
+  move/(cards_n (ltn0Sn 0)); elim=> [x2 /setD1P [x2neqx1 x2Nx]].
+  rewrite card_gt0; move/set0Pn; elim=> [x3 /setD1P [x3neqx2 /setD1P [x3neqx1 x3Nx]]].
 
   (* Arranca la parte difícil... *)
 
@@ -743,25 +782,23 @@ Proof.
   (* induced_col_2 toma dos vértices y devuelve el subgrafo inducido por
    * los vertices coloreados igual a esos dos vértices. *)
 
-  (* 1. Para todos dos vértices vecinos de x, estos recaen en la misma componente
+  (* 2. Para todos dos vértices vecinos de x, estos recaen en la misma componente
    * conexa de Hij, donde Hij = induced_col_2 i j *)
-  have ij_conn (i j : G) (C : {set {set G}}) (col : coloring C H) : i \in N(x) -> j \in N(x) ->
-    (*connect (restrict (induced_col_2 i j colPH) sedge) i j.*)
-    exists C : {set G}, (C \in (components (induced_col_2 i j col))) &&
-    (i \in C) && (j \in C). {admit. }
   have induced_comp (i j : G) (iX : i \in N(x)) (jX : j \in N(x)) (C : {set {set G}}) (col : coloring C H)
-      := xchoose (ij_conn i j C col iX jX).
+      := pblock (components (induced_col_2 i j col)) i.
+  have ij_conn (i j : G) (iX : i \in N(x)) (jX : j \in N(x)) (C : {set {set G}}) (col : coloring C H)
+      : j \in (induced_comp i j iX jX C col). {admit. }
 
-  (* 2. Esta componente conexa es un path entre i y j *)
+  (* 3. Esta componente conexa es un path entre i y j *)
   have ind_comp_is_path (i j : G) (iX : i \in N(x)) (jX : j \in N(x)) (C : {set {set G}}) (col : coloring C H)
         : is_path_of (induced_comp i j iX jX C col) i j. {admit. }
 
-  (* 3. Para vertices i,j,k, los paths Cij y Cik solo coinciden en i *)
+  (* 4. Para vertices i,j,k, los paths Cij y Cik solo coinciden en i *)
   have ijk_join_i (i j k : G) (iX : i \in N(x)) (jX : j \in N(x)) (kX : k \in N(x)) 
                   (C : {set {set G}}) (col : coloring C H) :
     (induced_comp i j iX jX C col) :&: (induced_comp i k iX kX C col) = [set i]. {admit. }
 
-  (* 4. Existen dos vertices vecinos de x que no son adyacentes (y existe un tercer vértice vecino de x). *)
+  (* 5. Existen dos vertices vecinos de x que no son adyacentes (y existe un tercer vértice vecino de x). *)
   have: (exists a b c : G, a \in N(x) /\ b \in N(x) /\ c \in N(x) /\ ~~ (a -- b)). {admit. }
   elim=> x1 [x2 [x3 [x1adjx [x2adjx [x3adjx x1nadjx2]]]]].
 
