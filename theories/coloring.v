@@ -1297,3 +1297,45 @@ by rewrite inE zS imset_f.
 Qed.
 
 Print Assumptions weak_perfect.
+
+
+
+
+
+
+
+
+
+Section Odd_hole.
+
+Variable (G : sgraph).
+
+(* it says that if G has an odd hole then G is not perfect. Note that
+   if |A| is odd and every vertex of A has exactly 2 neighbors in G[A], then
+   there exists at least an induced odd hole B in A *)
+Definition sub_neigh (A : {set G}) (v : G) := N(v) :&: A.
+
+Definition is_odd_hole (A : {set G}) := odd #|A| && [forall v : G, #|sub_neigh A v| == 2].
+
+Lemma odd_hole_omega2 (A : {set G}) : is_odd_hole A -> ω(A) = 2.
+Admitted.
+
+Lemma odd_hole_chi3 (A : {set G}) : is_odd_hole A -> χ(A) = 3.
+Admitted.
+
+Lemma odd_hole_imperfectness : (exists A : {set G}, is_odd_hole A) -> ~~ perfect G.
+Proof.
+  move=> [A ohA].
+  apply/negP ; rewrite -perfectT => pG.
+  move: (perfect_eq (sub_perfect (subsetT A) pG)).
+  by rewrite (odd_hole_omega2 ohA) (odd_hole_chi3 ohA).
+Qed.
+
+
+(* For proving imperfectness on anti odd-holes, may be one can take advantage of weak_perfect
+ * since the anti odd-hole is the complement of the odd hole by definition *)
+
+
+
+
+
