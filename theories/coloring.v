@@ -1310,12 +1310,9 @@ Section Odd_hole.
 
 Variable (G : sgraph).
 
-(* it says that if G has an odd hole then G is not perfect. Note that
-   if |A| is odd and every vertex of A has exactly 2 neighbors in G[A], then
-   there exists at least an induced odd hole B in A *)
 Definition sub_neigh (A : {set G}) (v : G) := N(v) :&: A.
 
-Definition is_odd_hole (A : {set G}) := odd #|A| && [forall v : G, #|sub_neigh A v| == 2].
+Definition is_odd_hole (A : {set G}) := connectedb A && (#|A| >= 5) && odd #|A| && [forall v : G, #|sub_neigh A v| == 2].
 
 Lemma odd_hole_omega2 (A : {set G}) : is_odd_hole A -> ω(A) = 2.
 Admitted.
