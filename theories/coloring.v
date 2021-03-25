@@ -1320,11 +1320,11 @@ Proof.
   move=> ohA ; apply/eqP ; rewrite eqn_leq ; apply/andP ; split ; last first.
   - move: ohA ; rewrite /is_odd_hole => /and4P [_ Acd5 _ Adeg2].
     have: 0 < #|A| by move: Acd5 ; apply: leq_ltn_trans.
-    rewrite card_gt0 ; move/set0Pn => [x xinA].
+    move/card_gt0P => [x xinA].
     move/forall_inP: Adeg2 => /(_ x xinA) ; rewrite /sub_neigh => sNv2.
     have: 0 < #|N(x) :&: A|
       by move: sNv2 ; rewrite eq_sym => /eqP s2Nv ; move: (eq_leq s2Nv) ; apply: leq_ltn_trans.
-    rewrite card_gt0 ; move/set0Pn => [y] ; rewrite in_setI => /andP [yinNx yinA].
+    move/card_gt0P => [y] ; rewrite in_setI => /andP [yinNx yinA].
     set K := [set x; y].
     move: yinNx ; rewrite in_opn => adjxy.
     have: #|K| = 2 by rewrite cards2 (sg_edgeNeq adjxy).
@@ -1334,7 +1334,31 @@ Proof.
     + apply/cliqueP ; rewrite /clique /K => p q ; rewrite !in_set2 ; case/orP.
       * move/eqP-> ; case/orP ; [by move/eqP-> ; apply: contraR | by move/eqP-> ].
       * move/eqP-> ; case/orP ; [by move/eqP-> ; rewrite sg_sym | by move/eqP-> ; apply: contraR ].
-  - admit.
+  - have [/= K clK maxK] := eq_bigmax_cond (fun X : {set G} => #|X|) (cliques_gt0 A).
+    suff: #|K| <= 2 by rewrite /omega_mem set_mem maxK.
+    rewrite leqNgt ; apply/negP => Kgeq3.
+    have: 0 < #|K| by move: Kgeq3 ; apply: leq_ltn_trans.
+    move/card_gt0P => [x xinK].
+    have: 0 < #|K :\ x|. by move: Kgeq3 ; rewrite (cardsD1 x) xinK add1n ; auto.
+    move/card_gt0P => [y yinKmx].
+    have: 0 < #|K :\ x :\ y| by move: Kgeq3 ; rewrite (cardsD1 x) (cardsD1 y) xinK yinKmx !add1n.
+    move/card_gt0P => [z zinKmxy].
+    move/setD1P: (yinKmx) => [yneqx yinK].
+    move/setD1P: (zinKmxy) => [zneqy] ; move/setD1P => [zneqx zinK].
+    move: clK ; rewrite in_set => /andP [KsubA] ; move/cliqueP ; rewrite /clique => Kcl.
+    move: (Kcl y x yinK xinK yneqx) (Kcl z x zinK xinK zneqx) (Kcl z y zinK yinK zneqy) => adjyx adjzx adjzy.
+    have: 0 < #|A :\ x :\ y :\ z|.
+    { move: ohA ; rewrite /is_odd_hole => /and4P [_ Acd5 _ _] ; move: Acd5.
+      rewrite (cardsD1 x) (cardsD1 y) (cardsD1 z) (subsetP KsubA x xinK).
+      rewrite (subsetP (setSD [set x] KsubA) y yinKmx).
+      rewrite (subsetP (setSD [set y] (setSD [set x] KsubA)) z zinKmxy).
+      rewrite !add1n ; auto. }
+    move/card_gt0P => [w winAmxyz].
+
+    (* Up to now K contains {x y z} so x--y, x--z, y--z, and w is some vertex from A-{x y z}.
+     * As A is connected, there is a path between w and x, then x (or y or z) should satisfy
+     * N(x) = {y, z, someone else, ...} >= 3, contradicting the fact that N(x) <= 2. *)
+    admit.
 Admitted.
 
 Lemma odd_hole_chi3 (A : {set G}) : is_odd_hole A -> χ(A) = 3.
