@@ -552,30 +552,48 @@ End Basics.
 
 (** ** Definition and Proof of Brook's Theorem from Mauricio Salichs *)
 
-
 (* Algunas definiciones y teoremas auxiliares que pueden resultar útiles.
    Ver si ya estan definidos en otro lado y/o reubicar. *)
 
 Definition is_path_of (S : {set G}) (x y : G) :=
   unique (fun p : Path x y => (S \subset p) /\ (p \subset S)).
 
-Definition same_col (D : {set G}) (P : {set {set G}}) (x y : G) (colPD : coloring P D) :=
-  [exists C : {set G}, (C \in P) && (x \in C) && (y \in C)].
+Definition same_col (A : {set G}) (P : {set {set G}}) (x y : G) (colPA : coloring P A) :=
+  y \in (induced_col x colPA).
 
 (* change_col debe intercambiar de subconjunto en la partición a todos los elementos de C.  
  * En C habrá vértices que corresponderán a DOS subconjuntos de la partición P.
  * Deben intercambiarse entre ellos en P y devolver una nueva partición.
  * Averiguar si es necesario definir esta operación. *)
 
-Let dif_sym (A B : {set G}) := (A :\: B) :|: (B :\: A).
-Definition change_col (P : {set {set G}}) (C : {set G}) :=
-  P(*seq_sub (map (dif_sym C) (enum P))*).
 
-Lemma chi_components (A : {set G}) : χ(A) = \max_(B in components A) χ(B).
+Let change_part_v (P : {set {set G}}) (A : {set G}) (x y : G) :=
+(* Movemos x de su conjunto dentro de la partición, y lo colocamos en el mismo que y *)
+  (pblock P x :\ x) |: ((x |: pblock P y) |: (P :\ (pblock P x) :\ (pblock P y))).
+
+Fact partition_v (A : {set G}) (P : {set {set G}}) (x y : G) :
+  x \in cover P -> y \in cover P ->
+  partition P A -> partition (change_part_v P A x y) A.
+Proof.
+  move=> xP yP /andP [/eqP coverP /andP [trivP Pn0]]; apply/andP; split.
+  rewrite -coverP /change_part_v.
 Admitted.
 
-Lemma components_def (A B : {set G}) :
-  B \in components A -> B \subset A /\ connected B.
+Let nds (A B : {set G}) := (A :&: B == set0) || (A \subset B).
+Let dif_sym' (A B : {set G}) := if (nds A B) then B else (A :\: B) :|: (B :\: A).
+Definition change_part (P : {set {set G}}) (C : {set G}) := (*map (dif_sym' C) *)P.
+(*seq_sub (map (dif_sym C) (enum P))*)
+
+Fact change_partP (P : {set {set G}}) (C : {set G}) (x y z : G) :
+  x \in cover P -> y \in cover P -> z \in cover P -> x \in C -> y \in C -> z \notin C ->
+  pblock P x != pblock P y -> pblock P y == pblock P z -> x \in pblock (change_part P C) z.
+Admitted. (* Un poco rebuscado *)
+
+Lemma chi_components (A B : {set G}) : χ(A) = \max_(B in components A) χ(B).
+Admitted.
+
+Lemma components_def (X Y : {set G}):
+  Y \in components X -> Y \subset X /\ connected Y.
 Admitted.
 
 Lemma components_sub_v (A : {set G}) (v : G) : connected A -> v \in A ->
@@ -596,8 +614,8 @@ Lemma max_leq_n (T : finType) (n : nat) (A : {set {set T}}) (F : {set T} -> nat)
     \max_(x in A) F x <= n <-> forall x : {set T}, x \in A -> F x <= n.
 Admitted.
 
-Lemma setISP (T : finType) (A B C : {set T}) : 
-   (exists2 x : T, x \in C :&: B & x \notin A) -> A \proper B -> C :&: A \proper C :&: B.
+Lemma setISP (T : finType) (X Y Z : {set T}) : 
+   (exists2 x : T, x \in Z :&: Y & x \notin X) -> X \proper Y -> Z :&: X \proper Z :&: Y.
 Admitted.
 
 Lemma aux (a b c : nat) : a.+1 = b -> a <= c -> c < b -> c.+1 = b.
@@ -618,13 +636,27 @@ Qed.
 Lemma aux2 (n m : nat) : 0 < n -> 0 < m -> n < m -> n.-1 < m.-1.
 Admitted.
 
-Lemma cards_n (T : finType) (A : {set T}) (n : nat) :
-    0 < n -> n < #|A| -> exists2 x : T, x \in A & (n.-1) < #|A :\ x|.
+Lemma cards_n (T : finType) (C : {set T}) (n : nat) :
+    0 < n -> n < #|C| -> exists2 x : T, x \in C & (n.-1) < #|C :\ x|.
 Proof.
   move=> ng0 cAgn. move: (ltn_trans ng0 cAgn); rewrite card_gt0; move/set0Pn.
-  elim=> [x xA]. exists x. by []. move: cAgn. rewrite (cardsD1 x A) addnC xA addn1 //=.
-  by move: (aux2 ng0 (ltn0Sn #|A :\ x|)).
+  elim=> [x xC]. exists x. by []. move: cAgn. rewrite (cardsD1 x C) addnC xC addn1 //=.
+  by move: (aux2 ng0 (ltn0Sn #|C :\ x|)).
 Qed.
+
+Lemma in_comp (A : {set G}) (x : G) : x \in A ->
+  (pblock (components A) x) != [set x] -> exists y : G, y \in A /\ y -- x.
+Proof.
+  (* x \in A  <-> (pblock (components A) x) != set0 *)
+Admitted.
+
+Lemma in_comp_2 (A : {set G}) (x y : G) : x \in A -> y \in A -> y -- x ->
+  y \in pblock (components A) x.
+Admitted.
+
+Lemma dif_col (P : {set {set G}}) (A : {set G}) (col : coloring P A) (x y : G) :
+    x \in A -> y \in A -> y -- x -> pblock P x != pblock P y.
+Admitted.
 
 (* Fin de teoremas auxiliares *)
 
@@ -644,7 +676,7 @@ Definition delta_mem (A : {set G}) :=
 
 Notation "Δ( A )" := (delta_mem A) (format "Δ( A )").
 
-Lemma leq_delta A : Δ(A) <= #|A|. (* Esto vale? *)
+Lemma leq_delta C : Δ(C) <= #|C|. (* Esto vale? *)
 Admitted.
 
 Fact delta_max (A : {set G}) : forall v : G, v \in A -> #|sub_neigh A v| <= Δ(A).
@@ -662,13 +694,14 @@ Admitted.
 Lemma conn1 (A : {set G}) : connected A -> Δ(A) = 1 -> exists x y : G, A = [set x;y] /\ (x -- y).
 Admitted.
 
-(* Inicio de sección de Teorema de Brooks *)
 
-Let induced_col_2 (P : {set {set G}}) (D : {set G}) (x y : G) (colP : coloring P D)
+(* Sublemas y definiciones preliminares el Teorema de Brooks *)
+
+Let induced_col_2 (A : {set G}) (P : {set {set G}}) (x y : G) (colP : coloring P A)
     := induced_col x colP :|: induced_col y colP.
 
-Lemma col0 (P : {set {set G}}) : coloring P set0 -> P = set0.
-Proof. move/andP=> [p0 _].
+Fact ind_col_subset (A : {set G}) (P : {set {set G}}) (x y : G) (colP : coloring P A) :
+    induced_col_2 x y colP \subset A.
 Admitted.
 
 Lemma chi_set0 : χ(set0) = 0.
@@ -676,38 +709,45 @@ Proof. apply/eqP; move: (leq_chi set0); by rewrite cards0 leqn0. Qed.
 
 Lemma delta_set0 : Δ(set0) = 0.
 Proof. apply/eqP; move: (leq_delta set0); by rewrite cards0 leqn0. Qed.
-  
+
+Fact coloring_ch_col_1 (A : {set G}) (x y : G) (P : {set {set G}}) (colP: coloring P A)
+                       (xA : x \in A) (yA : y \in A)  :
+  [forall v in pblock P y, ~~ (v -- x)] -> coloring (change_part_v P A x y) A.
+Proof.
+  move/andP: colP=> [partP stabP] stabY. apply/andP; split. apply partition_v.
+  all: try by rewrite (cover_partition partP). by [].
+Admitted.
+
+Fact coloring_ch_col_2 (A B : {set G}) (x y : G) (P : {set {set G}}) (colP: coloring P A) :
+  B \in components (induced_col_2 x y colP) -> coloring (change_part P B) A.
+Admitted.
+
 
 (* Previous Lemma: if A clique, χ = Δ + 1 and every vertex has maximum degree in A *)
-Lemma clique_br : forall A : {set G}, cliqueb A -> (forall v : G, v \in A -> #|sub_neigh A v| = Δ(A)) /\ (χ(A) = 1 + Δ(A)).
+Lemma clique_br : forall A : {set G}, cliqueb A ->
+  [forall v in A, (#|sub_neigh A v| == Δ(A))] && (χ(A) == 1 + Δ(A)).
 Admitted.
 
 (* Previous Lemma: if A odd cycle, χ = Δ + 1 and every vertex has maximum degree in A *)
-Lemma odd_cycle_br : forall A : {set G}, odd #|A| && [forall v : G, #|sub_neigh A v| == 2] ->
-    (forall v : G, v \in A -> #|sub_neigh A v| = Δ(A)) /\ (χ(A) = 1 + Δ(A)).
+Lemma odd_cycle_br (A : {set G}) : odd #|A| && [forall v in A, #|sub_neigh A v| == 2] ->
+    [forall v in A, (#|sub_neigh A v| == Δ(A))] && (χ(A) == 1 + Δ(A)).
 Admitted.
 
-Lemma clique_or_odd_cycle_br : forall A : {set G}, cliqueb A \/ (odd #|A| && [forall v : G, #|sub_neigh A v| == 2])
-      -> (forall v : G, v \in A -> #|sub_neigh A v| = Δ(A)) /\ (χ(A) = 1 + Δ(A)).
-Proof. move=> A; case. exact: clique_br. exact: odd_cycle_br. Qed.
+Lemma clique_or_odd_cycle_br (A : {set G}) : cliqueb A \/ (odd #|A| && [forall v in A, #|sub_neigh A v| == 2])
+      -> [forall v in A, (#|sub_neigh A v| == Δ(A))] && (χ(A) == 1 + Δ(A)).
+Proof. case. exact: clique_br. exact: odd_cycle_br. Qed.
 
 Theorem chi_leq_delta_sub (n : nat) :   (* Brook's Theorem for Subgraphs *)
   (forall A : {set G}, n == #|A| -> (* Tuve que hacer esto para que me saliera la inducción *)
   connected A -> (* A is connected *)
   ~ (cliqueb A) ->  (* A is not a complete graph *)
-  ~ (odd #|A| && [forall v : G, #|sub_neigh A v| == 2]) -> (* A is not an odd cycle *)
+  ~ (odd #|A| && [forall v in A, #|sub_neigh A v| == 2]) -> (* A is not an odd cycle *)
   χ(A) <= Δ(A)).
 Proof.
   elim/strong_ind: n. move=> A.
   (* Caso Base *)
   rewrite eq_sym; move/eqP/cards0_eq -> => _ _ _.
   by rewrite chi_set0 delta_set0.
-(*
-  have aux1: [set x in mem set0] = set0. { move=> t. by []. admit. }
-  have aux2: [set [set x] | x in set0] = set0. { admit. }
-  have aux3: [arg min_(P < set0 | coloring P set0) #|P|] = set0. { admit. }
-  rewrite /chi_mem aux1 /trivial_coloring aux2 aux3 cards0 //=.
-*)
   (*  Paso Inductivo  *)
   move=> n HI J /eqP Jn connJ not_clique not_oddc.
   move: (ltn0Sn n); rewrite Jn card_gt0; move/set0Pn=> [x xJ].
@@ -716,15 +756,15 @@ Proof.
   rewrite leqNgt; apply/contraT; move/negPn=> CR.
   (* Para cada componente conexa de H, su numero cromatico es menor al delta de J *)
   have chiH'_leq_deltaJ : forall H' : {set G}, H' \in components H -> χ(H') <= Δ(J). {
-    move=> H' H'compH; move: (H'compH)=> /components_def [H'subH connH'].
+    move=> H' H'compH; move: (H'compH); move=> /components_def [H'subH connH'].
     have pH'J := sub_proper_trans H'subH (properD1 xJ).
     have H'leqH : #|H'| <= n by rewrite Hn; apply subset_leq_card.
 
     (* Case 1: H' is clique or odd cycle *)
-    case: (boolP (cliqueb H' || odd #|H'| && [forall v : G, #|sub_neigh H' v| == 2])).
-    move/orP/clique_or_odd_cycle_br=> [all_delta ->].
+    case: (boolP (cliqueb H' || odd #|H'| && [forall v in H', #|sub_neigh H' v| == 2])).
+    move/orP/clique_or_odd_cycle_br/andP=> [/forallP all_delta /eqP ->].
     have [v vH' vadjx] := components_sub_v connJ xJ H'compH.
-    move: (all_delta v vH') <-.
+    move/implyP: (all_delta v)=> aux. move/eqP: (aux vH') <-.
     have NvinH'_l_NvinJ : 1 + #|sub_neigh H' v| <= #|sub_neigh J v|. {
       rewrite add1n; apply/proper_card.
       have NvneqH: (exists2 x : G, x \in N(v) :&: J & x \notin H').
@@ -744,7 +784,7 @@ Proof.
     exact: (leq_trans (leq_trans trans_1 (delta_sub H'subH)) trans_3).
   }
   (* El numero cromatico de H es menor al delta de J *)
-  have chiH_leq_deltaJ : χ(H) <= Δ(J) by rewrite chi_components max_leq_n.
+  have chiH_leq_deltaJ : χ(H) <= Δ(J). rewrite chi_components. by rewrite max_leq_n. by [].
   (* Si el numero cromatico aumenta agregando el vertice x, entonces deg(x) = Δ(J) *)
   have degx_eq_delta : χ(J :\ x) < χ(J) -> #|sub_neigh J x| = Δ(J). {
     move/chi_del_x=> chiH_leq_chiJ. move: (aux chiH_leq_chiJ chiH_leq_deltaJ CR).
@@ -777,30 +817,58 @@ Proof.
 
   (* Arranca la parte difícil... *)
 
+  (* Sublema: No hay ningun coloreo posible en H tal que para a,b en N(x), col(a) = col(b) *)
+  have dif_col_Nx (P' : {set {set G}}) (colP' : coloring P' H) (a b : G) :
+      a != b -> a \in N(x) -> b \in N(x) -> a \notin pblock P' b.
+  {admit. } (* En caso de haberlo, x podría usar algun color en [1..Δ(J)] -> χ(J) <= Δ(J) *)
+
   (* Vamos a trabajar con este coloreo *)
   move: (chi_gives_part (eqxx χ(H))) => [P /andP [colPH card_PH]].
   (* induced_col_2 toma dos vértices y devuelve el subgrafo inducido por
    * los vertices coloreados igual a esos dos vértices. *)
 
   (* 2. Para todos dos vértices vecinos de x, estos recaen en la misma componente
-   * conexa de Hij, donde Hij = induced_col_2 i j *)
-  have induced_comp (i j : G) (iX : i \in N(x)) (jX : j \in N(x)) (C : {set {set G}}) (col : coloring C H)
-      := pblock (components (induced_col_2 i j col)) i.
-  have ij_conn (i j : G) (iX : i \in N(x)) (jX : j \in N(x)) (C : {set {set G}}) (col : coloring C H)
-      : j \in (induced_comp i j iX jX C col). {admit. }
+   * conexa de Hij, donde Hij = induced_col_2 i j 
+  have induced_comp (i j : G) := pblock (components (induced_col_2 i j colPH)) i. *)
+  have ij_conn (i j : G) (ineqj: i != j) (iX : i \in N(x)) (jX : j \in N(x)) :
+  j \in pblock (components (induced_col_2 i j colPH)) i. {
+    move/andP: (colPH)=> [partPH stabP].
+    have iijcol : i \in induced_col_2 i j colPH. {admit. }
+    have xneqi : pblock (components (induced_col_2 i j colPH)) i != [set i].
+    {apply contraT; rewrite negbK. } (* Pasar i al color j, demostrar que es coloreo, contradecir con dif_col_Nx *)
+    have [k [k1 [knPi kPj]]] : exists k : G, (k \in pblock (components (induced_col_2 i j colPH)) i) /\
+    (pblock P i != pblock P k) /\ (pblock P k == pblock P j). {
+      move: (in_comp iijcol xneqi)=> [k [kijcol kadji]].
+      exists k; split.
+      exact: (in_comp_2 iijcol kijcol kadji). split.
+      move/subsetP: (ind_col_subset i j colPH)=> subs.
+      exact: (dif_col colPH (subs i iijcol) (subs k kijcol) kadji).
+      rewrite in_setU /induced_col in kijcol. case/orP: kijcol. {admit. } (*de nuevo... armar la prueba mas eficiente*)
+      {admit. } (*deberia ser facil...*)
+    }  (* existe otro elemento ahi por ser distinto de [x], luego debe ser de la parte de union de j *)
+    apply contraT=> jnPi.
+    set P' := change_part P (pblock (components (induced_col_2 i k colPH)) i).
+    have iP' : i \in cover (components (induced_col_2 i j colPH)). {admit. }
+    have iP : i \in cover P. {admit. }
+    have iPi : i \in pblock (components (induced_col_2 i j colPH)) i by rewrite mem_pblock.
+    have jP : j \in cover P. {admit. }
+    have kP : k \in cover P. {admit. }
+    have colP'H : coloring P' H by move: (coloring_ch_col_2 (pblock_mem iP')); rewrite //=.
+    move: (change_partP iP kP jP iPi k1 jnPi knPi kPj).
+    apply contraLR=> _. exact: (dif_col_Nx P' colP'H i j ineqj iX jX).
+  }
 
   (* 3. Esta componente conexa es un path entre i y j *)
-  have ind_comp_is_path (i j : G) (iX : i \in N(x)) (jX : j \in N(x)) (C : {set {set G}}) (col : coloring C H)
-        : is_path_of (induced_comp i j iX jX C col) i j. {admit. }
+  have ind_comp_is_path (i j : G) (iX : i \in N(x)) (jX : j \in N(x))
+        : is_path_of (pblock (components (induced_col_2 i j colPH)) i) i j. {admit. }
 
   (* 4. Para vertices i,j,k, los paths Cij y Cik solo coinciden en i *)
-  have ijk_join_i (i j k : G) (iX : i \in N(x)) (jX : j \in N(x)) (kX : k \in N(x)) 
-                  (C : {set {set G}}) (col : coloring C H) :
-    (induced_comp i j iX jX C col) :&: (induced_comp i k iX kX C col) = [set i]. {admit. }
+  have ijk_join_i (i j k : G) (iX : i \in N(x)) (jX : j \in N(x)) (kX : k \in N(x)) :
+    (pblock (components (induced_col_2 i j colPH)) i) :&: (pblock (components (induced_col_2 i j colPH)) i) = [set i]. {admit. }
 
-  (* 5. Existen dos vertices vecinos de x que no son adyacentes (y existe un tercer vértice vecino de x). *)
+  (* 5. Existen dos vertices vecinos de x que no son adyacentes (y existe un tercer vértice vecino de x). 
   have: (exists a b c : G, a \in N(x) /\ b \in N(x) /\ c \in N(x) /\ ~~ (a -- b)). {admit. }
-  elim=> x1 [x2 [x3 [x1adjx [x2adjx [x3adjx x1nadjx2]]]]].
+  elim=> x1 [x2 [x3 [x1adjx [x2adjx [x3adjx x1nadjx2]]]]]. *)
 
   (* Construímos el vértice u, vecino de x1 en C12, que tiene mismo color que x2 *)
   have: exists u : G, (u -- x1) && (u != x2) && (same_col u x2 colPH). {admit. }
@@ -808,7 +876,7 @@ Proof.
 
   (* Definimos una nueva partición P' que da lugar a un nuevo coloreo colP'H,
    * donde solo intercambiamos de conjunto en la partición a los vértices de C{i,j} *)
-  have P' := change_col P (induced_comp x1 x3 x1adjx x3adjx P colPH).
+  have P' := change_part P (induced_comp x1 x3 x1adjx x3adjx P colPH).
   have colP'H : coloring P' H. {admit. }
 
   (* As a neighbour of x1 = x'3 , our vertex u now lies in C'{x2,x3} *)
