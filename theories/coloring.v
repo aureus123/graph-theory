@@ -1312,9 +1312,29 @@ Variable (G : sgraph).
 
 Definition sub_neigh (A : {set G}) (v : G) := N(v) :&: A.
 
-Definition is_odd_hole (A : {set G}) := connectedb A && (#|A| >= 5) && odd #|A| && [forall v : G, #|sub_neigh A v| == 2].
+Definition is_odd_hole (A : {set G}) := [&& connectedb A, (#|A| >= 5), odd #|A|
+    & [forall v in A, #|sub_neigh A v| == 2]].
 
 Lemma odd_hole_omega2 (A : {set G}) : is_odd_hole A -> ω(A) = 2.
+Proof.
+  move=> ohA ; apply/eqP ; rewrite eqn_leq ; apply/andP ; split ; last first.
+  - move: ohA ; rewrite /is_odd_hole => /and4P [_ Acd5 _ Adeg2].
+    have: 0 < #|A| by move: Acd5 ; apply: leq_ltn_trans.
+    rewrite card_gt0 ; move/set0Pn => [x xinA].
+    move/forall_inP: Adeg2 => /(_ x xinA) ; rewrite /sub_neigh => sNv2.
+    have: 0 < #|N(x) :&: A|
+      by move: sNv2 ; rewrite eq_sym => /eqP s2Nv ; move: (eq_leq s2Nv) ; apply: leq_ltn_trans.
+    rewrite card_gt0 ; move/set0Pn => [y] ; rewrite in_setI => /andP [yinNx yinA].
+    set K := [set x; y].
+    move: yinNx ; rewrite in_opn => adjxy.
+    have: #|K| = 2 by rewrite cards2 (sg_edgeNeq adjxy).
+    move<- ; apply: clique_bound.
+    rewrite /cliques ; rewrite in_set ; apply/andP ; split.
+    + rewrite /K. apply/subsetP => z. rewrite in_set2 ; case/orP ; by move/eqP->.
+    + apply/cliqueP ; rewrite /clique /K => p q ; rewrite !in_set2 ; case/orP.
+      * move/eqP-> ; case/orP ; [by move/eqP-> ; apply: contraR | by move/eqP-> ].
+      * move/eqP-> ; case/orP ; [by move/eqP-> ; rewrite sg_sym | by move/eqP-> ; apply: contraR ].
+  - admit.
 Admitted.
 
 Lemma odd_hole_chi3 (A : {set G}) : is_odd_hole A -> χ(A) = 3.
@@ -1332,6 +1352,7 @@ Qed.
 (* For proving imperfectness on anti odd-holes, may be one can take advantage of weak_perfect
  * since the anti odd-hole is the complement of the odd hole by definition *)
 
+End Odd_hole.
 
 
 
