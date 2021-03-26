@@ -491,15 +491,13 @@ Definition induced_col (P : {set {set G}}) (D : {set G}) (x : G) (colP : colorin
     := if @idP (x \in D) is ReflectT p then induced_col' p colP else set0.
 *)
 
-Definition induced_col (P : {set {set G}}) (D : {set G}) (x : G) (colP : coloring P D) := pblock P x.
-
 Definition chi_mem (A : mem_pred G) := 
   #|[arg min_(P < trivial_coloring [set x in A] | coloring P [set x in A]) #|P|]|.
 
 Notation "χ( A )" := (chi_mem (mem A)) (format "χ( A )").
 
 Lemma chi_gives_part (D : {set G}) (n : nat) : χ(D) == n -> exists P : {set {set G}},
-    coloring P D && (#|P| == n).
+    coloring P D /\ (#|P| == n) /\ forall P' : {set {set G}}, coloring P' D -> #|P| <= #|P'|.
 Admitted.
 
 Section Basics.
@@ -559,7 +557,7 @@ Definition is_path_of (S : {set G}) (x y : G) :=
   unique (fun p : Path x y => (S \subset p) /\ (p \subset S)).
 
 Definition same_col (A : {set G}) (P : {set {set G}}) (x y : G) (colPA : coloring P A) :=
-  y \in (induced_col x colPA).
+  y \in pblock P x.
 
 (* change_col debe intercambiar de subconjunto en la partición a todos los elementos de C.  
  * En C habrá vértices que corresponderán a DOS subconjuntos de la partición P.
@@ -571,12 +569,17 @@ Let change_part_v (P : {set {set G}}) (A : {set G}) (x y : G) :=
 (* Movemos x de su conjunto dentro de la partición, y lo colocamos en el mismo que y *)
   (pblock P x :\ x) |: ((x |: pblock P y) |: (P :\ (pblock P x) :\ (pblock P y))).
 
-Fact partition_v (A : {set G}) (P : {set {set G}}) (x y : G) :
-  x \in cover P -> y \in cover P ->
+Fact ch_part_1 (A : {set G}) (P : {set {set G}}) (x y : G) (xA : x \in A) (yA : y \in A) :
   partition P A -> partition (change_part_v P A x y) A.
-Proof.
-  move=> xP yP /andP [/eqP coverP /andP [trivP Pn0]]; apply/andP; split.
-  rewrite -coverP /change_part_v.
+Admitted.
+
+Fact ch_part_2 (A : {set G}) (P : {set {set G}}) (x y : G) (xA : x \in A) (yA : y \in A) :
+    partition P A -> x \in pblock (change_part_v P A x y) y.
+Admitted.
+
+Fact ch_part_3 (A : {set G}) (P : {set {set G}}) (x y : G) :
+    [forall S in P, stable S] -> [forall y' in pblock P y, ~~ (x -- y')]
+    -> [forall S in (change_part_v P A x y), stable S].
 Admitted.
 
 Let nds (A B : {set G}) := (A :&: B == set0) || (A \subset B).
@@ -584,8 +587,8 @@ Let dif_sym' (A B : {set G}) := if (nds A B) then B else (A :\: B) :|: (B :\: A)
 Definition change_part (P : {set {set G}}) (C : {set G}) := (*map (dif_sym' C) *)P.
 (*seq_sub (map (dif_sym C) (enum P))*)
 
-Fact change_partP (P : {set {set G}}) (C : {set G}) (x y z : G) :
-  x \in cover P -> y \in cover P -> z \in cover P -> x \in C -> y \in C -> z \notin C ->
+Fact ch_partP (P : {set {set G}}) (A : {set G}) (partPA : partition P A) (C : {set G}) (x y z : G) :
+  x \in A -> y \in A -> z \in A -> x \in C -> y \in C -> z \notin C ->
   pblock P x != pblock P y -> pblock P y == pblock P z -> x \in pblock (change_part P C) z.
 Admitted. (* Un poco rebuscado *)
 
@@ -650,6 +653,10 @@ Proof.
   (* x \in A  <-> (pblock (components A) x) != set0 *)
 Admitted.
 
+Lemma in_comp_N (A : {set G}) (x : G) : x \in A ->
+  (pblock (components A) x) == [set x] -> forall y : G, y \in A -> ~~ (x -- y).
+Admitted.
+
 Lemma in_comp_2 (A : {set G}) (x y : G) : x \in A -> y \in A -> y -- x ->
   y \in pblock (components A) x.
 Admitted.
@@ -657,6 +664,17 @@ Admitted.
 Lemma dif_col (P : {set {set G}}) (A : {set G}) (col : coloring P A) (x y : G) :
     x \in A -> y \in A -> y -- x -> pblock P x != pblock P y.
 Admitted.
+
+Lemma cover_comp (A : {set G}) : cover (components A) = A.
+Admitted.
+
+Lemma in_part_pblock (P : {set {set G}}) (A : {set G}) (x y : G) :
+    partition P A -> x \in pblock P y -> x \in A.
+(* preim_partition_pblock. *)
+Admitted.
+
+Lemma xxx (x y : G) : (x == y) = false -> x != y. (* Esto ya debería existir... *)
+Proof. move=> H. apply/contraT. by rewrite negbK H. Qed.
 
 (* Fin de teoremas auxiliares *)
 
@@ -688,20 +706,27 @@ Admitted.
 Lemma neigh_chi (A : {set G}) (x : G) : #|sub_neigh A x| < χ(A :\ x) -> χ(A) = χ(A :\ x).
 Admitted.
 
+Lemma chi_neigh (A : {set G}) (x : G) : χ(A :\ x) < χ(A) -> #|sub_neigh A x| = χ(A :\ x) ->
+   forall P : {set {set G}}, coloring P (A :\ x) ->
+  (forall y z : G, y != z -> y \in sub_neigh A x -> z \in sub_neigh A x -> y \notin pblock P z).
+Admitted.
+
 Lemma conn0 (A : {set G}) : connected A -> Δ(A) = 0 -> A = set0.
 Admitted.
 
 Lemma conn1 (A : {set G}) : connected A -> Δ(A) = 1 -> exists x y : G, A = [set x;y] /\ (x -- y).
 Admitted.
 
+Lemma union_bij_proofR (A B : {set G}) (x : G) : x \in A -> x \in B :|: A.
+Proof. apply/subsetP. exact: subsetUr. Qed.
 
 (* Sublemas y definiciones preliminares el Teorema de Brooks *)
 
-Let induced_col_2 (A : {set G}) (P : {set {set G}}) (x y : G) (colP : coloring P A)
-    := induced_col x colP :|: induced_col y colP.
+Let pblockU (A : {set G}) (P : {set {set G}}) (x y : G) (colP : coloring P A)
+    := pblock P x :|: pblock P y.
 
 Fact ind_col_subset (A : {set G}) (P : {set {set G}}) (x y : G) (colP : coloring P A) :
-    induced_col_2 x y colP \subset A.
+    pblockU x y colP \subset A.
 Admitted.
 
 Lemma chi_set0 : χ(set0) = 0.
@@ -714,12 +739,12 @@ Fact coloring_ch_col_1 (A : {set G}) (x y : G) (P : {set {set G}}) (colP: colori
                        (xA : x \in A) (yA : y \in A)  :
   [forall v in pblock P y, ~~ (v -- x)] -> coloring (change_part_v P A x y) A.
 Proof.
-  move/andP: colP=> [partP stabP] stabY. apply/andP; split. apply partition_v.
+  move/andP: colP=> [partP stabP] stabY. apply/andP; split. apply ch_part_1.
   all: try by rewrite (cover_partition partP). by [].
 Admitted.
 
 Fact coloring_ch_col_2 (A B : {set G}) (x y : G) (P : {set {set G}}) (colP: coloring P A) :
-  B \in components (induced_col_2 x y colP) -> coloring (change_part P B) A.
+  B \in components (pblockU x y colP) -> coloring (change_part P B) A.
 Admitted.
 
 
@@ -738,23 +763,34 @@ Lemma clique_or_odd_cycle_br (A : {set G}) : cliqueb A \/ (odd #|A| && [forall v
 Proof. case. exact: clique_br. exact: odd_cycle_br. Qed.
 
 Theorem chi_leq_delta_sub (n : nat) :   (* Brook's Theorem for Subgraphs *)
-  (forall A : {set G}, n == #|A| -> (* Tuve que hacer esto para que me saliera la inducción *)
+  (forall A : {set G}, n == #|A| ->
   connected A -> (* A is connected *)
   ~ (cliqueb A) ->  (* A is not a complete graph *)
   ~ (odd #|A| && [forall v in A, #|sub_neigh A v| == 2]) -> (* A is not an odd cycle *)
   χ(A) <= Δ(A)).
 Proof.
   elim/strong_ind: n. move=> A.
-  (* Caso Base *)
+
+  (* Base Step *)
+
   rewrite eq_sym; move/eqP/cards0_eq -> => _ _ _.
   by rewrite chi_set0 delta_set0.
-  (*  Paso Inductivo  *)
+
+  (*  Inductive Step  *)
+
+  (* Starting definitions... *)
   move=> n HI J /eqP Jn connJ not_clique not_oddc.
   move: (ltn0Sn n); rewrite Jn card_gt0; move/set0Pn=> [x xJ].
   set H := J :\ x.
+  have/subsetP NxsubH : sub_neigh J x \subset H. {
+    apply/subsetP=> v; move/setIP=> [vNx vJ].
+    apply/setD1P; split => [|//].
+    by apply/xxx/sg_edgeNeq; rewrite sg_sym -in_opn.
+  }
   move: (cardsD1 x J). rewrite xJ -Jn; move/eqP; rewrite add1n eqSS; move/eqP; rewrite -/H=> Hn.
   rewrite leqNgt; apply/contraT; move/negPn=> CR.
-  (* Para cada componente conexa de H, su numero cromatico es menor al delta de J *)
+
+  (* For every H' connected component of H, χ(H') <= Δ(J) *)
   have chiH'_leq_deltaJ : forall H' : {set G}, H' \in components H -> χ(H') <= Δ(J). {
     move=> H' H'compH; move: (H'compH); move=> /components_def [H'subH connH'].
     have pH'J := sub_proper_trans H'subH (properD1 xJ).
@@ -770,7 +806,7 @@ Proof.
       have NvneqH: (exists2 x : G, x \in N(v) :&: J & x \notin H').
       { exists x. apply/setIP; split=> [|//=]; by rewrite in_opn.
         apply/contraT; rewrite negbK=> xH'.
-        move/subsetP: (H'subH). move=> sH'H. move: (sH'H x xH').  (*No recuerdo como simplificar esto*)
+        move/subsetP: (H'subH). move=> sH'H. move: (sH'H x xH').
         by rewrite /H setD11.  }
       exact: setISP NvneqH pH'J.
     }
@@ -783,24 +819,23 @@ Proof.
     have trans_3 := (delta_sub (subD1set J x)); rewrite -/H in trans_3.
     exact: (leq_trans (leq_trans trans_1 (delta_sub H'subH)) trans_3).
   }
-  (* El numero cromatico de H es menor al delta de J *)
-  have chiH_leq_deltaJ : χ(H) <= Δ(J). rewrite chi_components. by rewrite max_leq_n. by [].
-  (* Si el numero cromatico aumenta agregando el vertice x, entonces deg(x) = Δ(J) *)
-  have degx_eq_delta : χ(J :\ x) < χ(J) -> #|sub_neigh J x| = Δ(J). {
-    move/chi_del_x=> chiH_leq_chiJ. move: (aux chiH_leq_chiJ chiH_leq_deltaJ CR).
-    move=> dJ1_eq_cJ. apply/eqP; rewrite eqn_leq; apply/andP.
-    split; first by exact: delta_max.
-    move: dJ1_eq_cJ; rewrite -chiH_leq_chiJ; move/eqP; rewrite eqSS; move/eqP ->.
-    apply contraT; rewrite -ltnNge. move/neigh_chi; rewrite -chiH_leq_chiJ -add1n.
+
+  (* Some equalities and inequalities... *)
+  have χH_leq_ΔJ : χ(H) <= Δ(J). rewrite chi_components. by rewrite max_leq_n. by [].
+  move: (leq_ltn_trans χH_leq_ΔJ CR); move/chi_del_x=> χH_leq_χJ.
+  move: (aux χH_leq_χJ χH_leq_ΔJ CR).
+  rewrite -χH_leq_χJ; move/eqP; rewrite eqSS=>/eqP ΔJ_eq_χH.
+  move: (leq_ltn_trans χH_leq_ΔJ CR)=> χH_l_χJ.
+  (* ...to prove that #|N(x)| = Δ(J) *)
+  have/eqP Nx_eq_ΔJ : #|sub_neigh J x| == Δ(J). {
+    rewrite eqn_leq. apply/andP; split. by exact: delta_max xJ.
+    rewrite ΔJ_eq_χH.
+    apply contraT; rewrite -ltnNge. move/neigh_chi; rewrite -χH_leq_χJ -add1n.
     rewrite -[in RHS](add0n χ(J :\ x)); move/eqP; by rewrite eqn_add2r.
-  }
-  (* Y con esto podemos afirmar que #|N(x)| = Δ(J) *)
-  move: (degx_eq_delta (leq_ltn_trans chiH_leq_deltaJ CR))=> Nx_leq_ΔJ.
+  } move: (ΔJ_eq_χH); rewrite -Nx_eq_ΔJ=> Nx_eq_χH.
 
-  (* Probamos que Δ(J) >= 3 mostrando los casos para Δ(J) = 0,1,2 *)
-
+  (* Probamos que Δ(J) >= 3 mostrando los casos para Δ(J) = 0,1,2 --
   case (boolP (Δ(J) <= 2)).
-
   rewrite leq_eqVlt; move/orP; case. (* Caso para Δ(J) = 2 *)
   {admit. }
   rewrite ltnS leq_eqVlt ; move/orP; case. (* Caso para Δ(J) = 1 *)
@@ -813,58 +848,68 @@ Proof.
   (*Creamos 3 vertices distintos en N(x) a partir de este resultado *)
   move/(cards_n (ltn0Sn 1)); elim=> [x1 x1Nx].
   move/(cards_n (ltn0Sn 0)); elim=> [x2 /setD1P [x2neqx1 x2Nx]].
-  rewrite card_gt0; move/set0Pn; elim=> [x3 /setD1P [x3neqx2 /setD1P [x3neqx1 x3Nx]]].
+  rewrite card_gt0; move/set0Pn; elim=> [x3 /setD1P [x3neqx2 /setD1P [x3neqx1 x3Nx]]]. *)
 
-  (* Arranca la parte difícil... *)
 
-  (* Sublema: No hay ningun coloreo posible en H tal que para a,b en N(x), col(a) = col(b) *)
-  have dif_col_Nx (P' : {set {set G}}) (colP' : coloring P' H) (a b : G) :
-      a != b -> a \in N(x) -> b \in N(x) -> a \notin pblock P' b.
-  {admit. } (* En caso de haberlo, x podría usar algun color en [1..Δ(J)] -> χ(J) <= Δ(J) *)
+  (* Are we going to work with this colour partitions? *)
+  move: (chi_gives_part (eqxx χ(J))) => [PJ [colPJ [card_PJ chi_defJ]]].
+  move: (chi_gives_part (eqxx χ(H))) => [PH [colPH [card_PH chi_defH]]].
 
-  (* Vamos a trabajar con este coloreo *)
-  move: (chi_gives_part (eqxx χ(H))) => [P /andP [colPH card_PH]].
-  (* induced_col_2 toma dos vértices y devuelve el subgrafo inducido por
-   * los vertices coloreados igual a esos dos vértices. *)
+  (* 1. Para todo coloreo en H con a,b en N(x), col(a) != col(b) *)
+  have dif_col_Nx (P'H : {set {set G}}) (colP'H : coloring P'H H) (a b : G) (aneqb : a != b)
+  (aNx : a \in sub_neigh J x) (bNx : b \in sub_neigh J x) := chi_neigh χH_l_χJ Nx_eq_χH colP'H aneqb aNx bNx.
 
   (* 2. Para todos dos vértices vecinos de x, estos recaen en la misma componente
    * conexa de Hij, donde Hij = induced_col_2 i j 
   have induced_comp (i j : G) := pblock (components (induced_col_2 i j colPH)) i. *)
-  have ij_conn (i j : G) (ineqj: i != j) (iX : i \in N(x)) (jX : j \in N(x)) :
-  j \in pblock (components (induced_col_2 i j colPH)) i. {
-    move/andP: (colPH)=> [partPH stabP].
-    have iijcol : i \in induced_col_2 i j colPH. {admit. }
-    have xneqi : pblock (components (induced_col_2 i j colPH)) i != [set i].
-    {apply contraT; rewrite negbK. } (* Pasar i al color j, demostrar que es coloreo, contradecir con dif_col_Nx *)
-    have [k [k1 [knPi kPj]]] : exists k : G, (k \in pblock (components (induced_col_2 i j colPH)) i) /\
-    (pblock P i != pblock P k) /\ (pblock P k == pblock P j). {
-      move: (in_comp iijcol xneqi)=> [k [kijcol kadji]].
-      exists k; split.
-      exact: (in_comp_2 iijcol kijcol kadji). split.
+  have ij_conn (i j : G) (ineqj: i != j) (iX : i \in sub_neigh J x) (jX : j \in sub_neigh J x) :
+  j \in pblock (components (pblockU i j colPH)) i. {
+    move/andP: (colPH)=> [partPH stabP]. move/andP: (partPH)=> [_ /andP [trivP _]].
+    have jH := NxsubH i iX. have iH := NxsubH j jX.
+    have iijcol : i \in pblockU i j colPH. {
+      rewrite in_setU; apply/orP/or_introl.
+      by rewrite mem_pblock (cover_partition partPH).
+    }
+    have xneqi : pblock (components (pblockU i j colPH)) i != [set i]. {
+      apply contraT; rewrite negbK=> is_sing.
+      set P'H := change_part_v PH H i j.
+      have colP'H : coloring P'H H. {
+        apply/andP; split. by apply ch_part_1.
+        apply/(ch_part_3 H stabP)/contraT.
+        move/forall_inPn=> [j' j'colPHj /negbNE iadjj'].
+        move/(union_bij_proofR (pblock PH i)): (j'colPHj)=> j'colPHji.
+        by move: (in_comp_N iijcol is_sing j'colPHji); apply contraR=> _.
+      }
+      move: (ch_part_2 jH iH partPH)=> ?. move: (dif_col_Nx P'H colP'H i j ineqj iX jX).
+      by apply contraR=> _.
+    }
+    move: (in_comp iijcol xneqi)=> [k [kijcol kadji]].
+    have kCompi := in_comp_2 iijcol kijcol kadji.
+    have knPi : pblock PH i != pblock PH k.
       move/subsetP: (ind_col_subset i j colPH)=> subs.
       exact: (dif_col colPH (subs i iijcol) (subs k kijcol) kadji).
-      rewrite in_setU /induced_col in kijcol. case/orP: kijcol. {admit. } (*de nuevo... armar la prueba mas eficiente*)
-      {admit. } (*deberia ser facil...*)
-    }  (* existe otro elemento ahi por ser distinto de [x], luego debe ser de la parte de union de j *)
+    have/eqP kPj : pblock PH k = pblock PH j.
+      rewrite in_setU in kijcol. case/orP: kijcol.
+      by move/(same_pblock trivP)/eqP; rewrite eq_sym; apply/contraTeq=> _.
+      by apply/same_pblock.
     apply contraT=> jnPi.
-    set P' := change_part P (pblock (components (induced_col_2 i k colPH)) i).
-    have iP' : i \in cover (components (induced_col_2 i j colPH)). {admit. }
-    have iP : i \in cover P. {admit. }
-    have iPi : i \in pblock (components (induced_col_2 i j colPH)) i by rewrite mem_pblock.
-    have jP : j \in cover P. {admit. }
-    have kP : k \in cover P. {admit. }
-    have colP'H : coloring P' H by move: (coloring_ch_col_2 (pblock_mem iP')); rewrite //=.
-    move: (change_partP iP kP jP iPi k1 jnPi knPi kPj).
-    apply contraLR=> _. exact: (dif_col_Nx P' colP'H i j ineqj iX jX).
+    set P'H := change_part PH (pblock (components (pblockU i k colPH)) i).
+    rewrite in_setU in kijcol.
+    have kH : k \in H by case/orP: kijcol; exact: in_part_pblock partPH.
+    have iP' : i \in cover (components (pblockU i j colPH)) by rewrite cover_comp.
+    have iP'' : i \in pblock (components (pblockU i j colPH)) i by rewrite mem_pblock.
+    have colP'H : coloring P'H H by move: (coloring_ch_col_2 (pblock_mem iP')); rewrite //=.
+    move: (ch_partP partPH jH kH iH iP'' kCompi jnPi knPi kPj).
+    apply contraLR=> _. exact: (dif_col_Nx P'H colP'H i j ineqj iX jX).
   }
 
   (* 3. Esta componente conexa es un path entre i y j *)
   have ind_comp_is_path (i j : G) (iX : i \in N(x)) (jX : j \in N(x))
-        : is_path_of (pblock (components (induced_col_2 i j colPH)) i) i j. {admit. }
+        : is_path_of (pblock (components (pblockU i j colPH)) i) i j. {admit. }
 
   (* 4. Para vertices i,j,k, los paths Cij y Cik solo coinciden en i *)
   have ijk_join_i (i j k : G) (iX : i \in N(x)) (jX : j \in N(x)) (kX : k \in N(x)) :
-    (pblock (components (induced_col_2 i j colPH)) i) :&: (pblock (components (induced_col_2 i j colPH)) i) = [set i]. {admit. }
+    (pblock (components (pblockU i j colPH)) i) :&: (pblock (components (pblockU i j colPH)) i) = [set i]. {admit. }
 
   (* 5. Existen dos vertices vecinos de x que no son adyacentes (y existe un tercer vértice vecino de x). 
   have: (exists a b c : G, a \in N(x) /\ b \in N(x) /\ c \in N(x) /\ ~~ (a -- b)). {admit. }
