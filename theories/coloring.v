@@ -673,8 +673,11 @@ Lemma in_part_pblock (P : {set {set G}}) (A : {set G}) (x y : G) :
 (* preim_partition_pblock. *)
 Admitted.
 
-Lemma xxx (x y : G) : (x == y) = false -> x != y. (* Esto ya debería existir... *)
+Lemma xxx (T : finType) (x y : T) : (x == y) = false -> x != y. (* Esto ya debería existir... *)
 Proof. move=> H. apply/contraT. by rewrite negbK H. Qed.
+
+Lemma yyy (T : finType) (x y : T) : (x != y -> false) -> x == y.
+Proof. move=> H. apply/contraT. by []. Qed.
 
 (* Fin de teoremas auxiliares *)
 
@@ -854,6 +857,7 @@ Proof.
   (* Are we going to work with this colour partitions? *)
   move: (chi_gives_part (eqxx χ(J))) => [PJ [colPJ [card_PJ chi_defJ]]].
   move: (chi_gives_part (eqxx χ(H))) => [PH [colPH [card_PH chi_defH]]].
+  move/andP: (colPH)=> [partPH stabP]. move/andP: (partPH)=> [_ /andP [trivP _]].
 
   (* 1. Para todo coloreo en H con a,b en N(x), col(a) != col(b) *)
   have dif_col_Nx (P'H : {set {set G}}) (colP'H : coloring P'H H) (a b : G) (aneqb : a != b)
@@ -864,7 +868,6 @@ Proof.
   have induced_comp (i j : G) := pblock (components (induced_col_2 i j colPH)) i. *)
   have ij_conn (i j : G) (ineqj: i != j) (iX : i \in sub_neigh J x) (jX : j \in sub_neigh J x) :
   j \in pblock (components (pblockU i j colPH)) i. {
-    move/andP: (colPH)=> [partPH stabP]. move/andP: (partPH)=> [_ /andP [trivP _]].
     have jH := NxsubH i iX. have iH := NxsubH j jX.
     have iijcol : i \in pblockU i j colPH. {
       rewrite in_setU; apply/orP/or_introl.
@@ -904,12 +907,29 @@ Proof.
   }
 
   (* 3. Esta componente conexa es un path entre i y j *)
-  have ind_comp_is_path (i j : G) (iX : i \in N(x)) (jX : j \in N(x))
-        : is_path_of (pblock (components (pblockU i j colPH)) i) i j. {admit. }
+  have ind_comp_is_path (i j : G) (iX : i \in N(x)) (jX : j \in N(x)) :
+  is_path_of (pblock (components (pblockU i j colPH)) i) i j. {
+    rewrite /is_path_of /unique=> P1 P2 [psubP1 P1subp].
+  }
 
   (* 4. Para vertices i,j,k, los paths Cij y Cik solo coinciden en i *)
-  have ijk_join_i (i j k : G) (iX : i \in N(x)) (jX : j \in N(x)) (kX : k \in N(x)) :
-    (pblock (components (pblockU i j colPH)) i) :&: (pblock (components (pblockU i j colPH)) i) = [set i]. {admit. }
+  have ijk_join_i (i j k : G) (iX : i \in sub_neigh J x) (jX : j \in sub_neigh J x) (kX : k \in sub_neigh J x) :
+  (pblock (components (pblockU i j colPH)) i) :&: (pblock (components (pblockU i k colPH)) i) = [set i]. 
+  {
+    apply/eqP; rewrite eqEsubset; apply/andP; split.
+
+(* Probamos primero el caso difícil*)
+  { apply/subsetP=> u. move/setIP=> [u_ij u_ik].
+    rewrite in_set1.
+}
+(* Volvemos a probar lo mismo sobre los vertices i,j de siempre... Buscar generalizar esto. *)
+    have iH := NxsubH j jX. have jH := NxsubH i iX. have kH := NxsubH k kX.
+    have iijcol : i \in pblockU i j colPH.
+      by rewrite in_setU; apply/orP/or_introl; rewrite mem_pblock (cover_partition partPH).
+    have iikcol : i \in pblockU i k colPH.
+      by rewrite in_setU; apply/orP/or_introl; rewrite mem_pblock (cover_partition partPH).
+    rewrite sub1set; apply/setIP; split; by rewrite mem_pblock cover_comp.
+  }
 
   (* 5. Existen dos vertices vecinos de x que no son adyacentes (y existe un tercer vértice vecino de x). 
   have: (exists a b c : G, a \in N(x) /\ b \in N(x) /\ c \in N(x) /\ ~~ (a -- b)). {admit. }
