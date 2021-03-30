@@ -550,6 +550,22 @@ End Basics.
 
 (** ** Definition and Proof of Brook's Theorem from Mauricio Salichs *)
 
+(* Esto debería estar en sgraph *)
+
+Definition component_of' (A : {set G}) (x : G) := pblock (components A) x.
+
+Lemma in_component_of' (A : {set G}) (x : G) : x \in A -> x \in component_of' A x.
+Proof. move=> xA. rewrite mem_pblock. Admitted.
+
+Lemma component_of_components' (A : {set G}) (x : G) : x \in A ->
+  component_of' A x \in components A.
+Proof. move=> xA. rewrite pblock_mem //. Admitted.
+
+Lemma connected_component_of' (A : {set G}) (x : G) : x \in A ->
+  connected (component_of' A x).
+Admitted.
+
+
 (* Algunas definiciones y teoremas auxiliares que pueden resultar útiles.
    Ver si ya estan definidos en otro lado y/o reubicar. *)
 
@@ -673,6 +689,21 @@ Lemma in_part_pblock (P : {set {set G}}) (A : {set G}) (x y : G) :
 (* preim_partition_pblock. *)
 Admitted.
 
+Lemma in_2_pblock (P : {set {set G}}) (x y : G) :
+    trivIset P -> y != x -> pblock P x :&: pblock P y = set0.
+Admitted.
+
+Lemma union_bij_proofR (A B : {set G}) (x : G) : x \in A -> x \in B :|: A.
+Proof. apply/subsetP. exact: subsetUr. Qed.
+
+Lemma trans_pblock (P : {set {set G}}) (x y z : G) :
+    x \in pblock P z -> y \in pblock P z -> x \in pblock P y.
+Admitted.
+
+Lemma trans_n_pblock (P : {set {set G}}) (x y z : G) :
+    x \in pblock P z -> y \notin pblock P z -> x \notin pblock P z.
+Admitted.
+
 Lemma xxx (T : finType) (x y : T) : (x == y) = false -> x != y. (* Esto ya debería existir... *)
 Proof. move=> H. apply/contraT. by rewrite negbK H. Qed.
 
@@ -720,15 +751,12 @@ Admitted.
 Lemma conn1 (A : {set G}) : connected A -> Δ(A) = 1 -> exists x y : G, A = [set x;y] /\ (x -- y).
 Admitted.
 
-Lemma union_bij_proofR (A B : {set G}) (x : G) : x \in A -> x \in B :|: A.
-Proof. apply/subsetP. exact: subsetUr. Qed.
-
-Lemma trans_pblock (P : {set {set G}}) (x y z : G) :
-    x \in pblock P z -> y \in pblock P z -> x \in pblock P y.
+Lemma sn_1 (A: {set G}) : forall z : G, connected A -> (exists x y : G, x != y /\
+  x \in A /\ y \in A) -> 0 < #|sub_neigh A z|.
 Admitted.
 
-Lemma trans_n_pblock (P : {set {set G}}) (x y z : G) :
-    x \in pblock P z -> y \notin pblock P z -> x \notin pblock P z.
+Lemma sn_2 (A: {set G}) (x : G) : #|sub_neigh A x| == 2 -> exists y z : G, y != z /\
+    y \in sub_neigh A x /\ z \in sub_neigh A x.
 Admitted.
 
 (* Sublemas y definiciones preliminares el Teorema de Brooks *)
@@ -876,7 +904,7 @@ Proof.
     by rewrite Jab; apply/set2cond; split=> [//=|]; rewrite sg_sym. }
   rewrite ltnS leq_eqVlt ; move/orP; case. (* Caso para Δ(J) = 0 *)
   { by move/eqP=> ΔJ0; rewrite (conn0 connJ ΔJ0) in_set0 in xJ. }
-  by []. rewrite -ltnNge -Nx_leq_ΔJ.
+  by []. rewrite -ltnNge -Nx_connected_component_ofleq_ΔJ.
   (*Creamos 3 vertices distintos en N(x) a partir de este resultado *)
   move/(cards_n (ltn0Sn 1)); elim=> [i iX].
   move/(cards_n (ltn0Sn 0)); elim=> [j /setD1P [jneqi jX]].
@@ -892,11 +920,12 @@ Proof.
   have dif_col_Nx (P : {set {set G}}) (colP : coloring P H) (i j : G) (ineqj : i != j)
   (iX : i \in sub_neigh J x) (jX : j \in sub_neigh J x) := chi_neigh χH_l_χJ Nx_eq_χH colP ineqj iX jX.
 
+  pose C (P : {set {set G}}) (colP : coloring P H) (i j : G) := pblock (components (pblockU i j colP)) i.
+
   (* 2. Para todos dos vértices vecinos de x, estos recaen en la misma componente
    * conexa de Hij, donde Hij = pblockU i j colP *)
   have ij_conn (P : {set {set G}}) (colP : coloring P H) (i j : G) (ineqj: i != j)
-               (iX : i \in sub_neigh J x) (jX : j \in sub_neigh J x) :
-  j \in pblock (components (pblockU i j colP)) i. {
+               (iX : i \in sub_neigh J x) (jX : j \in sub_neigh J x) : j \in C P colP i j. {
     move/andP: (colP)=> [partP stabP]. move/andP: (partP)=> [_ /andP [trivP _]].
     have jH := NxsubH i iX. have iH := NxsubH j jX.
     have iijcol : i \in pblockU i j colP. {
@@ -918,9 +947,9 @@ Proof.
     }
     move: (in_comp iijcol xneqi)=> [k [kijcol kadji]].
     have kCompi := in_comp_2 iijcol kijcol kadji.
-    have knPi : pblock P i != pblock P k.
-      move/subsetP: (ind_col_subset i j colP)=> subs.
-      exact: (dif_col colP (subs i iijcol) (subs k kijcol) kadji).
+    have knPi : pblock P i != pblock P k. {admit. }
+      (*move/subsetP: (ind_col_subset i j colP)=> subs.
+      exact: (dif_col colP (subs i iijcol) (subs k kijcol) kadji).*)
     have/eqP kPj : pblock P k = pblock P j.
       rewrite in_setU in kijcol. case/orP: kijcol.
       by move/(same_pblock trivP)/eqP; rewrite eq_sym; apply/contraTeq=> _.
@@ -937,39 +966,67 @@ Proof.
   }
 
   (* 3. Esta componente conexa es un path entre i y j *)
-  have ind_comp_is_path (P : {set {set G}}) (colP : coloring P H) (i j : G) (ineqj: i != j)
+  have C_is_path (P : {set {set G}}) (colP : coloring P H) (i j : G) (ineqj: i != j)
                         (iX : i \in sub_neigh J x) (jX : j \in sub_neigh J x) :
-  forall u : G, u \in pblock (components (pblockU i j colP)) i ->
-                unique (fun p : Path i j => u \in p). {
-    move=> u uCij. rewrite /unique. }
-
-(*
-  have ind_comp_is_path (i j : G) (iX : i \in N(x)) (jX : j \in N(x)) :
-  is_path_of (pblock (components (pblockU i j colPH)) i) i j. {
-    rewrite /is_path_of /unique=> P1 P2 [psubP1 P1subp].
+    #|sub_neigh (C P colP i j) i| == 1 /\ #|sub_neigh (C P colP i j) j| == 1 /\
+    forall v : G, v \in (C P colP i j) -> v != i -> v != j -> #|sub_neigh (C P colP i j) v| == 2.
+  {
+    split. rewrite eqn_leq; apply/andP; split. apply/contraT.
+    rewrite -ltnNge. {admit. } (* Si tiene mas de un vecino, tienen el mismo color.
+    Como N(i) <= Δ-1, se puede recolorear i, teniendo mismo color que j -> Absurdo. *)
+    have connC : connected (C P colP i j). {admit. } (* Sale facil usando connected_component_of' *)
+    apply/(sn_1 i connC).
+    exists i. exists j. split. by []. split. {admit. } {admit. } (* Fáciles *)
+    split. {admit. } (* Sale fácil demostrando que (C P colP i j) = (C P colP j i) *)
+    move=> v vinC vneqi vneqj. rewrite eqn_leq; apply/andP; split.
+    {admit. } (*Si tiene 3 vertices vecinos, todos estan coloreados iguales, .... *)
+    {admit. } (* Si todos tienen solo un vecino, no hay manera de conectar i con j *)
   }
-*)
+
+  have v_in_C1 (P : {set {set G}}) (colP : coloring P H) (i j v : G) :
+    v \in C P colP i j -> v \in pblock P i \/ v \in pblock P j.
+  {
+    rewrite /C /pblockU.
+  }
+
+  have v_in_C2 (P : {set {set G}}) (colP : coloring P H) (i j u v : G) :
+    v \in sub_neigh (C P colP i j) u -> u \in pblock P i -> v \in pblock P j.
+  {admit. }
+
   (* 4. Para vertices i,j,k, los paths Cij y Cik solo coinciden en i *)
   have ijk_join_i (P : {set {set G}}) (colP : coloring P H) (i j k : G) (ineqj : i != j) (ineqk : i != k) (jneqk : j != k)
                   (iX : i \in sub_neigh J x) (jX : j \in sub_neigh J x) (kX : k \in sub_neigh J x) :
-  (pblock (components (pblockU i j colP)) i) :&: (pblock (components (pblockU i k colP)) i) \subset [set i].
+  (C P colP i j) :&: (C P colP i k) \subset [set i].
   {
+    move/andP: (colP)=> [partP _]. move/andP: (partP)=> [covP /andP [trivP nP0]].
     apply/subsetP=> u. move/setIP=> [u_ij u_ik].
     rewrite in_set1; apply/contraT=> uneqi.
+    (* Probamos que u es distinto que j (análogo k) *)
+    have uneqj : u != j. {admit. }  have uneqk : u != k. {admit. }
     (* Probamos que u tiene mismo color que i *)
-    have ucoli : u \in pblock P i. {admit. }
+    have ucoli : u \in pblock P i. {
+      move/v_in_C1 in u_ij. move/v_in_C1 in u_ik.
+      case u_ij. by []. case u_ik. by [].
+      move=> H1 H2. move/setIP: (conj H1 H2).
+      by rewrite (in_2_pblock trivP jneqk) in_set0.
+    }
+
+    have [NCij_i [NCij_j NCij_v]] := C_is_path P colP i j ineqj iX jX.
+    move/sn_2: (NCij_v u u_ij uneqi uneqj)=> [uj1 [uj2 [uj1nuj2 [uj1NCij uj2NCij]]]].
     (* Probamos que u tiene dos vecinos con color j *)
-    have [uj1 [uj2 /andP [/andP [/andP [/andP [uj1Nu uj2Nu] uj1nuj2] uj1Pj] uj2Pj]]] : exists uj1 uj2 : G,
-          (uj1 \in sub_neigh H u) && (uj2 \in sub_neigh H u) && (uj1 != uj2)
-       && (uj1 \in pblock P j) && (uj2 \in pblock P j). {admit. }
+    have uj1Pj := v_in_C2 P colP i j u uj1 uj1NCij ucoli.
+    have uj2Pj := v_in_C2 P colP i j u uj2 uj2NCij ucoli.
+
+    have [NCik_i [NCik_k NCik_v]] := C_is_path P colP i k ineqk iX kX.
+    move/sn_2: (NCik_v u u_ik uneqi uneqk)=> [uk1 [uk2 [uk1nuk2 [uk1NCik uk2NCik]]]].
     (* Probamos que u tiene dos vecinos con color k *)
-    have [uk1 [uk2 /andP [/andP [/andP [/andP [uk1Nu uk2Nu] uk1nuk2] uk1Pk] uk2Pk]]] : exists uk1 uk2 : G,
-          (uk1 \in sub_neigh H u) && (uk2 \in sub_neigh H u) && (uk1 != uk2)
-       && (uk1 \in pblock P k) && (uk2 \in pblock P k). {admit. } (* analogo a la anterior *)
+    have uk1Pk := v_in_C2 P colP i k u uk1 uk1NCik ucoli.
+    have uk2Pk := v_in_C2 P colP i k u uk2 uk2NCik ucoli.
+
     (* y despues... *)
     have uH : u \in H. {admit. }
-    have [_ uj1H] := setIP uj1Nu. have [_ uj2H] := setIP uj2Nu.
-    have [_ uk1H] := setIP uk1Nu. have [_ uk2H] := setIP uk2Nu.
+    have [_ uj1Cij] := setIP uj1NCij. have [_ uj2Cij] := setIP uj2NCij.
+    have [_ uk1Cik] := setIP uk1NCik. have [_ uk2Cik] := setIP uk2NCik. 
     have all_dif : #|[set uj1; uj2; uk1; uk2] :&: sub_neigh H u| = 4. {admit. }
     move: (ch_col_aux colP uH all_dif (trans_pblock uj1Pj uj2Pj) (trans_pblock uk1Pk uk2Pk))=> xd.
     move: (ch_col_dif colP uH xd)=> [y/andP[/andP[yH ynPu]colP']].
@@ -987,17 +1044,17 @@ Proof.
 
   (* Definimos una nueva partición P' que da lugar a un nuevo coloreo colP'H,
    * donde solo intercambiamos de conjunto en la partición a los vértices de C{i,j} *)
-  have P' := change_part P (induced_comp x1 x3 x1adjx x3adjx P colPH).
-  have colP'H : coloring P' H. {admit. }
+  have P' := change_part P (C P colPH x1 x3).
+  have colP'H : coloring P' H. {admit. } (*coloring_ch_col_2*)
 
   (* As a neighbour of x1 = x'3 , our vertex u now lies in C'{x2,x3} *)
-  have u_inC'23 : u \in (induced_comp x2 x3 x2adjx x3adjx P' colP'H). {admit. }
+  have u_inC'23 : u \in (C P' colP'H x2 x3). {admit. }
 
   (* By (4) for P, however, the path C{1,2} - x1 retained its original colouring, so u ∈ [C{1,2} - x] ⊆ C'{1,2} *)
-  have u_inC'12 : u \in (induced_comp x2 x1 x2adjx x1adjx P' colP'H). {admit. }
+  have u_inC'12 : u \in (C P' colP'H x2 x1). {admit. }
 
-  (* Hence u ∈ C'{2,3} ∩ C'{1,2}, contradicting (3) for P'. *)
-  have: u \in (induced_comp x2 x3 x2adjx x3adjx P' colP'H) :&: (induced_comp x2 x1 x2adjx x1adjx P' colP'H)
+  (* Hence u ∈ C'{2,3} ∩ C'{1,2}, contradicting (4) for P'. *)
+  have: u \in (C P' colP'H x2 x3) :&: (C P' colP'H x2 x1)
     by apply/setIP; split => [|].
   rewrite (ijk_join_i x2 x3 x1 x2adjx x3adjx x1adjx P' colP'H) in_set1.
   by move/eqP=> ueqx1; move: uneqx1; apply/contra_neqT.
