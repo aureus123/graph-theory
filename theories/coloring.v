@@ -565,9 +565,16 @@ Lemma connected_component_of' (A : {set G}) (x : G) : x \in A ->
   connected (component_of' A x).
 Admitted.
 
+Lemma in_component_sub (A : {set G}) (x y : G) :
+   y \in (component_of' A x) -> y \in A.
+Admitted.
 
 (* Algunas definiciones y teoremas auxiliares que pueden resultar útiles.
    Ver si ya estan definidos en otro lado y/o reubicar. *)
+
+Lemma col_neigh (P : {set {set G}}) (A : {set G}) (x y z : G) :
+  coloring P A -> y \in N(x) -> x \in pblock P z -> y \notin pblock P z.
+Admitted.
 
 Definition is_path_of (S : {set G}) (x y : G) :=
   unique (fun p : Path x y => (S \subset p) /\ (p \subset S)).
@@ -652,6 +659,9 @@ Proof.
   all: by apply/implyP; move/negP.
 Qed.
 
+Lemma aux1 (m n : nat) : m < n -> 0 < n.
+Admitted.
+
 Lemma aux2 (n m : nat) : 0 < n -> 0 < m -> n < m -> n.-1 < m.-1.
 Admitted.
 
@@ -662,6 +672,10 @@ Proof.
   elim=> [x xC]. exists x. by []. move: cAgn. rewrite (cardsD1 x C) addnC xC addn1 //=.
   by move: (aux2 ng0 (ltn0Sn #|C :\ x|)).
 Qed.
+
+Lemma cards_n_sub (T : finType) (C : {set T}) (n : nat) (x : T) :
+    0 < n -> n < #|C| -> x \in C -> (n.-1) < #|C :\ x|.
+Admitted.
 
 Lemma in_comp (A : {set G}) (x : G) : x \in A ->
   (pblock (components A) x) != [set x] -> exists y : G, y \in A /\ y -- x.
@@ -737,6 +751,16 @@ Admitted.
 Fact delta_sub (A : {set G}) : forall B : {set G}, B \subset A -> Δ(B) <= Δ(A).
 Admitted.
 
+Lemma chi_set0 : χ(set0) = 0.
+Proof. apply/eqP; move: (leq_chi set0); by rewrite cards0 leqn0. Qed.
+
+Lemma delta_set0 : Δ(set0) = 0.
+Proof. apply/eqP; move: (leq_delta set0); by rewrite cards0 leqn0. Qed.
+
+Lemma clique_delta (A : {set G}) (x : G) : connected A -> cliqueb (sub_neigh A x) ->
+  #|(sub_neigh A x)| = Δ(A) -> cliqueb A.
+Admitted.
+
 Lemma neigh_chi (A : {set G}) (x : G) : #|sub_neigh A x| < χ(A :\ x) -> χ(A) = χ(A :\ x).
 Admitted.
 
@@ -788,12 +812,6 @@ Let pblockU (A : {set G}) (P : {set {set G}}) (x y : G) (colP : coloring P A)
 Fact pblockU_subset (A : {set G}) (P : {set {set G}}) (x y : G) (colP : coloring P A) :
     pblockU x y colP \subset A.
 Admitted.
-
-Lemma chi_set0 : χ(set0) = 0.
-Proof. apply/eqP; move: (leq_chi set0); by rewrite cards0 leqn0. Qed.
-
-Lemma delta_set0 : Δ(set0) = 0.
-Proof. apply/eqP; move: (leq_delta set0); by rewrite cards0 leqn0. Qed.
 
 Fact coloring_ch_col_1 (A : {set G}) (x y : G) (P : {set {set G}}) (colP: coloring P A)
                        (xA : x \in A) (yA : y \in A)  :
@@ -894,7 +912,7 @@ Proof.
     rewrite -[in RHS](add0n χ(J :\ x)); move/eqP; by rewrite eqn_add2r.
   } move: (ΔJ_eq_χH); rewrite -Nx_eq_ΔJ=> Nx_eq_χH.
 
-  (* Probamos que Δ(J) >= 3 mostrando los casos para Δ(J) = 0,1,2 --
+  (* Probamos que Δ(J) >= 3 mostrando los casos para Δ(J) = 0,1,2 *)
   case (boolP (Δ(J) <= 2)).
   rewrite leq_eqVlt; move/orP; case. (* Caso para Δ(J) = 2 *)
   {admit. }
@@ -904,17 +922,7 @@ Proof.
     by rewrite Jab; apply/set2cond; split=> [//=|]; rewrite sg_sym. }
   rewrite ltnS leq_eqVlt ; move/orP; case. (* Caso para Δ(J) = 0 *)
   { by move/eqP=> ΔJ0; rewrite (conn0 connJ ΔJ0) in_set0 in xJ. }
-  by []. rewrite -ltnNge -Nx_connected_component_ofleq_ΔJ.
-  (*Creamos 3 vertices distintos en N(x) a partir de este resultado *)
-  move/(cards_n (ltn0Sn 1)); elim=> [i iX].
-  move/(cards_n (ltn0Sn 0)); elim=> [j /setD1P [jneqi jX]].
-  rewrite card_gt0; move/set0Pn; elim=> [k /setD1P [kneqj /setD1P [kneqi kX]]]. *)
-
-
-  (* Are we going to work with this colour partitions?
-  move: (chi_gives_part (eqxx χ(J))) => [PJ [colPJ [card_PJ chi_defJ]]].
-  move: (chi_gives_part (eqxx χ(H))) => [PH [colPH [card_PH chi_defH]]].
-  move/andP: (colPH)=> [partPH stabP]. move/andP: (partPH)=> [_ /andP [trivP _]].*)
+  by []. rewrite -ltnNge -Nx_eq_ΔJ=> NJx_geq_2.
 
   (* 1. Para todo coloreo en H con a,b en N(x), col(a) != col(b) *)
   have dif_col_Nx (P : {set {set G}}) (colP : coloring P H) (i j : G) (ineqj : i != j)
@@ -983,15 +991,13 @@ Proof.
     {admit. } (* Si todos tienen solo un vecino, no hay manera de conectar i con j *)
   }
 
-  have v_in_C1 (P : {set {set G}}) (colP : coloring P H) (i j v : G) :
-    v \in C P colP i j -> v \in pblock P i \/ v \in pblock P j.
-  {
-    rewrite /C /pblockU.
-  }
-
   have v_in_C2 (P : {set {set G}}) (colP : coloring P H) (i j u v : G) :
     v \in sub_neigh (C P colP i j) u -> u \in pblock P i -> v \in pblock P j.
-  {admit. }
+  {
+    move/setIP=> [vNu /in_component_sub vCij] uPi. move: (col_neigh colP vNu uPi).
+    rewrite in_setU in vCij. case/orP: vCij. move=> h1 /negbTE h2. 
+    by rewrite h2 in h1. by move=> ? _.
+  }
 
   (* 4. Para vertices i,j,k, los paths Cij y Cik solo coinciden en i *)
   have ijk_join_i (P : {set {set G}}) (colP : coloring P H) (i j k : G) (ineqj : i != j) (ineqk : i != k) (jneqk : j != k)
@@ -1005,8 +1011,8 @@ Proof.
     have uneqj : u != j. {admit. }  have uneqk : u != k. {admit. }
     (* Probamos que u tiene mismo color que i *)
     have ucoli : u \in pblock P i. {
-      move/v_in_C1 in u_ij. move/v_in_C1 in u_ik.
-      case u_ij. by []. case u_ik. by [].
+      move/in_component_sub: (u_ij); rewrite in_setU; case/orP. by [].
+      move/in_component_sub: (u_ik); rewrite in_setU; case/orP. by [].
       move=> H1 H2. move/setIP: (conj H1 H2).
       by rewrite (in_2_pblock trivP jneqk) in_set0.
     }
@@ -1030,21 +1036,38 @@ Proof.
     have all_dif : #|[set uj1; uj2; uk1; uk2] :&: sub_neigh H u| = 4. {admit. }
     move: (ch_col_aux colP uH all_dif (trans_pblock uj1Pj uj2Pj) (trans_pblock uk1Pk uk2Pk))=> xd.
     move: (ch_col_dif colP uH xd)=> [y/andP[/andP[yH ynPu]colP']].
-    (* Ahora demostramos que teniendo u un color disinto a i ó j, no se cumple (2) en él. *)
-    Check trans_n_pblock ucoli .
+    (* Ahora demostramos que teniendo u un color disinto a i ó j, no se cumple (2) en él.
+     * Es decir, tenemos que mostrar que el nuevo color de u "corta" al camino Cij. *)
+    
   }
 
-  (* 5. Existen dos vertices vecinos de x que no son adyacentes (y existe un tercer vértice vecino de x). 
-  have: (exists a b c : G, a \in N(x) /\ b \in N(x) /\ c \in N(x) /\ ~~ (a -- b)). {admit. }
-  elim=> x1 [x2 [x3 [x1adjx [x2adjx [x3adjx x1nadjx2]]]]]. *)
+
+  (* 5. Existen dos vertices vecinos de x que no son adyacentes. *)
+  have : ~~ cliqueb (sub_neigh J x).
+  {
+    apply/contraT; rewrite negbK=> cliqueNJx.
+    move: (aux1 NJx_geq_2); rewrite card_gt0; move/set0Pn=> [y yNJx].
+    by move: (clique_delta connJ cliqueNJx Nx_eq_ΔJ).
+  }
+  move/forall_inPn=> [x1 x1Hx]. move/forall_inPn=> [x2 x2Hx].
+  rewrite negb_imply; move/andP=> [x1neqx2 x1nadjx2]. rewrite eq_sym in x1neqx2.
+  move/setD1P: (conj x1neqx2 x2Hx)=> x2Hxsx1.
+  move: (cards_n_sub (ltn0Sn 0) (cards_n_sub (ltn0Sn 1) NJx_geq_2 x1Hx) x2Hxsx1).
+  rewrite card_gt0; move/set0Pn=> [x3]. rewrite !in_setD1=> /andP [x3neqx2 /andP [x3neqx1 x3Hx]].
+
+  (* We are going to work with this colour partitions *)
+  move: (chi_gives_part (eqxx χ(J))) => [PJ [colPJ [card_PJ chi_defJ]]].
+  move: (chi_gives_part (eqxx χ(H))) => [PH [colPH [card_PH chi_defH]]].
+  move/andP: (colPH)=> [partPH stabP]. move/andP: (partPH)=> [_ /andP [trivP _]].
 
   (* Construímos el vértice u, vecino de x1 en C12, que tiene mismo color que x2 *)
-  have: exists u : G, (u -- x1) && (u != x2) && (same_col u x2 colPH). {admit. }
-  elim=> u /andP [/andP [uadjx1 uneqx1] sc_u_x2].
+  have [u/andP [/andP [unadjx1 uneqx2] uPx2]]: exists u : G, (u -- x1) && (u != x2) && (u \in pblock PH x2). {
+    admit.
+  }
 
   (* Definimos una nueva partición P' que da lugar a un nuevo coloreo colP'H,
    * donde solo intercambiamos de conjunto en la partición a los vértices de C{i,j} *)
-  have P' := change_part P (C P colPH x1 x3).
+  have P' := change_part PH (C PH colPH x1 x3).
   have colP'H : coloring P' H. {admit. } (*coloring_ch_col_2*)
 
   (* As a neighbour of x1 = x'3 , our vertex u now lies in C'{x2,x3} *)
@@ -1056,7 +1079,7 @@ Proof.
   (* Hence u ∈ C'{2,3} ∩ C'{1,2}, contradicting (4) for P'. *)
   have: u \in (C P' colP'H x2 x3) :&: (C P' colP'H x2 x1)
     by apply/setIP; split => [|].
-  rewrite (ijk_join_i x2 x3 x1 x2adjx x3adjx x1adjx P' colP'H) in_set1.
+  rewrite (ijk_join_i P' colP'H x2 x3 x1 x2Hx x3Hx x1Hx P' colP'H) in_set1.
   by move/eqP=> ueqx1; move: uneqx1; apply/contra_neqT.
 Admitted.
 
