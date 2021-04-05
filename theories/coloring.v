@@ -561,8 +561,7 @@ Lemma component_of_components' (A : {set G}) (x : G) : x \in A ->
   component_of' A x \in components A.
 Proof. move=> xA. rewrite pblock_mem //. Admitted.
 
-Lemma connected_component_of' (A : {set G}) (x : G) : x \in A ->
-  connected (component_of' A x).
+Lemma connected_component_of' (A : {set G}) (x : G) : connected (component_of' A x).
 Admitted.
 
 Lemma in_component_sub (A : {set G}) (x y : G) :
@@ -572,7 +571,11 @@ Admitted.
 (* Algunas definiciones y teoremas auxiliares que pueden resultar útiles.
    Ver si ya estan definidos en otro lado y/o reubicar. *)
 
-Lemma col_neigh (P : {set {set G}}) (A : {set G}) (x y z : G) :
+Lemma col_neigh (P : {set {set G}}) (A : {set G}) (x y : G) :
+  coloring P A -> y \in N(x) -> y \notin pblock P x.
+Admitted.
+
+Lemma col_neigh' (P : {set {set G}}) (A : {set G}) (x y z : G) : (* Ver de descartar y usar solo el de arriba *)
   coloring P A -> y \in N(x) -> x \in pblock P z -> y \notin pblock P z.
 Admitted.
 
@@ -610,10 +613,14 @@ Let dif_sym' (A B : {set G}) := if (nds A B) then B else (A :\: B) :|: (B :\: A)
 Definition change_part (P : {set {set G}}) (C : {set G}) := (*map (dif_sym' C) *)P.
 (*seq_sub (map (dif_sym C) (enum P))*)
 
-Fact ch_part_C (P : {set {set G}}) (A : {set G}) (partPA : partition P A) (C : {set G}) (x y z : G) :
+Fact ch_part_C_1 (P : {set {set G}}) (A : {set G}) (partPA : partition P A) (C : {set G}) (x y z : G) :
   x \in A -> y \in A -> z \in A -> x \in C -> y \in C -> z \notin C ->
   pblock P x != pblock P y -> pblock P y == pblock P z -> x \in pblock (change_part P C) z.
 Admitted. (* Un poco rebuscado *)
+
+Fact ch_part_C_2 (P : {set {set G}}) (A : {set G}) (partPA : partition P A) (C : {set G}) (x y : G) :
+  x \notin C -> y \notin C -> y \in pblock P x -> y \in pblock (change_part P C) x.
+Admitted.
 
 Lemma chi_components (A B : {set G}) : χ(A) = \max_(B in components A) χ(B).
 Admitted.
@@ -627,6 +634,10 @@ Lemma components_sub_v (A : {set G}) (v : G) : connected A -> v \in A ->
 Admitted.
 
 Lemma chi_del_x (A : {set G}) (x : G) : χ(A :\ x) < χ(A) -> χ(A :\ x).+1 = χ(A).
+Admitted.
+
+Lemma conn_dif (A : {set G}) (x y : G) : connected A -> x \in A -> y \in A ->
+    x != y -> ~~ (x -- y) -> [exists z in A, x -- z && (z != y)].
 Admitted.
 
 Lemma ind_G : induced [set: G] = G. (*  Este lema no funciona   *)
@@ -928,7 +939,7 @@ Proof.
   have dif_col_Nx (P : {set {set G}}) (colP : coloring P H) (i j : G) (ineqj : i != j)
   (iX : i \in sub_neigh J x) (jX : j \in sub_neigh J x) := chi_neigh χH_l_χJ Nx_eq_χH colP ineqj iX jX.
 
-  pose C (P : {set {set G}}) (colP : coloring P H) (i j : G) := pblock (components (pblockU i j colP)) i.
+  pose C (P : {set {set G}}) (colP : coloring P H) (i j : G) := component_of' (pblockU i j colP) i.
 
   (* 2. Para todos dos vértices vecinos de x, estos recaen en la misma componente
    * conexa de Hij, donde Hij = pblockU i j colP *)
@@ -954,10 +965,9 @@ Proof.
       by apply contraR=> _.
     }
     move: (in_comp iijcol xneqi)=> [k [kijcol kadji]].
-    have kCompi := in_comp_2 iijcol kijcol kadji.
+    have kCompi := in_comp_2 iijcol kijcol kadji. rewrite -in_opn in kadji.
     have knPi : pblock P i != pblock P k. {admit. }
-      (*move/subsetP: (ind_col_subset i j colP)=> subs.
-      exact: (dif_col colP (subs i iijcol) (subs k kijcol) kadji).*)
+      (*Check col_neigh colP kadji.*)
     have/eqP kPj : pblock P k = pblock P j.
       rewrite in_setU in kijcol. case/orP: kijcol.
       by move/(same_pblock trivP)/eqP; rewrite eq_sym; apply/contraTeq=> _.
@@ -969,7 +979,7 @@ Proof.
     have iP' : i \in cover (components (pblockU i j colP)) by rewrite cover_comp.
     have iP'' : i \in pblock (components (pblockU i j colP)) i by rewrite mem_pblock.
     have colP'H : coloring P'H H by move: (coloring_ch_col_2 (pblock_mem iP')); rewrite //=.
-    move: (ch_part_C partP jH kH iH iP'' kCompi jnPi knPi kPj).
+    move: (ch_part_C_1 partP jH kH iH iP'' kCompi jnPi knPi kPj).
     apply contraLR=> _. exact: (dif_col_Nx P'H colP'H i j ineqj iX jX).
   }
 
@@ -994,7 +1004,7 @@ Proof.
   have v_in_C2 (P : {set {set G}}) (colP : coloring P H) (i j u v : G) :
     v \in sub_neigh (C P colP i j) u -> u \in pblock P i -> v \in pblock P j.
   {
-    move/setIP=> [vNu /in_component_sub vCij] uPi. move: (col_neigh colP vNu uPi).
+    move/setIP=> [vNu /in_component_sub vCij] uPi. move: (col_neigh' colP vNu uPi).
     rewrite in_setU in vCij. case/orP: vCij. move=> h1 /negbTE h2. 
     by rewrite h2 in h1. by move=> ? _.
   }
@@ -1051,7 +1061,7 @@ Proof.
   }
   move/forall_inPn=> [x1 x1Hx]. move/forall_inPn=> [x2 x2Hx].
   rewrite negb_imply; move/andP=> [x1neqx2 x1nadjx2]. rewrite eq_sym in x1neqx2.
-  move/setD1P: (conj x1neqx2 x2Hx)=> x2Hxsx1.
+  move/setD1P: (conj x1neqx2 x2Hx)=> x2Hxsx1. rewrite eq_sym in x1neqx2.
   move: (cards_n_sub (ltn0Sn 0) (cards_n_sub (ltn0Sn 1) NJx_geq_2 x1Hx) x2Hxsx1).
   rewrite card_gt0; move/set0Pn=> [x3]. rewrite !in_setD1=> /andP [x3neqx2 /andP [x3neqx1 x3Hx]].
 
@@ -1061,20 +1071,34 @@ Proof.
   move/andP: (colPH)=> [partPH stabP]. move/andP: (partPH)=> [_ /andP [trivP _]].
 
   (* Construímos el vértice u, vecino de x1 en C12, que tiene mismo color que x2 *)
-  have [u/andP [/andP [unadjx1 uneqx2] uPx2]]: exists u : G, (u -- x1) && (u != x2) && (u \in pblock PH x2). {
-    admit.
-  }
+  pose C12 := C PH colPH x1 x2.
+  have x1C12 : x1 \in C12.
+    rewrite mem_pblock cover_comp in_setU. apply/orP/or_introl.
+    rewrite mem_pblock (cover_partition partPH). exact: NxsubH x1 x1Hx.
+  have x2C12 := ij_conn PH colPH x1 x2 x1neqx2 x1Hx x2Hx. rewrite -/C12 in x2C12.
+  have connC12 : connected C12 by exact: connected_component_of'.
+  have/existsP [u /andP[uC12/andP[x1adju uneqx2]]] := conn_dif connC12 x1C12 x2C12 x1neqx2 x1nadjx2.
+  rewrite -in_opn in x1adju.
+  have uCx2 : u \in pblock PH x2. case/in_component_sub/setUP: (uC12).
+    by move/negbTE: (col_neigh colPH x1adju) ->. by [].
 
   (* Definimos una nueva partición P' que da lugar a un nuevo coloreo colP'H,
    * donde solo intercambiamos de conjunto en la partición a los vértices de C{i,j} *)
-  have P' := change_part PH (C PH colPH x1 x3).
-  have colP'H : coloring P' H. {admit. } (*coloring_ch_col_2*)
+  have x1_triv : x1 \in (pblockU x1 x3 colPH).
+    rewrite in_setU. apply/orP/or_introl.
+    rewrite mem_pblock (cover_partition partPH). exact: NxsubH x1 x1Hx.
+  pose C13 := C PH colPH x1 x3.
+  have C13_triv : C13 \in components (pblockU x1 x3 colPH) by exact: (component_of_components' x1_triv).
+  pose P' := change_part PH C13.
+  have colP'H : coloring P' H by exact: (coloring_ch_col_2 C13_triv).
 
   (* As a neighbour of x1 = x'3 , our vertex u now lies in C'{x2,x3} *)
-  have u_inC'23 : u \in (C P' colP'H x2 x3). {admit. }
+  have u_inC'23 : u \in (C P' colP'H x2 x1). {
+    apply/contraT; rewrite /C.
+  }
 
   (* By (4) for P, however, the path C{1,2} - x1 retained its original colouring, so u ∈ [C{1,2} - x] ⊆ C'{1,2} *)
-  have u_inC'12 : u \in (C P' colP'H x2 x1). {admit. }
+  have u_inC'12 : u \in (C P' colP'H x3 x2) :\ x3. {admit. }
 
   (* Hence u ∈ C'{2,3} ∩ C'{1,2}, contradicting (4) for P'. *)
   have: u \in (C P' colP'H x2 x3) :&: (C P' colP'H x2 x1)
