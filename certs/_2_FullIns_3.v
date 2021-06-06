@@ -237,7 +237,7 @@ Section Certificate.
     Definition inst_list := [:: 'v12; 'v13; 'v14; 'v15; 'v16; 'v17; 'v18; 'v19; 'v20; 'v21; 'v22; 'v23; 'v36; 'v37; 'v38; 'v39; 'v40; 'v41; 'v42; 'v43; 'v44; 'v45; 'v46; 'v47; 'v50].
 
     Fact inst_list_eq_inst_set : inst_list =i inst_set.
-    Proof. by move=> v ; rewrite !inE /= ; try rewrite !orbA. Qed.
+    Proof. by move=> v ; rewrite !inE ; try rewrite !orbA. Qed.
 
     Fact inst_list_uniq : uniq inst_list.
     Proof. done. Qed.
